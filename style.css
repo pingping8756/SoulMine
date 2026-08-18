@@ -534,7 +534,6 @@ button {
     .slot div, .team-slot div, .player-item div { font-size: 0.7rem !important; word-break: break-all; }
     .slot strong, .team-slot strong, .player-item strong { font-size: 0.75rem !important; word-break: break-word; }
 }
-}
 
 .dual-schedule-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
 
