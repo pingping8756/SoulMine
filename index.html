@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SoulMine組隊系統</title>
+    <link rel="icon" type="image/png" href="favicon.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
+    <link rel="stylesheet" href="style.css?v=20">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Flatpickr CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <!-- Flatpickr JS -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://unpkg.com/drag-drop-touch"></script>
+    <script src="https://npmcdn.com/flatpickr/dist/l10n/zh-tw.js"></script>
+</head>
+<body>
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal-overlay">
+        <div class="glass-card modal-content">
+            <h2>登入 / 建立帳號</h2>
+            <p class="subtitle" style="margin-bottom: 1.5rem;">輸入名稱與密碼。如果是首次使用，系統會直接以此建立新帳號。</p>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="login-name">您的名稱 (稱呼)</label>
+                    <input type="text" id="login-name" required placeholder="例如: 小明">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">密碼</label>
+                    <input type="password" id="login-password" required placeholder="請輸入密碼">
+                </div>
+                <div id="login-error" style="color: var(--danger-color); font-size: 0.9rem; margin-bottom: 1rem; display: none;">密碼錯誤！</div>
+                <button type="submit" class="btn-primary" style="width: 100%;">進入系統</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="app-container" id="main-app" style="display:none;">
+        <header class="app-header">
+            <h1>SoulMine突襲揪團</h1>
+            <nav class="tabs">
+                <button class="tab-btn active" data-target="tab-profile">1. 角色設定</button>
+                <button class="tab-btn" data-target="tab-schedule">2. 填寫時間</button>
+                <button class="tab-btn" data-target="tab-team">3. 團長組隊</button>
+                <button class="tab-btn" data-target="tab-status">4. 已出團資訊</button>
+                <button class="tab-btn" data-target="tab-changelog">5. 更新日誌</button>
+            </nav>
+        </header>
+
+        <main class="content-area">
+            <!-- Tab 1: Profile -->
+            <section id="tab-profile" class="tab-content active">
+                <div class="glass-card">
+                    <h2>建立你的角色卡</h2>
+                    <p class="subtitle">請輸入你的遊戲資訊，方便團長安排隊伍。</p>
+                    
+                    <form id="profile-form">
+                        <div class="character-slots-container" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.5rem; margin-bottom: 2rem;">
+                            <!-- Character 1 -->
+                            <div class="character-slot" style="background: var(--secondary-color); padding: 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                                <h3 style="margin-bottom: 1rem; color: var(--primary-color); border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">角色 1 (主要)</h3>
+                                <div class="form-group">
+                                    <label>遊戲 ID</label>
+                                    <input type="text" id="player-name-1" placeholder="輸入遊戲ID" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>職業</label>
+                                    <select id="player-job-1" required>
+                                        <option value="">請選擇職業</option>
+                                        <optgroup label="劍士"><option value="黑騎">黑騎士</option><option value="英雄">英雄</option><option value="聖騎">聖騎士</option></optgroup>
+                                        <optgroup label="法師"><option value="主教">主教</option><option value="冰雷">冰雷大魔導</option><option value="火毒">火毒大魔導</option></optgroup>
+                                        <optgroup label="弓箭手"><option value="弓手">箭神 (弓)</option><option value="弩手">神射手 (弩)</option></optgroup>
+                                        <optgroup label="盜賊"><option value="標賊">夜使者 (標)</option><option value="刀賊">暗影神偷 (刀)</option></optgroup>
+                                        <optgroup label="海盜"><option value="拳霸">拳霸</option><option value="槍神">槍神</option></optgroup>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>等級</label>
+                                        <input type="number" id="player-level-1" placeholder="例如: 150" required min="1" max="250">
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>可打次數</label>
+                                        <input type="number" id="player-tickets-1" placeholder="例如: 7" value="7" min="1" max="99">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Character 2 -->
+                            <div class="character-slot" style="background: var(--secondary-color); padding: 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                                <h3 style="margin-bottom: 1rem; color: var(--text-muted); border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">角色 2 (選填)</h3>
+                                <div class="form-group">
+                                    <label>遊戲 ID</label>
+                                    <input type="text" id="player-name-2" placeholder="輸入遊戲ID">
+                                </div>
+                                <div class="form-group">
+                                    <label>職業</label>
+                                    <select id="player-job-2">
+                                        <option value="">請選擇職業</option>
+                                        <optgroup label="劍士"><option value="黑騎">黑騎士</option><option value="英雄">英雄</option><option value="聖騎">聖騎士</option></optgroup>
+                                        <optgroup label="法師"><option value="主教">主教</option><option value="冰雷">冰雷大魔導</option><option value="火毒">火毒大魔導</option></optgroup>
+                                        <optgroup label="弓箭手"><option value="弓手">箭神 (弓)</option><option value="弩手">神射手 (弩)</option></optgroup>
+                                        <optgroup label="盜賊"><option value="標賊">夜使者 (標)</option><option value="刀賊">暗影神偷 (刀)</option></optgroup>
+                                        <optgroup label="海盜"><option value="拳霸">拳霸</option><option value="槍神">槍神</option></optgroup>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>等級</label>
+                                        <input type="number" id="player-level-2" placeholder="例如: 150" min="1" max="250">
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>可打次數</label>
+                                        <input type="number" id="player-tickets-2" placeholder="例如: 7" value="7" min="1" max="99">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Character 3 -->
+                            <div class="character-slot" style="background: var(--secondary-color); padding: 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                                <h3 style="margin-bottom: 1rem; color: var(--text-muted); border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">角色 3 (選填)</h3>
+                                <div class="form-group">
+                                    <label>遊戲 ID</label>
+                                    <input type="text" id="player-name-3" placeholder="輸入遊戲ID">
+                                </div>
+                                <div class="form-group">
+                                    <label>職業</label>
+                                    <select id="player-job-3">
+                                        <option value="">請選擇職業</option>
+                                        <optgroup label="劍士"><option value="黑騎">黑騎士</option><option value="英雄">英雄</option><option value="聖騎">聖騎士</option></optgroup>
+                                        <optgroup label="法師"><option value="主教">主教</option><option value="冰雷">冰雷大魔導</option><option value="火毒">火毒大魔導</option></optgroup>
+                                        <optgroup label="弓箭手"><option value="弓手">箭神 (弓)</option><option value="弩手">神射手 (弩)</option></optgroup>
+                                        <optgroup label="盜賊"><option value="標賊">夜使者 (標)</option><option value="刀賊">暗影神偷 (刀)</option></optgroup>
+                                        <optgroup label="海盜"><option value="拳霸">拳霸</option><option value="槍神">槍神</option></optgroup>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>等級</label>
+                                        <input type="number" id="player-level-3" placeholder="例如: 150" min="1" max="250">
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>可打次數</label>
+                                        <input type="number" id="player-tickets-3" placeholder="例如: 7" value="7" min="1" max="99">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- Character 4 -->
+                            <div class="character-slot" style="background: var(--secondary-color); padding: 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                                <h3 style="margin-bottom: 1rem; color: var(--text-muted); border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">角色 4 (選填)</h3>
+                                <div class="form-group">
+                                    <label>遊戲 ID</label>
+                                    <input type="text" id="player-name-4" placeholder="輸入遊戲ID">
+                                </div>
+                                <div class="form-group">
+                                    <label>職業</label>
+                                    <select id="player-job-4">
+                                        <option value="">請選擇職業</option>
+                                        <optgroup label="劍士"><option value="黑騎">黑騎士</option><option value="英雄">英雄</option><option value="聖騎">聖騎士</option></optgroup>
+                                        <optgroup label="法師"><option value="主教">主教</option><option value="冰雷">冰雷大魔導</option><option value="火毒">火毒大魔導</option></optgroup>
+                                        <optgroup label="弓箭手"><option value="弓手">箭神 (弓)</option><option value="弩手">神射手 (弩)</option></optgroup>
+                                        <optgroup label="盜賊"><option value="標賊">夜使者 (標)</option><option value="刀賊">暗影神偷 (刀)</option></optgroup>
+                                        <optgroup label="海盜"><option value="拳霸">拳霸</option><option value="槍神">槍神</option></optgroup>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>等級</label>
+                                        <input type="number" id="player-level-4" placeholder="例如: 150" min="1" max="250">
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>可打次數</label>
+                                        <input type="number" id="player-tickets-4" placeholder="例如: 7" value="7" min="1" max="99">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Character 5 -->
+                            <div class="character-slot" style="background: var(--secondary-color); padding: 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                                <h3 style="margin-bottom: 1rem; color: var(--text-muted); border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">角色 5 (選填)</h3>
+                                <div class="form-group">
+                                    <label>遊戲 ID</label>
+                                    <input type="text" id="player-name-5" placeholder="輸入遊戲ID">
+                                </div>
+                                <div class="form-group">
+                                    <label>職業</label>
+                                    <select id="player-job-5">
+                                        <option value="">請選擇職業</option>
+                                        <optgroup label="劍士"><option value="黑騎">黑騎士</option><option value="英雄">英雄</option><option value="聖騎">聖騎士</option></optgroup>
+                                        <optgroup label="法師"><option value="主教">主教</option><option value="冰雷">冰雷大魔導</option><option value="火毒">火毒大魔導</option></optgroup>
+                                        <optgroup label="弓箭手"><option value="弓手">箭神 (弓)</option><option value="弩手">神射手 (弩)</option></optgroup>
+                                        <optgroup label="盜賊"><option value="標賊">夜使者 (標)</option><option value="刀賊">暗影神偷 (刀)</option></optgroup>
+                                        <optgroup label="海盜"><option value="拳霸">拳霸</option><option value="槍神">槍神</option></optgroup>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>等級</label>
+                                        <input type="number" id="player-level-5" placeholder="例如: 150" min="1" max="250">
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>可打次數</label>
+                                        <input type="number" id="player-tickets-5" placeholder="例如: 7" value="7" min="1" max="99">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Character 6 -->
+                            <div class="character-slot" style="background: var(--secondary-color); padding: 1rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                                <h3 style="margin-bottom: 1rem; color: var(--text-muted); border-bottom: 1px solid var(--card-border); padding-bottom: 0.5rem;">角色 6 (選填)</h3>
+                                <div class="form-group">
+                                    <label>遊戲 ID</label>
+                                    <input type="text" id="player-name-6" placeholder="輸入遊戲ID">
+                                </div>
+                                <div class="form-group">
+                                    <label>職業</label>
+                                    <select id="player-job-6">
+                                        <option value="">請選擇職業</option>
+                                        <optgroup label="劍士"><option value="黑騎">黑騎士</option><option value="英雄">英雄</option><option value="聖騎">聖騎士</option></optgroup>
+                                        <optgroup label="法師"><option value="主教">主教</option><option value="冰雷">冰雷大魔導</option><option value="火毒">火毒大魔導</option></optgroup>
+                                        <optgroup label="弓箭手"><option value="弓手">箭神 (弓)</option><option value="弩手">神射手 (弩)</option></optgroup>
+                                        <optgroup label="盜賊"><option value="標賊">夜使者 (標)</option><option value="刀賊">暗影神偷 (刀)</option></optgroup>
+                                        <optgroup label="海盜"><option value="拳霸">拳霸</option><option value="槍神">槍神</option></optgroup>
+                                    </select>
+                                </div>
+                                <div style="display: flex; gap: 1rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>等級</label>
+                                        <input type="number" id="player-level-6" placeholder="例如: 150" min="1" max="250">
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>可打次數</label>
+                                        <input type="number" id="player-tickets-6" placeholder="例如: 7" value="7" min="1" max="99">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn-primary">儲存設定</button>
+                    </form>
+                </div>
+            </section>
+
+            <!-- Tab 2: Schedule -->
+            <section id="tab-schedule" class="tab-content">
+                <div class="glass-card" style="max-width: 100%;">
+                    <h2>時間表</h2>
+                    <p class="subtitle">左方：填寫您有空的時間。右方：查看公會成員共同有空的時間（顏色越深代表越多人）。滑鼠移至右方格子可查看名單。</p>
+                    
+                    <div class="dual-schedule-layout">
+                        <!-- Left: My Schedule (V2 Form) -->
+                        <div>
+                            <h3 style="text-align:center; margin-bottom: 1rem; color: var(--primary-color);">新增行程</h3>
+                            <div class="glass-card" style="padding: 1.5rem; background: var(--secondary-color); border: 1px solid var(--card-border);">
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>選擇角色</label>
+                                        <select id="schedule-char-select">
+                                            <option value="">請先至「1. 角色設定」建立角色</option>
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>討伐目標</label>
+                                        <select id="schedule-boss-select">
+                                            <option value="困拉">困拉</option>
+                                            <option value="普拉">普拉</option>
+                                            <option value="龍王">龍王</option>
+                                            <option value="炎魔">炎魔</option>
+                                            <option value="蝴蝶">蝴蝶</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group" style="margin-bottom: 0.8rem;">
+                                    <label>選擇日期</label>
+                                    <input type="text" id="schedule-dates-select" placeholder="點擊選擇日期">
+                                </div>
+                                <div style="display: flex; gap: 0.5rem;">
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>開始</label>
+                                        <select id="schedule-time-start">
+                                            <!-- JS 動態產生 -->
+                                        </select>
+                                    </div>
+                                    <div class="form-group" style="flex: 1;">
+                                        <label>結束</label>
+                                        <select id="schedule-time-end">
+                                            <!-- JS 動態產生 -->
+                                        </select>
+                                    </div>
+                                </div>
+                                <button id="btn-add-schedule" class="btn-primary" style="width: 100%; margin-top: 1rem;">加入行程</button>
+                            </div>
+
+                            <h3 style="text-align:center; margin: 2rem 0 1rem 0; color: var(--primary-color);">我的已登記行程</h3>
+                            <div id="personal-schedule-list" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; max-height: 180px; overflow-y: auto;">
+                                <!-- JS 會動態渲染清單 -->
+                                <div style="grid-column: 1 / -1; text-align: center; color: var(--text-muted); font-size: 0.9rem;">目前沒有任何行程</div>
+                            </div>
+                            <div style="margin-top: 1rem; text-align: center;">
+                                <button id="save-schedule" class="btn-primary">儲存變更至雲端</button>
+                            </div>
+                        </div>
+
+                        <!-- Right: Group Heatmap -->
+                        <div>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <h3 style="color: var(--primary-color); margin: 0;">大家的共同時間</h3>
+                                <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: nowrap;">
+                                    <label style="font-size: 0.85rem; color: var(--text-muted); margin: 0; white-space: nowrap; display: inline-block;">起始日:</label>
+                                    <input type="text" id="heatmap-start-date" style="padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--card-border); font-size: 0.9rem; width: 100px; display: inline-block;">
+                                    <label style="font-size: 0.85rem; color: var(--text-muted); margin: 0; margin-left: 0.5rem; white-space: nowrap; display: inline-block;">Boss:</label>
+                                    <select id="heatmap-boss-filter" style="padding: 0.2rem 0.5rem; border-radius: 4px; border: 1px solid var(--card-border); font-size: 0.9rem; width: auto; display: inline-block;">
+                                        <option value="困拉">困拉</option>
+                                        <option value="普拉">普拉</option>
+                                        <option value="龍王">龍王</option>
+                                        <option value="炎魔">炎魔</option>
+                                        <option value="蝴蝶">蝴蝶</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="schedule-container">
+                                <div class="schedule-header" id="heatmap-header">
+                                    <div class="time-col-header">時間</div>
+                                    <div class="day-col-header" id="heatmap-day-1">週二</div>
+                                    <div class="day-col-header" id="heatmap-day-2">週三</div>
+                                    <div class="day-col-header" id="heatmap-day-3">週四</div>
+                                    <div class="day-col-header" id="heatmap-day-4">週五</div>
+                                    <div class="day-col-header" id="heatmap-day-5">週六</div>
+                                    <div class="day-col-header" id="heatmap-day-6">週日</div>
+                                    <div class="day-col-header" id="heatmap-day-7">週一</div>
+                                </div>
+                                <div class="schedule-grid" id="heatmap-grid">
+                                    <!-- JS 產生熱點圖 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Tooltip -->
+            <div id="heatmap-tooltip" style="display:none; position:absolute; z-index:100; background:rgba(255,255,255,0.95); padding:10px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.1); border:1px solid var(--primary-color); pointer-events:none; font-size:0.9rem; min-width:150px; color:var(--text-main);"></div>
+
+            <!-- Tab 3: Team -->
+            <section id="tab-team" class="tab-content">
+                <div class="glass-card" id="captain-view">
+                    <h2>組隊面板 (所有人共用)</h2>
+                    <p class="subtitle">選擇一個時段，將有空的玩家拖曳至隊伍中。大家都能看到彼此有空的時間。</p>
+                    
+                    <div style="margin-bottom: 2rem; padding: 1.5rem; background: rgba(255, 165, 0, 0.1); border-radius: 12px; border: 1px dashed var(--warning-color);">
+                        <h2 style="color: var(--warning-color); margin-top: 0; margin-bottom: 0.5rem; font-size: 1.2rem;">暫存隊伍區</h2>
+                        <p class="subtitle" style="margin-bottom: 1rem;">草稿階段的隊伍，僅供參考與後續調整。</p>
+                        <div id="draft-teams-container" style="display: grid; gap: 1.5rem;" class="two-col-grid">
+                            <!-- JS 會動態渲染暫存隊伍 -->
+                        </div>
+                    </div>
+
+                    <div class="team-builder-layout">
+                        <div class="left-panel">
+                            <h3>熱門時段與可用玩家</h3>
+                            <div style="display: flex; gap: 1rem; align-items: flex-end; margin-bottom: 1.5rem;">
+                                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                    <label>討伐目標</label>
+                                    <select id="team-boss" style="width: 100%;">
+                                        <option value="困拉">困拉</option>
+                                        <option value="普拉">普拉</option>
+                                        <option value="龍王">龍王</option>
+                                        <option value="炎魔">炎魔</option>
+                                        <option value="蝴蝶">蝴蝶</option>
+                                    </select>
+                                </div>
+                                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                    <label>出團日期</label>
+                                    <input type="text" id="team-date-select" placeholder="點擊選擇日期">
+                                </div>
+                                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                                    <label>出團時段</label>
+                                    <select id="team-timeslot">
+                                        <!-- JS 會動態列出有交集的時段 -->
+                                    </select>
+                                </div>
+
+                            </div>
+                            <div class="available-players" id="available-players-pool">
+                                <!-- JS 渲染該時段有空的玩家卡片 -->
+                            </div>
+                        </div>
+                        
+                        <div class="right-panel">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                                <div>
+                                    <h3 style="margin: 0 0 0.2rem 0;">隊伍配置</h3>
+                                    <div style="font-size: 0.9rem; color: var(--text-muted);">(6人)</div>
+                                </div>
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <label style="margin: 0; font-size: 0.9rem; font-weight: bold; color: var(--text-main);">出團場次:</label>
+                                    <input type="number" id="team-games-count" value="7" min="1" max="50" style="width: 60px; text-align: center; border: 1px solid var(--card-border); border-radius: 6px; padding: 0.4rem;">
+                                </div>
+                            </div>
+                            <div class="team-slots" id="team-slots">
+                                <div class="slot" data-index="0">空位 1</div>
+                                <div class="slot" data-index="1">空位 2</div>
+                                <div class="slot" data-index="2">空位 3</div>
+                                <div class="slot" data-index="3">空位 4</div>
+                                <div class="slot" data-index="4">空位 5</div>
+                                <div class="slot" data-index="5">空位 6</div>
+                            </div>
+                            
+
+
+                            <div class="team-actions">
+                                <button class="btn-primary" id="confirm-team">確認</button>
+                                <button class="btn-secondary" id="draft-team" style="background: #FFD700; color: #111; border:none; padding: 0.8rem 1.5rem; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.3s; margin-left: 0.5rem; box-shadow: 0 4px 15px rgba(255, 215, 0, 0.4);">暫存</button>
+                                <button class="btn-secondary" id="clear-team" style="margin-left: 0.5rem;">清空</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <!-- Tab 4: Team Status -->
+            <section id="tab-status" class="tab-content">
+                <div class="glass-card">
+                    <h2>已確認出團名單</h2>
+                    <p class="subtitle" style="margin-bottom: 1.5rem;">所有目前已成團的時段與成員陣容。</p>
+                    <div id="confirmed-teams-container" style="display: grid; gap: 1.5rem;" class="two-col-grid">
+                        <!-- JS 會動態渲染成團資訊 -->
+                    </div>
+                </div>
+                
+                <div class="glass-card" style="margin-top: 2rem; background: rgba(0,0,0,0.02);">
+                    <h2 style="color: var(--text-muted); margin-bottom: 0.5rem;">歷史出團紀錄</h2>
+                    <p class="subtitle" style="margin-bottom: 1.5rem;">已過期的團隊紀錄，您可以在此記錄掉寶。</p>
+                    <div id="historical-teams-container" style="display: grid; gap: 1.5rem;" class="two-col-grid">
+                        <!-- JS 會動態渲染歷史紀錄 -->
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 5: Changelog -->
+            <section id="tab-changelog" class="tab-content">
+                <div class="glass-card">
+                    <h2>更新日誌</h2>
+                    <p class="subtitle">紀錄系統的更新與重要變更。</p>
+                    
+                    <form id="changelog-form" style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;">
+                        <div class="input-group">
+                            <label>更新標題</label>
+                            <input type="text" id="changelog-title" placeholder="輸入標題..." required>
+                        </div>
+                        <div class="input-group">
+                            <label>更新內容</label>
+                            <textarea id="changelog-content" placeholder="輸入詳細更新內容..." rows="4" required style="width:100%; padding: 0.8rem; border: 1px solid var(--input-border); border-radius: 8px; font-family: inherit; font-size: 1rem; background: var(--bg-main); color: var(--text-main);"></textarea>
+                        </div>
+                        <button type="submit" class="btn-primary">新增紀錄</button>
+                    </form>
+
+                    <div id="changelog-container" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- JS generated changelogs -->
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <!-- Firebase SDK (Compat mode for Vanilla JS) -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+    
+    <script src="app.js?v=3"></script>
+</body>
+</html>
