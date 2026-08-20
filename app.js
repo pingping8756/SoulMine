@@ -128,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loginSuccess(name) {
         sessionStorage.setItem('artale_session', name);
+        sessionName = name;
         currentUserData = accountsDB[name];
         loginModal.style.display = 'none';
         mainApp.style.display = 'block';
@@ -1151,7 +1152,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     timeslot: timeInput ? timeInput.value : '',
                     timeText: timeText,
                     members: members,
-                    timestamp: new Date().getTime()
+                    timestamp: new Date().getTime(),
+                    creator: sessionName
                 });
                 
                 if(typeof saveDB === 'function') saveDB();
