@@ -522,17 +522,17 @@ button {
     div[style*="display: flex"] { flex-wrap: wrap !important; }
     div[style*="display: flex"] > .form-group { min-width: 120px !important; flex: 1 1 120px !important; }
     
-    /* Allow 3-column team slots and available players to stay 3-column */
-    div[style*="grid-template-columns: repeat(3, 1fr)"] { grid-template-columns: repeat(3, 1fr) !important; gap: 0.3rem !important; }
-    .team-slots, .team-group, .available-players { grid-template-columns: repeat(3, 1fr) !important; gap: 0.3rem !important; }
+    /* Allow team slots and available players to use 2 columns instead of 3 on mobile */
+    div[style*="grid-template-columns: repeat(3, 1fr)"] { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
+    .team-slots, .team-group, .available-players { grid-template-columns: repeat(2, 1fr) !important; gap: 0.5rem !important; }
     
     /* Character Slots: 2 in a row on mobile */
     div.character-slots-container[style] { grid-template-columns: 1fr 1fr !important; gap: 1rem !important; }
     
     /* Shrink the content inside the slots so they fit */
-    .slot, .team-slot, .player-item, .player-card, .player-info { padding: 0.4rem 0.2rem !important; font-size: 0.75rem !important; min-width: 0 !important; }
-    .slot div, .team-slot div, .player-item div { font-size: 0.7rem !important; word-break: break-all; }
-    .slot strong, .team-slot strong, .player-item strong { font-size: 0.75rem !important; word-break: break-word; }
+    .slot, .team-slot, .player-item, .player-card, .player-info { padding: 0.5rem 0.4rem !important; font-size: 0.8rem !important; min-width: 0 !important; }
+    .slot div, .team-slot div, .player-item div { font-size: 0.8rem !important; word-break: break-word; }
+    .slot strong, .team-slot strong, .player-item strong { font-size: 0.85rem !important; word-break: break-word; }
 }
 
 .dual-schedule-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; }
@@ -578,3 +578,5 @@ button {
     .grid-cell { padding: 0.2rem !important; }
 }
 
+
+@media (max-width: 768px) { .hide-on-mobile { display: none !important; } }

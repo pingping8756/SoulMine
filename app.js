@@ -625,15 +625,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                         const tDate = new Date(parseInt(tParts[0]), parseInt(tParts[1]) - 1, parseInt(tParts[2]), tHour, tMin, 0);
                                         
                                         if (tDate >= weekStart && tDate < weekEnd) {
-                                            spentTickets += (team.boss === '龍王' ? 14 : 7);
+                                            const N = team.gamesCount || 7;
+                                            spentTickets += (team.boss === '龍王' ? (N * 2) : N);
                                         }
                                     }
                                 });
                                 
                                 currentTickets = Math.max(0, maxTickets - spentTickets);
                             }
-
-                            if (currentTickets <= 0) return; // Dynamically hide if tickets <= 0
 
                             // Clone charInfo to store displayTickets safely
                             const displayCharInfo = Object.assign({}, charInfo, { displayTickets: currentTickets });
@@ -736,8 +735,11 @@ document.addEventListener('DOMContentLoaded', () => {
             globalAllSchedules.forEach(s => {
                 if (s.boss === filterBoss) {
                     if(!slotData[s.key]) slotData[s.key] = [];
-                    if(!slotData[s.key].includes(s.charInfo.name)) {
-                        slotData[s.key].push(s.charInfo.name);
+                    if(!slotData[s.key].find(x => x.name === s.charInfo.name)) {
+                        slotData[s.key].push({
+                            name: s.charInfo.name,
+                            available: s.charInfo.displayTickets > 0
+                        });
                     }
                 }
             });
@@ -816,9 +818,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const botPeople = slotData[botKey] || [];
                     const topCount = topPeople.length;
                     const botCount = botPeople.length;
+                    const topAvailableCount = topPeople.filter(x => x.available).length;
+                    const botAvailableCount = botPeople.filter(x => x.available).length;
                     
                     // Helper to get raw rgba color
-                    function getHeatColor(count) {
+                    function getHeatColor(count, totalCount) {
+                        if(totalCount > 0 && count === 0) return 'rgba(128, 128, 128, 0.4)';
                         if(count === 0) return 'transparent';
                         if(colorPrefix === 'heat-red') {
                             if(count === 1) return 'rgba(255, 99, 71, 0.2)';
@@ -863,8 +868,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         return 'transparent';
                     }
                     
-                    const topColor = getHeatColor(topCount);
-                    const botColor = getHeatColor(botCount);
+                    const topColor = getHeatColor(topAvailableCount, topCount);
+                    const botColor = getHeatColor(botAvailableCount, botCount);
                     
                     if (topCount > 0 || botCount > 0) {
                         // Linear gradient for half-half coloring
@@ -875,10 +880,20 @@ document.addEventListener('DOMContentLoaded', () => {
                         tooltip.style.display = 'block';
                         let html = '';
                         if(topCount > 0) {
-                            html += `<div style="margin-bottom:4px;"><strong style="color:var(--primary-color);">(${hour.toString().padStart(2, '0')}:00-${hour.toString().padStart(2, '0')}:30):</strong> ${topPeople.join(', ')}</div>`;
+                            const avail = topPeople.filter(x => x.available).map(x => x.name).join(', ');
+                            const exhausted = topPeople.filter(x => !x.available).map(x => x.name).join(', ');
+                            html += `<div style="margin-bottom:8px;">`;
+                            html += `<div><strong style="color:var(--primary-color);">(${hour.toString().padStart(2, '0')}:00-${hour.toString().padStart(2, '0')}:30):</strong> ${avail}</div>`;
+                            if(exhausted) html += `<div style="color:gray; font-size:0.9em; margin-top:2px;">[已被登記: ${exhausted}]</div>`;
+                            html += '</div>';
                         }
                         if(botCount > 0) {
-                            html += `<div><strong style="color:var(--primary-color);">(${hour.toString().padStart(2, '0')}:30-${(hour+1).toString().padStart(2, '0')}:00):</strong> ${botPeople.join(', ')}</div>`;
+                            const avail = botPeople.filter(x => x.available).map(x => x.name).join(', ');
+                            const exhausted = botPeople.filter(x => !x.available).map(x => x.name).join(', ');
+                            html += `<div style="margin-bottom:8px;">`;
+                            html += `<div><strong style="color:var(--primary-color);">(${hour.toString().padStart(2, '0')}:30-${(hour+1).toString().padStart(2, '0')}:00):</strong> ${avail}</div>`;
+                            if(exhausted) html += `<div style="color:gray; font-size:0.9em; margin-top:2px;">[已被登記: ${exhausted}]</div>`;
+                            html += '</div>';
                         }
                         if(topCount === 0 && botCount === 0) {
                     html = '<span style="color:var(--text-muted);">目前尚未確定成員</span>';
@@ -905,8 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const available = globalAllSchedules.filter(s => 
                 s.key === slotKey && 
                 s.boss === boss && 
-                !currentTeam.some(m => m && m.id === s.charInfo.id) &&
-                (s.charInfo.displayTickets > 0)
+                !currentTeam.some(m => m && m.id === s.charInfo.id)
             ).map(s => s.charInfo);
             
             const uniqueAvailable = [];
@@ -919,28 +933,76 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            // Sort: Players with tickets > 0 first, exhausted players last
+            uniqueAvailable.sort((a, b) => {
+                const aTickets = a.displayTickets !== undefined ? a.displayTickets : (a.currentTickets !== undefined ? a.currentTickets : (a.tickets !== undefined ? a.tickets : 7));
+                const bTickets = b.displayTickets !== undefined ? b.displayTickets : (b.currentTickets !== undefined ? b.currentTickets : (b.tickets !== undefined ? b.tickets : 7));
+                const aExhausted = aTickets <= 0;
+                const bExhausted = bTickets <= 0;
+                if (aExhausted && !bExhausted) return 1;
+                if (!aExhausted && bExhausted) return -1;
+                return 0;
+            });
+
             uniqueAvailable.forEach(p => {
                 const ticketsText = p.displayTickets !== undefined ? p.displayTickets : (p.currentTickets !== undefined ? p.currentTickets : (p.tickets !== undefined ? p.tickets : 7));
+                const isExhausted = (ticketsText <= 0);
+                
                 const card = document.createElement('div');
                 card.className = 'player-card';
-                card.draggable = true;
+                card.draggable = !isExhausted;
                 card.dataset.player = JSON.stringify(p);
+                
+                if (isExhausted) {
+                    card.style.opacity = '0.6';
+                    card.style.filter = 'grayscale(100%)';
+                    card.style.cursor = 'not-allowed';
+                }
+
                 card.innerHTML = `
-                    <div class="player-info">
+                    <div class="player-info" style="width: 100%;">
                         <span class="player-name">${p.name}</span>
+                        <span class="player-meta"><span class="hide-on-mobile">Lv.${p.level} / </span>${p.job}</span>
                         <span class="player-meta" style="color:var(--primary-color); font-weight:bold;">[次數: ${ticketsText}]</span>
-                        <span class="player-meta">Lv.${p.level}<br>${p.job}</span>
                     </div>
-            <div style="font-size: 1.2rem; opacity: 0.5;">≡</div>
+                    ${!isExhausted ? '<div style="font-size: 1.2rem; opacity: 0.5; margin-left: 5px;">＋</div>' : ''}
                 `;
                 
-                card.addEventListener('dragstart', (e) => {
-                    e.dataTransfer.setData('application/json', card.dataset.player);
-                    card.style.opacity = '0.5';
-                });
-                card.addEventListener('dragend', () => {
-                    card.style.opacity = '1';
-                });
+                if (!isExhausted) {
+                    card.addEventListener('dragstart', (e) => {
+                        e.dataTransfer.setData('application/json', card.dataset.player);
+                        card.style.opacity = '0.5';
+                    });
+                    card.addEventListener('dragend', () => {
+                        card.style.opacity = '1';
+                    });
+                    // Tap to auto-assign for mobile users
+                    card.addEventListener('click', () => {
+                        const emptyIndex = currentTeam.findIndex(member => member === null);
+                        if (emptyIndex !== -1) {
+                            currentTeam[emptyIndex] = p;
+                            const slot = document.querySelector(`.slot[data-index="${emptyIndex}"]`);
+                            if (slot) {
+                                const ticketsText = p.displayTickets !== undefined ? p.displayTickets : (p.currentTickets !== undefined ? p.currentTickets : (p.tickets !== undefined ? p.tickets : 7));
+                                slot.innerHTML = `
+                                    <div class="player-card" style="cursor:pointer; width: 100%;" title="點擊以移除成員">
+                                        <div class="player-info">
+                                            <span class="player-name">${p.name}</span>
+                                            <span class="player-meta" style="color:var(--primary-color); font-weight:bold;">[次數: ${ticketsText}]</span>
+                                            <span class="player-meta">Lv.${p.level} / ${p.job}</span>
+                                        </div>
+                                    </div>
+                                `;
+                                slot.dataset.filled = "true";
+                                const tsVal = document.getElementById('team-timeslot') ? document.getElementById('team-timeslot').value : '';
+                                const tbVal = document.getElementById('team-boss') ? document.getElementById('team-boss').value : '';
+                                if(typeof renderAvailablePlayers === 'function') renderAvailablePlayers(tsVal, tbVal);
+                            }
+                        } else {
+                            alert('隊伍已經滿囉！');
+                        }
+                    });
+                }
 
                 availablePlayersPool.appendChild(card);
             });
@@ -1006,7 +1068,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="player-info">
                                     <span class="player-name">${p.name}</span>
                                     <span class="player-meta" style="color:var(--primary-color); font-weight:bold;">[次數: ${ticketsText}]</span>
-                                    <span class="player-meta">Lv.${p.level}<br>${p.job}</span>
+                                    <span class="player-meta">Lv.${p.level} / ${p.job}</span>
                                 </div>
                             </div>
                         `;
@@ -1249,7 +1311,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const p = currentTeam[i];
                     if (p) {
                         const ticketsText = p.displayTickets !== undefined ? p.displayTickets : (p.currentTickets !== undefined ? p.currentTickets : (p.tickets !== undefined ? p.tickets : 7));
-                        slot.innerHTML = `<div class="player-card" style="cursor:pointer; width: 100%;" title="點擊以移除成員"><div class="player-info"><span class="player-name">${p.name}</span><span class="player-meta" style="color:var(--primary-color); font-weight:bold;">[次數: ${ticketsText}]</span><span class="player-meta">Lv.${p.level}<br>${p.job}</span></div></div>`;
+                        slot.innerHTML = `<div class="player-card" style="cursor:pointer; width: 100%;" title="點擊以移除成員"><div class="player-info"><span class="player-name">${p.name}</span><span class="player-meta" style="color:var(--primary-color); font-weight:bold;">[次數: ${ticketsText}]</span><span class="player-meta">Lv.${p.level} / ${p.job}</span></div></div>`;
                         slot.dataset.filled = "true";
                     } else {
                         slot.innerHTML = `空位 ${i + 1}`;
@@ -1300,49 +1362,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const { start: weekStart, end: weekEnd } = getMSWeekRange(timeslotSelect.value);
-            let updatedAccounts = new Set();
-
-            members.forEach(m => {
-                // Find which account owns this character
-                for (let accountName in accountsDB) {
-                    const acc = accountsDB[accountName];
-                    if (acc.characters) {
-                        const charObj = acc.characters.find(c => c.id === m.id);
-                        if (charObj) {
-                            // Deduct N for others, N*2 for 龍王
-                            const nInput = document.getElementById('team-games-count');
-                            const N = nInput ? (parseInt(nInput.value) || 7) : 7;
-                            const deduction = boss === '龍王' ? N * 2 : N;
-                            let currentT = charObj.currentTickets !== undefined ? parseInt(charObj.currentTickets) : ((charObj.tickets !== undefined && charObj.tickets !== '' ? parseInt(charObj.tickets) : 7));
-                            charObj.currentTickets = Math.max(0, currentT - deduction);
-                            
-                            // Tickets are deducted. Dynamic hiding handles the rest.
-                            
-                            updatedAccounts.add(accountName);
-                            break;
-                        }
-                    }
-                }
-            });
-
-            // Save all modified accounts back to Firebase
-            updatedAccounts.forEach(accountName => {
-                db.ref('accounts/' + accountName).set(accountsDB[accountName]);
-            });
-            // --------------------------------------------------------
-            
+            const nInput = document.getElementById('team-games-count');
+            const N = nInput ? (parseInt(nInput.value) || 7) : 7;
             
             confirmedTeams.push({
                 boss: boss,
                 timeslot: timeslotSelect.value,
                 timeText: timeText,
                 members: members,
+                gamesCount: N,
                 rolledChannels: [
                     Math.floor(Math.random() * 1999) + 1,
                     Math.floor(Math.random() * 1999) + 1,
                     Math.floor(Math.random() * 1999) + 1
                 ],
-                finalChannel: null
+                finalChannel: null,
+                creator: sessionName
             });
             
             saveDB();
@@ -1483,7 +1518,7 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                             memberSlot.style.background = '#ffffff';
                             memberSlot.innerHTML = `
                                 <div style="font-weight: 600; color: var(--text-main);">${m.name}</div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);">Lv.${m.level}<br>${m.job}</div>
+                                <div style="font-size: 0.85rem; color: var(--text-muted);">Lv.${m.level} / ${m.job}</div>
                             `;
                         } else {
                             memberSlot.style.background = 'transparent';
@@ -1613,6 +1648,13 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                     card.appendChild(channelSection);
                 }
                 
+                const creatorInfo = document.createElement('div');
+                creatorInfo.style.fontSize = '0.8rem';
+                creatorInfo.style.color = 'var(--text-muted)';
+                creatorInfo.style.textAlign = 'right';
+                creatorInfo.style.marginTop = '0.5rem';
+                creatorInfo.textContent = `建立者：${team.creator || '未知'}`;
+
                 const deleteBtn = document.createElement('button');
                 deleteBtn.textContent = '刪除紀錄';
                 deleteBtn.style.marginTop = '1rem';
@@ -1622,45 +1664,36 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                 deleteBtn.style.color = '#ff6666';
                 deleteBtn.style.borderRadius = '6px';
                 deleteBtn.style.cursor = 'pointer';
+                deleteBtn.style.width = '100%';
                 
                 deleteBtn.onclick = () => {
-                    if(confirm('確定要刪除這筆紀錄嗎？將會歸還所有成員被扣除的次數。')) {
+                    const bossName = team.boss || '未知';
+                    const confirmMsg = `二次確認：您確定要刪除這筆【${bossName}】隊伍嗎？\n(刪除後將歸還成員次數，且此操作無法復原)`;
+                    if(confirm(confirmMsg)) {
                         const actualIndex = confirmedTeams.indexOf(team);
                         if(actualIndex > -1) {
-                            // Refund tickets
-                            const N = team.gamesCount || 7;
-                            const addition = team.boss === '龍王' ? N * 2 : N;
+                            // The dynamic currentTickets computation in updateTeamView 
+                            // will automatically "refund" the tickets when this team is removed.
                             
-                            let updatedAccounts = new Set();
-                            if (team.members && accountsDB) {
-                                team.members.forEach(m => {
-                                    for (let accountName in accountsDB) {
-                                        const acc = accountsDB[accountName];
-                                        if (acc.characters) {
-                                            const charObj = acc.characters.find(c => c.id === m.id);
-                                            if (charObj) {
-                                                let currentT = charObj.currentTickets !== undefined ? parseInt(charObj.currentTickets) : ((charObj.tickets !== undefined && charObj.tickets !== '' ? parseInt(charObj.tickets) : 7));
-                                                charObj.currentTickets = currentT + addition;
-                                                updatedAccounts.add(accountName);
-                                                break;
-                                            }
-                                        }
-                                    }
-                                });
-                            }
-                            
-                            // Save accounts back
-                            updatedAccounts.forEach(accountName => {
-                                db.ref('accounts/' + accountName).set(accountsDB[accountName]);
+                            // Log this deletion silently for audit purposes
+                            db.ref('teamActionLogs').push({
+                                action: 'delete_team',
+                                boss: bossName,
+                                timeText: team.timeText || '未知時間',
+                                deletedAt: Date.now(),
+                                deletedBy: sessionName || '未知',
+                                originalCreator: team.creator || '未知'
                             });
-                            alert('已成功歸還次數！每位成員加回 ' + addition + ' 次。');
-                        
+
                             confirmedTeams.splice(actualIndex, 1);
                             saveDB();
+                            renderConfirmedTeams();
+                            alert(`已刪除隊伍，成員的場次已自動歸還！`);
                         }
                     }
                 };
 
+                card.appendChild(creatorInfo);
                 card.appendChild(deleteBtn);
                 if (isHistory) {
                     targetContainer.prepend(card);
