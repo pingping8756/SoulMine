@@ -1305,7 +1305,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             setTimeout(() => {
-                currentTeam = JSON.parse(JSON.stringify(draft.members));
+                const targetSize = draft.boss === '龍王' ? 12 : 6;
+                const draftMembers = JSON.parse(JSON.stringify(draft.members));
+                currentTeam = Array.from({ length: targetSize }, (_, i) => draftMembers[i] || null);
                 const container = document.getElementById('team-slots');
                 const slotsNodes = container.querySelectorAll('.slot');
                 for(let i=0; i<slotsNodes.length; i++) {
