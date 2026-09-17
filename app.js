@@ -746,7 +746,8 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             let colorPrefix = 'heat'; 
-            if(filterBoss === '困拉') colorPrefix = 'heat-red';
+            if(filterBoss === '樹王') colorPrefix = 'heat-green';
+            else if(filterBoss === '困拉') colorPrefix = 'heat-red';
             else if(filterBoss === '普拉') colorPrefix = 'heat-blue';
             else if(filterBoss === '龍王') colorPrefix = 'heat-purple';
             else if(filterBoss === '炎魔') colorPrefix = 'heat-orange';

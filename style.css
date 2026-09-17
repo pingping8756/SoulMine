@@ -435,6 +435,14 @@ button {
     border: 2px solid var(--primary-color);
 }
 /* Heatmap Boss Colors */
+/* 樹王 - 綠 */
+.heat-green-1 { background: rgba(46, 139, 87, 0.2) !important; }
+.heat-green-2 { background: rgba(46, 139, 87, 0.4) !important; }
+.heat-green-3 { background: rgba(46, 139, 87, 0.6) !important; }
+.heat-green-4 { background: rgba(46, 139, 87, 0.8) !important; }
+.heat-green-5 { background: rgba(46, 139, 87, 1) !important; }
+.heat-green-max { background: rgba(34, 139, 34, 1) !important; }
+
 /* 炎魔 - 紅 */
 .heat-red-1 { background: rgba(255, 99, 71, 0.2) !important; }
 .heat-red-2 { background: rgba(255, 99, 71, 0.4) !important; }
