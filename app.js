@@ -1480,6 +1480,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.borderRadius = '12px';
                 card.style.padding = '1.5rem';
                 card.style.opacity = isHistory ? '0.85' : '1';
+                card.style.color = isHistory ? 'var(--text-main)' : '#4a4559';
                 if (isDragonKing) {
                     card.style.gridColumn = '1 / -1';
                 }
@@ -1496,8 +1497,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const channelDisplay = team.finalChannel ? team.finalChannel : (team.channels && team.channels !== '未指定' ? team.channels : '');
                 const channelInfo = channelDisplay ? `<span style="color:var(--primary-color); font-weight:bold;">(頻道: ${channelDisplay})</span>` : '';
                 header.innerHTML = `
-                    <h3 style="color: var(--text-main); margin: 0;">[${bossName}] 出團時間 ${updatedTimeText} ${channelInfo}</h3>
-                    <span style="font-size: 0.9rem; color: var(--text-muted);">共 ${teamMembers.length} 人</span>
+                    <h3 style="color: ${isHistory ? 'var(--text-main)' : '#4a4559'}; margin: 0;">[${bossName}] 出團時間 ${updatedTimeText} ${channelInfo}</h3>
+                    <span style="font-size: 0.9rem; color: ${isHistory ? 'var(--text-muted)' : '#8b8c89'};">共 ${teamMembers.length} 人</span>
                 `;
                 card.appendChild(header);
 
@@ -1530,8 +1531,8 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                             const m = teamMembers[memberIndex];
                             memberSlot.style.background = '#ffffff';
                             memberSlot.innerHTML = `
-                                <div style="font-weight: 600; color: var(--text-main);">${m.name}</div>
-                                <div style="font-size: 0.85rem; color: var(--text-muted);">Lv.${m.level} / ${m.job}</div>
+                                <div style="font-weight: 600; color: #4a4559;">${m.name}</div>
+                                <div style="font-size: 0.85rem; color: #8b8c89;">Lv.${m.level} / ${m.job}</div>
                             `;
                         } else {
                             memberSlot.style.background = 'transparent';
@@ -1539,7 +1540,7 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                             memberSlot.style.display = 'flex';
                             memberSlot.style.alignItems = 'center';
                             memberSlot.style.justifyContent = 'center';
-                            memberSlot.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">(空位)</span>';
+                            memberSlot.innerHTML = '<span style="color: #8b8c89; font-size: 0.85rem;">(空位)</span>';
                         }
                         grid.appendChild(memberSlot);
                     }
@@ -1618,7 +1619,7 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                             channelSection.innerHTML = `
                                 <div style="margin-bottom: 0.8rem; font-weight: 600; font-size: 0.9rem; color: var(--text-main);">頻道選擇 (輸入，或點擊隨機)</div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" class="channel-input" value="${singleChannel}" style="width: 80px; padding: 0.4rem; font-size: 1rem; border: 1px solid var(--card-border); border-radius: 4px; text-align: center; color: var(--text-main);">
+                                    <input type="number" class="channel-input" value="${singleChannel}" style="width: 80px; padding: 0.4rem; font-size: 1rem; border: 1px solid var(--card-border); border-radius: 4px; text-align: center; color: #4a4559;">
                                     <button class="btn-secondary reroll-btn" style="padding: 0.4rem 0.8rem; font-size: 1rem;" title="隨機">🎲</button>
                                     <button class="btn-primary select-btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">決定</button>
                                 </div>
@@ -1663,7 +1664,7 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                 
                 const creatorInfo = document.createElement('div');
                 creatorInfo.style.fontSize = '0.8rem';
-                creatorInfo.style.color = 'var(--text-muted)';
+                creatorInfo.style.color = isHistory ? 'var(--text-muted)' : '#8b8c89';
                 creatorInfo.style.textAlign = 'right';
                 creatorInfo.style.marginTop = '0.5rem';
                 creatorInfo.textContent = `建立者：${team.creator || '未知'}`;
