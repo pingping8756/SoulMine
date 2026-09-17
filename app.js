@@ -827,6 +827,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     function getHeatColor(count, totalCount) {
                         if(totalCount > 0 && count === 0) return 'rgba(128, 128, 128, 0.4)';
                         if(count === 0) return 'transparent';
+                        if(colorPrefix === 'heat-green') {
+                            if(count === 1) return 'rgba(46, 139, 87, 0.2)';
+                            if(count === 2) return 'rgba(46, 139, 87, 0.4)';
+                            if(count === 3) return 'rgba(46, 139, 87, 0.6)';
+                            if(count === 4) return 'rgba(46, 139, 87, 0.8)';
+                            if(count === 5) return 'rgba(46, 139, 87, 1)';
+                            return 'rgba(34, 139, 34, 1)';
+                        }
                         if(colorPrefix === 'heat-red') {
                             if(count === 1) return 'rgba(255, 99, 71, 0.2)';
                             if(count === 2) return 'rgba(255, 99, 71, 0.4)';
