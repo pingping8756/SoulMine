@@ -1480,7 +1480,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.style.borderRadius = '12px';
                 card.style.padding = '1.5rem';
                 card.style.opacity = isHistory ? '0.85' : '1';
-                card.style.color = isHistory ? 'var(--text-main)' : '#4a4559';
                 if (isDragonKing) {
                     card.style.gridColumn = '1 / -1';
                 }
@@ -1497,8 +1496,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const channelDisplay = team.finalChannel ? team.finalChannel : (team.channels && team.channels !== '未指定' ? team.channels : '');
                 const channelInfo = channelDisplay ? `<span style="color:var(--primary-color); font-weight:bold;">(頻道: ${channelDisplay})</span>` : '';
                 header.innerHTML = `
-                    <h3 style="color: ${isHistory ? 'var(--text-main)' : '#4a4559'}; margin: 0;">[${bossName}] 出團時間 ${updatedTimeText} ${channelInfo}</h3>
-                    <span style="font-size: 0.9rem; color: ${isHistory ? 'var(--text-muted)' : '#8b8c89'};">共 ${teamMembers.length} 人</span>
+                    <h3 style="color: var(--primary-color); margin: 0;">[${bossName}] 出團時間 ${updatedTimeText} ${channelInfo}</h3>
+                    <span style="font-size: 0.9rem; color: var(--text-muted);">共 ${teamMembers.length} 人</span>
                 `;
                 card.appendChild(header);
 
@@ -1540,7 +1539,7 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                             memberSlot.style.display = 'flex';
                             memberSlot.style.alignItems = 'center';
                             memberSlot.style.justifyContent = 'center';
-                            memberSlot.innerHTML = '<span style="color: #8b8c89; font-size: 0.85rem;">(空位)</span>';
+                            memberSlot.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">(空位)</span>';
                         }
                         grid.appendChild(memberSlot);
                     }
@@ -1664,7 +1663,7 @@ gridsWrapper.style.gridTemplateColumns = '1fr 1fr';
                 
                 const creatorInfo = document.createElement('div');
                 creatorInfo.style.fontSize = '0.8rem';
-                creatorInfo.style.color = isHistory ? 'var(--text-muted)' : '#8b8c89';
+                creatorInfo.style.color = 'var(--text-muted)';
                 creatorInfo.style.textAlign = 'right';
                 creatorInfo.style.marginTop = '0.5rem';
                 creatorInfo.textContent = `建立者：${team.creator || '未知'}`;
