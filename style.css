@@ -21,8 +21,13 @@
     margin: 0;    padding: 0;
 }
 
-html, body {
-    background-color: #0f172a; background-image: linear-gradient(135deg, #0f172a 0%, #1a1a2e 100%);
+html {
+    background-color: #0f172a;
+    background-image: linear-gradient(135deg, #0f172a 0%, #1a1a2e 100%);
+    min-height: 100vh;
+}
+body {
+    background: transparent;
     color: var(--text-main);
     font-family: var(--font-family);
     min-height: 100vh;
@@ -837,8 +842,13 @@ button {
 
 @media (max-width: 768px) { .hide-on-mobile { display: none !important; } }
 
-html, body {
-    background-color: #0f172a; background-image: linear-gradient(135deg, #0f172a 0%, #1a1a2e 100%);
+html {
+    background-color: #0f172a;
+    background-image: linear-gradient(135deg, #0f172a 0%, #1a1a2e 100%);
+    min-height: 100vh;
+}
+body {
+    background: transparent;
     color: var(--text-main);
     font-family: var(--font-family);
     min-height: 100vh;
