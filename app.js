@@ -361,7 +361,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const weekDay = weekDays[dObj.getDay()];
                 const fullTimeText = `${dateParts[1]}/${dateParts[2]} (${weekDay}) ${timeStr}`;
 
-                const initialMember = {
+                const initialMember = { slotIndex: 0,
                     id: char.id,
                     name: char.name,
                     job: char.job,
@@ -394,6 +394,7 @@ document.addEventListener('DOMContentLoaded', () => {
             joinRaidForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const raidId = document.getElementById('join-raid-id').value;
+                const slotIdx = parseInt(document.getElementById('join-slot-index').value) || 0;
                 const charId = document.getElementById('join-character').value;
                 if (!charId) {
                     alert("請選擇出戰角色！");
@@ -411,13 +412,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         alert(`角色「${char.name}」已經在此隊伍中了！`);
                         return;
                     }
-                    if (members.length >= 6) {
+                                        const maxSlots = (raid.boss === '龍王') ? 12 : (raid.maxPlayers || 6);
+                    if (members.length >= maxSlots) {
                         alert("隊伍已滿額！");
                         joinModal.style.display = 'none';
                         return;
                     }
 
-                    members.push({
+                    members.push({ slotIndex: slotIdx,
                         id: char.id,
                         name: char.name,
                         job: char.job,
@@ -432,7 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    window.openJoinModal = function(raidId) {
+    window.openJoinModal = function(raidId, slotIndex) {
         if (!currentUserData.characters || currentUserData.characters.length === 0) {
             alert("請先到「1. 我的角色」設定您的遊戲角色！");
             const profileTabBtn = document.querySelector('[data-target="tab-profile"]');
@@ -441,6 +443,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         document.getElementById('join-raid-id').value = raidId;
+        document.getElementById('join-slot-index').value = (slotIndex !== undefined) ? slotIndex : 0;
+        const raid = raidsDB[raidId];
+        const isDragonKing = raid && raid.boss === '龍王';
+        const slotNum = isDragonKing ? ((slotIndex || 0) < 6 ? (slotIndex || 0) + 1 : (slotIndex || 0) - 5) : (slotIndex || 0) + 1;
+        const descEl = document.getElementById('join-slot-desc');
+        if (descEl) {
+            descEl.textContent = "報名位置：第 " + slotNum + " 位。請選擇出戰角色。";
+        }
         const select = document.getElementById('join-character');
         select.innerHTML = '';
         currentUserData.characters.forEach(c => {
@@ -511,61 +521,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
         raids.forEach(raid => {
             const members = raid.members || [];
-            const isFull = members.length >= 6;
+            const isDragonKing = (raid.boss === '龍王');
+            const maxSlots = isDragonKing ? 12 : (raid.maxPlayers || 6);
+            const isFull = members.length >= maxSlots;
             const isCreator = raid.creator === currentUserData.name;
-            const userJoinedMembers = members.filter(m => m.accountName === currentUserData.name);
 
-            let membersHtml = members.map(m => `
-                <div style="background: rgba(255,255,255,0.06); padding: 0.6rem 0.8rem; border-radius: 6px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <strong style="color: var(--primary-color);">${m.job}</strong> 
-                        <span style="color: #fff; font-weight: 500; margin-left: 0.3rem;">${m.name}</span> 
-                        <span style="color: var(--text-muted); font-size: 0.8rem;">(Lv.${m.level})</span>
-                        ${m.isCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;">👑 隊長</span>' : ''}
+            const renderSlot = (slotIdx) => {
+                const m = members.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
+                const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
+                if (m) {
+                    // m is already defined
+                    return `
+                        <div style="background: rgba(255,255,255,0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.12);">
+                            <div>
+                                <strong style="color: var(--primary-color);">${m.job}</strong> 
+                                <span style="color: #fff; font-weight: 600; margin-left: 0.3rem;">${m.name}</span> 
+                                <span style="color: var(--text-muted); font-size: 0.8rem;">(Lv.${m.level})</span>
+                                ${m.isCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;">👑</span>' : ''}
+                            </div>
+                            ${m.accountName === currentUserData.name && !m.isCreator ? `
+                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;">退出</button>
+                            ` : ''}
+                        </div>
+                    `;
+                } else {
+                    return `
+                        <div onclick="openJoinModal('${raid.id}', ${slotIdx})" style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" title="點擊報名此位置 (第 ${slotNum} 位)">➕ 點擊報名 (第 ${slotNum} 位)</div>
+                    `;
+                }
+            };
+
+            let slotsHtml = '';
+            if (isDragonKing) {
+                let team1Html = '';
+                for (let i = 0; i < 6; i++) team1Html += renderSlot(i);
+                let team2Html = '';
+                for (let i = 6; i < 12; i++) team2Html += renderSlot(i);
+
+                slotsHtml = `
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 1rem;">
+                        <div>
+                            <div style="color: var(--primary-color); font-weight: bold; margin-bottom: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid rgba(255,117,24,0.3); padding-bottom: 0.3rem;">第一隊</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.45rem;">${team1Html}</div>
+                        </div>
+                        <div>
+                            <div style="color: var(--primary-color); font-weight: bold; margin-bottom: 0.5rem; font-size: 0.95rem; border-bottom: 1px solid rgba(255,117,24,0.3); padding-bottom: 0.3rem;">第二隊</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.45rem;">${team2Html}</div>
+                        </div>
                     </div>
-                    ${m.accountName === currentUserData.name && !m.isCreator ? `
-                        <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem;">退出</button>
-                    ` : ''}
-                </div>
-            `).join('');
-
-            for (let i = members.length; i < 6; i++) {
-                membersHtml += `<div style="border: 1px dashed rgba(255,255,255,0.18); padding: 0.6rem; border-radius: 6px; font-size: 0.85rem; color: var(--text-muted); text-align: center;">(等待加入...)</div>`;
-            }
-
-            let actionBtn = '';
-            if (isFull) {
-                actionBtn = `<button class="btn-secondary" style="width:100%; opacity: 0.6; cursor: not-allowed;" disabled>隊伍已滿額</button>`;
+                `;
             } else {
-                actionBtn = `<button onclick="openJoinModal('${raid.id}')" class="btn-primary" style="width:100%; background: var(--success-color); border-color: var(--success-color); color: #111; font-weight: bold;">一鍵報名</button>`;
+                let listHtml = '';
+                for (let i = 0; i < 6; i++) listHtml += renderSlot(i);
+                slotsHtml = `
+                    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 1rem;">
+                        ${listHtml}
+                    </div>
+                `;
             }
 
             let creatorActions = '';
             if (isCreator) {
                 creatorActions = `
                     <div style="display:flex; gap:0.5rem; margin-top: 0.6rem;">
-                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex:2; padding: 0.6rem;">✅ 確認出團</button>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:1; border-color: var(--danger-color); color: var(--danger-color); padding: 0.6rem;">刪除</button>
+                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex:2; padding: 0.6rem; font-size: 0.95rem;">✅ 確認出團</button>
+                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:1; border-color: var(--danger-color); color: var(--danger-color); padding: 0.6rem; font-size: 0.95rem;">刪除</button>
                     </div>
                 `;
             }
 
             const card = document.createElement('div');
             card.className = 'glass-card';
-            card.style.background = 'rgba(22, 33, 62, 0.7)';
+            card.style.background = 'rgba(26, 15, 43, 0.75)';
+            if (isDragonKing) {
+                card.classList.add('dragon-recruit-card');
+            }
+
+            const gamesDisplay = raid.gamesCount ? ` ${raid.gamesCount}場` : '';
+
             card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items: baseline; margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem;">
-                    <h3 style="margin:0; color:var(--primary-color);">[${raid.boss}]</h3>
+                <div style="display:flex; justify-content:space-between; align-items: baseline; margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <h3 style="margin:0; color:var(--primary-color); font-size: 1.2rem;">[${raid.boss}${gamesDisplay}]</h3>
                     <span style="font-weight:bold; font-size: 1.05rem; color: #fff;">${raid.time}</span>
                 </div>
                 <div style="margin-bottom: 0.8rem; color: var(--text-muted); font-size: 0.9rem; display: flex; justify-content: space-between;">
-                    <span>發起人：<strong>${raid.creator}</strong></span>
-                    <span>成員：<strong style="color: ${isFull ? 'var(--danger-color)' : 'var(--success-color)'};">${members.length}</strong> / 6</span>
+                    <span>發起人：<strong style="color: #fff;">${raid.creator}</strong></span>
+                    <span>成員：<strong style="color: ${isFull ? 'var(--danger-color)' : 'var(--success-color)'}; font-size: 1rem;">${members.length}</strong> / ${maxSlots}</span>
                 </div>
-                <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-bottom: 1.2rem;">
-                    ${membersHtml}
-                </div>
-                ${actionBtn}
+                ${slotsHtml}
                 ${creatorActions}
             `;
             container.appendChild(card);
@@ -649,7 +692,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const channelInfo = channelDisplay ? `<span style="color:var(--primary-color); font-weight:bold;">(頻道: ${channelDisplay})</span>` : '';
 
                 header.innerHTML = `
-                    <h3 style="color: var(--primary-color); margin: 0;">[${bossName}] 出團時間 ${timeDisplay} ${channelInfo}</h3>
+                    <h3 style="color: var(--primary-color); margin: 0;">[${bossName}${team.gamesCount ? (" " + team.gamesCount + "場") : ""}] 出團時間 ${timeDisplay} ${channelInfo}</h3>
                     <span style="font-size: 0.9rem; color: var(--text-muted);">共 ${teamMembers.length} 人</span>
                 `;
                 card.appendChild(header);
@@ -679,7 +722,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         memberSlot.style.borderRadius = '8px';
                         memberSlot.style.border = '1px solid var(--card-border)';
 
-                        if (memberIndex < teamMembers.length) {
+                        const m = teamMembers.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === memberIndex);
+                        if (m) {
                             const m = teamMembers[memberIndex];
                             memberSlot.style.background = '#ffffff';
                             memberSlot.innerHTML = `

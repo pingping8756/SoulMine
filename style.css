@@ -953,3 +953,13 @@ body::after {
         grid-template-columns: 1fr !important;
     }
 }
+
+/* Dragon King Card 2-team width */
+.dragon-recruit-card {
+    grid-column: span 2;
+}
+@media (max-width: 768px) {
+    .dragon-recruit-card {
+        grid-column: span 1 !important;
+    }
+}
