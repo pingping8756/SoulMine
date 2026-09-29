@@ -338,6 +338,9 @@ document.addEventListener('DOMContentLoaded', () => {
             createRaidForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const boss = document.getElementById('raid-boss').value;
+                const gamesEl = document.getElementById('raid-games');
+                const gamesCount = gamesEl ? (parseInt(gamesEl.value, 10) || 7) : 7;
+                const maxPlayers = (boss === '龍王') ? 12 : 6;
                 const charId = createCharSelect.value;
                 const dateStr = document.getElementById('raid-date').value;
                 const timeStr = document.getElementById('raid-time-select').value;
@@ -374,6 +377,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 newRaidRef.set({
                     id: newRaidRef.key,
                     boss: boss,
+                    gamesCount: gamesCount,
+                    maxPlayers: maxPlayers,
                     date: dateStr,
                     timeStr: timeStr,
                     time: fullTimeText,
@@ -483,7 +488,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 timeText: raid.time,
                 scheduledTimestamp: raid.scheduledTimestamp || Date.now(),
                 members: raid.members || [],
-                gamesCount: 7,
+                gamesCount: raid.gamesCount || 7,
                 rolledChannels: [Math.floor(Math.random() * 2000) + 1],
                 finalChannel: null,
                 creator: raid.creator,
@@ -601,7 +606,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items: baseline; margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <h3 style="margin:0; color:var(--primary-color); font-size: 1.2rem;">[${raid.boss}${gamesDisplay}]</h3>
+                    <h3 style="margin:0; color:var(--primary-color); font-size: 1.2rem;">[${raid.boss}]${raid.gamesCount || 7}場</h3>
                     <span style="font-weight:bold; font-size: 1.05rem; color: #fff;">${raid.time}</span>
                 </div>
                 <div style="margin-bottom: 0.8rem; color: var(--text-muted); font-size: 0.9rem; display: flex; justify-content: space-between;">
@@ -692,7 +697,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const channelInfo = channelDisplay ? `<span style="color:var(--primary-color); font-weight:bold;">(頻道: ${channelDisplay})</span>` : '';
 
                 header.innerHTML = `
-                    <h3 style="color: var(--primary-color); margin: 0;">[${bossName}${team.gamesCount ? (" " + team.gamesCount + "場") : ""}] 出團時間 ${timeDisplay} ${channelInfo}</h3>
+                    <h3 style="color: var(--primary-color); margin: 0;">[${bossName}]${team.gamesCount || 7}場 出團時間 ${timeDisplay} ${channelInfo}</h3>
                     <span style="font-size: 0.9rem; color: var(--text-muted);">共 ${teamMembers.length} 人</span>
                 `;
                 card.appendChild(header);
