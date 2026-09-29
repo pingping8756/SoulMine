@@ -1,17 +1,17 @@
 :root {
-    --bg-color: #1a1a2e;
-    --card-bg: rgba(22, 33, 62, 0.7);
-    --card-border: rgba(246, 192, 79, 0.2);
-    --text-main: #f1f2f6;
-    --text-muted: #a4b0be;
-    --primary-color: #f6c04f;
-    --primary-hover: #e0ac40;
-    --secondary-color: rgba(246, 192, 79, 0.15);
-    --success-color: #56d364; 
-    --danger-color: #ff6b81;
-    --warning-color: #eccc68;
-    --input-bg: rgba(15, 23, 42, 0.6);
-    --input-text: #f1f2f6;
+    --bg-color: #12091f;
+    --card-bg: rgba(26, 15, 43, 0.75);
+    --card-border: rgba(255, 117, 24, 0.3);
+    --text-main: #f8fafc;
+    --text-muted: #a39cb5;
+    --primary-color: #ff7518;
+    --primary-hover: #ff5722;
+    --secondary-color: rgba(255, 117, 24, 0.18);
+    --success-color: #4ade80; 
+    --danger-color: #f43f5e;
+    --warning-color: #fbbf24;
+    --input-bg: rgba(18, 9, 31, 0.7);
+    --input-text: #f8fafc;
     --font-family: 'Inter', 'Noto Sans TC', sans-serif;
     --glass-blur: blur(20px);
 }
@@ -21,23 +21,91 @@
     margin: 0;    padding: 0;
 }
 
-html {
-    background-color: #0f172a;
-    background-image: linear-gradient(135deg, #0f172a 0%, #1a1a2e 100%);
+html, body {
+    background-color: #0c0617 !important;
+    background-image: 
+        radial-gradient(circle at 85% 15%, rgba(255, 117, 24, 0.18) 0%, transparent 45%),
+        radial-gradient(circle at 15% 85%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
+        linear-gradient(135deg, #0c0617 0%, #1a0b2e 50%, #0d061a 100%) !important;
+    background-attachment: fixed;
     min-height: 100vh;
-}
-body {
-    background: transparent;
+    min-height: -webkit-fill-available;
     color: var(--text-main);
     font-family: var(--font-family);
-    min-height: 100vh;
     line-height: 1.6;
     overflow-x: hidden;
     position: relative;
+    -webkit-text-size-adjust: 100%;
+}
+
+.app-container {
+    position: relative;
+    z-index: 5;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100;
 }
 
 body::before {
-    content: "🌕";
+    content: "🎃";
+    position: fixed;
+    top: 5vh;
+    right: 5vw;
+    font-size: clamp(5rem, 12vw, 10rem);
+    line-height: 1;
+    z-index: 1;
+    opacity: 0.95;
+    filter: drop-shadow(0 0 35px rgba(255, 117, 24, 0.85));
+    animation: floatMoon 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+body::after {
+    content: "👻";
+    position: fixed;
+    top: calc(5vh + clamp(2.5rem, 6vw, 5rem));
+    right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1;
+    z-index: 2;
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.75));
+    animation: floatMoon 7s ease-in-out infinite reverse;
+    pointer-events: none;
+}
+
+body::after {
+    content: "👻";
+    position: fixed;
+    top: calc(5vh + clamp(3rem, 7.5vw, 6rem));
+    right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1;
+    z-index: -1;
+    /* emoji color */
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.75));
+    animation: floatMoon 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+body::after {
+    content: "👻";
+    position: fixed;
+    top: calc(5vh + clamp(3rem, 7.5vw, 6rem));
+    right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1;
+    z-index: -1;
+    /* emoji color */
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.75));
+    animation: floatMoon 8s ease-in-out infinite;
+    pointer-events: none;
+}
+
+body::before {
+    content: "🎃";
     position: fixed;
     top: 5vh;
     right: 5vw;
@@ -45,63 +113,21 @@ body::before {
     line-height: 1;
     z-index: -2;
     opacity: 0.9;
-    filter: drop-shadow(0 0 30px rgba(246, 192, 79, 0.8));
+    filter: drop-shadow(0 0 30px rgba(255, 117, 24, 0.85));
     animation: floatMoon 8s ease-in-out infinite;
     pointer-events: none;
 }
 
 body::after {
-    content: "🐇";
+    content: "👻";
     position: fixed;
     top: calc(5vh + clamp(3rem, 7.5vw, 6rem));
     right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
     font-size: clamp(2.5rem, 6vw, 5rem);
     line-height: 1;
     z-index: -1;
-    color: transparent;
-    text-shadow: 0 0 0 #1a1a2e;
-    animation: floatMoon 8s ease-in-out infinite;
-    pointer-events: none;
-}
-
-body::after {
-    content: "🐇";
-    position: fixed;
-    top: calc(5vh + clamp(3rem, 7.5vw, 6rem));
-    right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
-    font-size: clamp(2.5rem, 6vw, 5rem);
-    line-height: 1;
-    z-index: -1;
-    color: transparent;
-    text-shadow: 0 0 0 #4a4559;
-    animation: floatMoon 8s ease-in-out infinite;
-    pointer-events: none;
-}
-
-body::before {
-    content: "🌕";
-    position: fixed;
-    top: 5vh;
-    right: 5vw;
-    font-size: clamp(6rem, 15vw, 12rem);
-    line-height: 1;
-    z-index: -2;
-    opacity: 0.9;
-    filter: drop-shadow(0 0 30px rgba(246, 192, 79, 0.8));
-    animation: floatMoon 8s ease-in-out infinite;
-    pointer-events: none;
-}
-
-body::after {
-    content: "🐇";
-    position: fixed;
-    top: calc(5vh + clamp(3rem, 7.5vw, 6rem));
-    right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
-    font-size: clamp(2.5rem, 6vw, 5rem);
-    line-height: 1;
-    z-index: -1;
-    color: transparent;
-    text-shadow: 0 0 0 #1a1a2e;
+    /* emoji color */
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.75));
     animation: floatMoon 8s ease-in-out infinite;
     pointer-events: none;
 }
@@ -842,45 +868,88 @@ button {
 
 @media (max-width: 768px) { .hide-on-mobile { display: none !important; } }
 
-html {
-    background-color: #0f172a;
-    background-image: linear-gradient(135deg, #0f172a 0%, #1a1a2e 100%);
+html, body {
+    background-color: #0c0617 !important;
+    background-image: 
+        radial-gradient(circle at 85% 15%, rgba(255, 117, 24, 0.18) 0%, transparent 45%),
+        radial-gradient(circle at 15% 85%, rgba(147, 51, 234, 0.15) 0%, transparent 50%),
+        linear-gradient(135deg, #0c0617 0%, #1a0b2e 50%, #0d061a 100%) !important;
+    background-attachment: fixed;
     min-height: 100vh;
-}
-body {
-    background: transparent;
+    min-height: -webkit-fill-available;
     color: var(--text-main);
     font-family: var(--font-family);
-    min-height: 100vh;
     line-height: 1.6;
     overflow-x: hidden;
     position: relative;
+    -webkit-text-size-adjust: 100%;
+}
+
+.app-container {
+    position: relative;
+    z-index: 5;
+}
+
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; width: 100%; height: 100%;
+    z-index: 100;
 }
 
 body::before {
-    content: "🌕";
+    content: "🎃";
     position: fixed;
     top: 5vh;
     right: 5vw;
-    font-size: clamp(6rem, 15vw, 12rem);
+    font-size: clamp(5rem, 12vw, 10rem);
     line-height: 1;
-    z-index: -2;
-    opacity: 0.9;
-    filter: drop-shadow(0 0 30px rgba(246, 192, 79, 0.8));
+    z-index: 1;
+    opacity: 0.95;
+    filter: drop-shadow(0 0 35px rgba(255, 117, 24, 0.85));
     animation: floatMoon 8s ease-in-out infinite;
     pointer-events: none;
 }
 
 body::after {
-    content: "🐇";
+    content: "👻";
+    position: fixed;
+    top: calc(5vh + clamp(2.5rem, 6vw, 5rem));
+    right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
+    font-size: clamp(2.5rem, 6vw, 5rem);
+    line-height: 1;
+    z-index: 2;
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.75));
+    animation: floatMoon 7s ease-in-out infinite reverse;
+    pointer-events: none;
+}
+
+body::after {
+    content: "👻";
     position: fixed;
     top: calc(5vh + clamp(3rem, 7.5vw, 6rem));
     right: calc(5vw + clamp(1.5rem, 3.75vw, 3rem));
     font-size: clamp(2.5rem, 6vw, 5rem);
     line-height: 1;
     z-index: -1;
-    color: transparent;
-    text-shadow: 0 0 0 #1a1a2e;
+    /* emoji color */
+    filter: drop-shadow(0 0 25px rgba(168, 85, 247, 0.75));
     animation: floatMoon 8s ease-in-out infinite;
     pointer-events: none;
+}
+
+
+/* iOS & Mobile Enhancements */
+@media (max-width: 768px) {
+    select, input[type="text"], input[type="number"], input[type="password"] {
+        font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+    }
+    .modal-content {
+        max-width: 92vw !important;
+        max-height: 88vh !important;
+        overflow-y: auto !important;
+        padding: 1.2rem !important;
+    }
+    .two-col-grid {
+        grid-template-columns: 1fr !important;
+    }
 }
