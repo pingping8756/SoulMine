@@ -294,21 +294,22 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnOpenCreate = document.getElementById('btn-open-create-modal');
         if (btnOpenCreate) {
             btnOpenCreate.addEventListener('click', () => {
-                if (!currentUserData.characters || currentUserData.characters.length === 0) {
-                    alert("請先到「1. 我的角色」設定至少一隻角色！");
-                    const profileTabBtn = document.querySelector('[data-target="tab-profile"]');
-                    if (profileTabBtn) profileTabBtn.click();
-                    return;
-                }
+                // Allow opening without character
+                // optional
+                // optional
+                // optional
+                // optional
+                // optional
 
                 // Populate creator's character options
-                createCharSelect.innerHTML = '';
-                currentUserData.characters.forEach(c => {
+                createCharSelect.innerHTML = "<option value=''>暫不入座（僅建立招募）</option>";
+                if (currentUserData.characters) { currentUserData.characters.forEach(c => {
                     const opt = document.createElement('option');
                     opt.value = c.id;
                     opt.textContent = `${c.name} (${c.job} Lv.${c.level})`;
                     createCharSelect.appendChild(opt);
-                });
+                }); }
+                //
 
                 if (raidDatePicker) {
                     raidDatePicker.setDate(new Date());
@@ -337,60 +338,66 @@ document.addEventListener('DOMContentLoaded', () => {
         if (createRaidForm) {
             createRaidForm.addEventListener('submit', (e) => {
                 e.preventDefault();
-                const boss = document.getElementById('raid-boss').value;
-                const gamesEl = document.getElementById('raid-games');
-                const gamesCount = gamesEl ? (parseInt(gamesEl.value, 10) || 7) : 7;
-                const maxPlayers = (boss === '龍王') ? 12 : 6;
-                const charId = createCharSelect.value;
-                const dateStr = document.getElementById('raid-date').value;
-                const timeStr = document.getElementById('raid-time-select').value;
+                try {
+                    const boss = document.getElementById('raid-boss').value;
+                    const gamesEl = document.getElementById('raid-games');
+                    const gamesCount = gamesEl ? (parseInt(gamesEl.value, 10) || 7) : 7;
+                    const maxPlayers = (boss === '龍王') ? 12 : 6;
+                    const charId = createCharSelect.value;
+                    const dateStr = document.getElementById('raid-date').value;
+                    const timeStr = document.getElementById('raid-time-select').value;
 
-                if (!dateStr || !timeStr) {
-                    alert("請選擇出團日期與時段！");
-                    return;
+                    if (!dateStr || !timeStr) {
+                        alert("請選擇出團日期與時段！");
+                        return;
+                    }
+
+                    let initialMembers = [];
+                    if (charId && currentUserData.characters) {
+                        const char = currentUserData.characters.find(c => c.id === charId);
+                        if (char) {
+                            initialMembers.push({
+                                slotIndex: 0,
+                                id: char.id,
+                                name: char.name,
+                                job: char.job,
+                                level: char.level,
+                                accountName: currentUserData.name,
+                                isCreator: true
+                            });
+                        }
+                    }
+
+                    // Parse dateObj for weekday and exact timestamp
+                    const dateParts = dateStr.includes('/') ? dateStr.split('/') : dateStr.split('-');
+                    const timeParts = timeStr.split(':');
+                    const dObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]), parseInt(timeParts[0]), parseInt(timeParts[1]));
+                    const weekDays = ['日','一','二','三','四','五','六'];
+                    const weekDay = isNaN(dObj.getDay()) ? '六' : weekDays[dObj.getDay()];
+                    const fullTimeText = `${dateParts[1]}/${dateParts[2]} (${weekDay}) ${timeStr}`;
+
+                    const newRaidRef = db.ref('raids').push();
+                    newRaidRef.set({
+                        id: newRaidRef.key,
+                        boss: boss,
+                        gamesCount: gamesCount,
+                        maxPlayers: maxPlayers,
+                        date: dateStr,
+                        timeStr: timeStr,
+                        time: fullTimeText,
+                        scheduledTimestamp: !isNaN(dObj.getTime()) ? dObj.getTime() : Date.now(),
+                        creator: currentUserData.name,
+                        isConfirmed: false,
+                        members: initialMembers,
+                        createdAt: Date.now()
+                    });
+
+                    createModal.style.display = 'none';
+                    createRaidForm.reset();
+                } catch (err) {
+                    console.error("發佈招募錯誤:", err);
+                    alert("發佈招募失敗：" + err.message);
                 }
-
-                const char = currentUserData.characters.find(c => c.id === charId);
-                if (!char) {
-                    alert("請選擇有效的出戰角色！");
-                    return;
-                }
-
-                // Parse dateObj for weekday and exact timestamp
-                const dateParts = dateStr.split('/');
-                const timeParts = timeStr.split(':');
-                const dObj = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]), parseInt(timeParts[0]), parseInt(timeParts[1]));
-                const weekDays = ['日','一','二','三','四','五','六'];
-                const weekDay = weekDays[dObj.getDay()];
-                const fullTimeText = `${dateParts[1]}/${dateParts[2]} (${weekDay}) ${timeStr}`;
-
-                const initialMember = { slotIndex: 0,
-                    id: char.id,
-                    name: char.name,
-                    job: char.job,
-                    level: char.level,
-                    accountName: currentUserData.name,
-                    isCreator: true
-                };
-
-                const newRaidRef = db.ref('raids').push();
-                newRaidRef.set({
-                    id: newRaidRef.key,
-                    boss: boss,
-                    gamesCount: gamesCount,
-                    maxPlayers: maxPlayers,
-                    date: dateStr,
-                    timeStr: timeStr,
-                    time: fullTimeText,
-                    scheduledTimestamp: dObj.getTime(),
-                    creator: currentUserData.name,
-                    isConfirmed: false,
-                    members: [initialMember],
-                    createdAt: Date.now()
-                });
-
-                createModal.style.display = 'none';
-                createRaidForm.reset();
             });
         }
 
