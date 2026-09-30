@@ -24,7 +24,6 @@ function getTeamTimestamp(team) {
     if (!team) return 0;
     if (team.scheduledTimestamp) return team.scheduledTimestamp;
     
-    // Parse timeslot if format is YYYY-MM-DD-row
     if (team.timeslot && typeof team.timeslot === 'string') {
         const parts = team.timeslot.split('-');
         if (parts.length >= 4) {
@@ -39,7 +38,6 @@ function getTeamTimestamp(team) {
         }
     }
     
-    // Parse timeText or timeslot if format is YYYY/MM/DD ... HH:mm
     const str = team.timeText || team.timeslot || '';
     const m = str.match(/(\d{4})?[/]?(\d{1,2})\/(\d{1,2}).*?(\d{1,2}):(\d{2})/);
     if (m) {
@@ -69,20 +67,47 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const db = firebase.database();
 
+// --- Client Device Identification & Local Memory ---
+function getClientId() {
+    let cid = localStorage.getItem('soulmine_client_id');
+    if (!cid) {
+        cid = 'c_' + Date.now() + '_' + Math.random().toString(36).substring(2, 9);
+        localStorage.setItem('soulmine_client_id', cid);
+    }
+    return cid;
+}
+const myClientId = getClientId();
+
+function getSavedChar() {
+    try {
+        return JSON.parse(localStorage.getItem('soulmine_saved_char')) || {};
+    } catch (e) {
+        return {};
+    }
+}
+
+function setSavedChar(name, job, level) {
+    localStorage.setItem('soulmine_saved_char', JSON.stringify({ name, job, level }));
+}
+
+function getSavedCreator() {
+    return localStorage.getItem('soulmine_creator_name') || '';
+}
+
+function setSavedCreator(name) {
+    localStorage.setItem('soulmine_creator_name', name);
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- State ---
-    let accountsDB = {};
     let raidsDB = {};
     let confirmedTeams = [];
     let changelogs = [];
-    let currentUserData = null; 
-    let sessionName = sessionStorage.getItem('artale_session');
-    let dbLoaded = false;
-    
+    let raidDatePicker = null;
+
     // --- Realtime Sync ---
     db.ref('/').on('value', (snapshot) => {
         const data = snapshot.val() || {};
-        accountsDB = data.accounts || {};
         raidsDB = data.raids || {};
         
         // Preserve all historical and confirmed teams
@@ -92,79 +117,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const rawChangelogs = data.changelog || data.changelogs || [];
         changelogs = Array.isArray(rawChangelogs) ? rawChangelogs.filter(c => c !== null && c !== undefined) : Object.values(rawChangelogs);
         
-        dbLoaded = true;
-        
-        if (sessionName && accountsDB[sessionName]) {
-            currentUserData = accountsDB[sessionName];
-            if (document.getElementById('login-modal').style.display !== 'none') {
-                loginSuccess(sessionName);
-            } else {
-                updateUI();
-            }
-        } else if (sessionName && !accountsDB[sessionName]) {
-            sessionStorage.removeItem('artale_session');
-            sessionName = null;
-        }
-        
-        if (!sessionName) {
-            document.getElementById('login-modal').style.display = 'flex';
-        }
+        updateUI();
     });
 
     function saveDB() {
-        if (currentUserData && currentUserData.name) {
-            db.ref('accounts/' + currentUserData.name).set(currentUserData);
-        }
         const safeTeams = confirmedTeams.filter(t => t !== null && t !== undefined);
         db.ref('teams').set(safeTeams);
     }
 
-    // --- Login Logic ---
-    const loginModal = document.getElementById('login-modal');
-    const loginForm = document.getElementById('login-form');
-    const loginError = document.getElementById('login-error');
-
-    loginForm.addEventListener('submit', (e) => {
-        e.preventDefault();
-        loginError.style.display = 'none';
-        const name = document.getElementById('login-name').value.trim();
-        const pass = document.getElementById('login-password').value;
-        if (!name || !pass) return;
-
-        if (accountsDB[name]) {
-            if (accountsDB[name].password === pass) {
-                loginSuccess(name);
-            } else {
-                loginError.style.display = 'block';
-            }
-        } else {
-            accountsDB[name] = {
-                name: name,
-                password: pass,
-                characters: []
-            };
-            db.ref('accounts/' + name).set(accountsDB[name]);
-            loginSuccess(name);
-        }
-    });
-
-    function loginSuccess(name) {
-        sessionStorage.setItem('artale_session', name);
-        sessionName = name;
-        currentUserData = accountsDB[name];
-        document.getElementById('login-modal').style.display = 'none';
-        document.getElementById('main-app').style.display = 'block';
-        initApp();
-    }
-
     // --- App Initialization ---
-    let appInitialized = false;
-    let raidDatePicker = null;
+    initApp();
 
     function initApp() {
-        if (appInitialized) return;
-        appInitialized = true;
-
         // --- Tab Switching ---
         const tabBtns = document.querySelectorAll('.tab-btn');
         const tabContents = document.querySelectorAll('.tab-content');
@@ -180,61 +144,18 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
-        setupProfileForm();
         setupRaidModals();
         setupChangelogForm();
         updateUI();
     }
 
     function updateUI() {
-        if (!currentUserData) return;
-        populateProfileForm();
         renderRecruitBoard();
         renderConfirmedTeams();
         renderChangelogs();
     }
 
-    // --- Tab 1: Profile ---
-    function populateProfileForm() {
-        if (currentUserData.characters && currentUserData.characters.length > 0) {
-            currentUserData.characters.forEach((c, idx) => {
-                if (c && c.name) {
-                    const i = idx + 1;
-                    const nameInput = document.getElementById(`player-name-${i}`);
-                    const jobSelect = document.getElementById(`player-job-${i}`);
-                    const levelInput = document.getElementById(`player-level-${i}`);
-                    if (nameInput) nameInput.value = c.name;
-                    if (jobSelect) jobSelect.value = c.job;
-                    if (levelInput) levelInput.value = c.level;
-                }
-            });
-        }
-    }
-
-    function setupProfileForm() {
-        const profileForm = document.getElementById('profile-form');
-        if (!profileForm) return;
-        profileForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            let chars = [];
-            for (let i = 1; i <= 6; i++) {
-                const nameInput = document.getElementById(`player-name-${i}`);
-                const jobSelect = document.getElementById(`player-job-${i}`);
-                const levelInput = document.getElementById(`player-level-${i}`);
-                const name = nameInput ? nameInput.value.trim() : '';
-                const job = jobSelect ? jobSelect.value : '主教';
-                const level = levelInput ? levelInput.value.trim() : '';
-                if (name) {
-                    chars.push({ id: `${currentUserData.name}-char-${i}`, name, job, level: level || '1' });
-                }
-            }
-            currentUserData.characters = chars;
-            saveDB();
-            alert('角色設定已儲存！');
-        });
-    }
-
-    // --- Tab 2: Recruitment Board (LFG) ---
+    // --- Time Dropdown Logic ---
     function updateRaidTimeDropdown(dateObj) {
         const timeSelect = document.getElementById('raid-time-select');
         if (!timeSelect) return;
@@ -271,10 +192,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // --- Modals Setup ---
     function setupRaidModals() {
         const createModal = document.getElementById('create-raid-modal');
         const joinModal = document.getElementById('join-raid-modal');
-        const createCharSelect = document.getElementById('create-character');
+        const selfJoinCheck = document.getElementById('create-join-self');
+        const selfCharFields = document.getElementById('create-self-char-fields');
+
+        if (selfJoinCheck && selfCharFields) {
+            selfJoinCheck.addEventListener('change', () => {
+                selfCharFields.style.display = selfJoinCheck.checked ? 'flex' : 'none';
+            });
+        }
 
         // Setup Flatpickr for raid date
         const raidDateInput = document.getElementById('raid-date');
@@ -294,22 +223,26 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnOpenCreate = document.getElementById('btn-open-create-modal');
         if (btnOpenCreate) {
             btnOpenCreate.addEventListener('click', () => {
-                // Allow opening without character
-                // optional
-                // optional
-                // optional
-                // optional
-                // optional
+                // Prefill organizer name
+                const creatorInput = document.getElementById('raid-creator-name');
+                if (creatorInput) {
+                    creatorInput.value = getSavedCreator();
+                }
 
-                // Populate creator's character options
-                createCharSelect.innerHTML = "<option value=''>暫不入座（僅建立招募）</option>";
-                if (currentUserData.characters) { currentUserData.characters.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.id;
-                    opt.textContent = `${c.name} (${c.job} Lv.${c.level})`;
-                    createCharSelect.appendChild(opt);
-                }); }
-                //
+                // Prefill saved character info
+                const saved = getSavedChar();
+                const charNameInput = document.getElementById('create-char-name');
+                const charJobSelect = document.getElementById('create-char-job');
+                const charLevelInput = document.getElementById('create-char-level');
+
+                if (charNameInput && saved.name) charNameInput.value = saved.name;
+                if (charJobSelect && saved.job) charJobSelect.value = saved.job;
+                if (charLevelInput && saved.level) charLevelInput.value = saved.level;
+
+                if (selfJoinCheck) {
+                    selfJoinCheck.checked = true;
+                    if (selfCharFields) selfCharFields.style.display = 'flex';
+                }
 
                 if (raidDatePicker) {
                     raidDatePicker.setDate(new Date());
@@ -339,11 +272,17 @@ document.addEventListener('DOMContentLoaded', () => {
             createRaidForm.addEventListener('submit', (e) => {
                 e.preventDefault();
                 try {
+                    const creatorName = document.getElementById('raid-creator-name').value.trim();
+                    if (!creatorName) {
+                        alert("請輸入發起人稱呼！");
+                        return;
+                    }
+                    setSavedCreator(creatorName);
+
                     const boss = document.getElementById('raid-boss').value;
                     const gamesEl = document.getElementById('raid-games');
                     const gamesCount = gamesEl ? (parseInt(gamesEl.value, 10) || 7) : 7;
                     const maxPlayers = (boss === '龍王') ? 12 : 6;
-                    const charId = createCharSelect.value;
                     const dateStr = document.getElementById('raid-date').value;
                     const timeStr = document.getElementById('raid-time-select').value;
 
@@ -353,19 +292,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     let initialMembers = [];
-                    if (charId && currentUserData.characters) {
-                        const char = currentUserData.characters.find(c => c.id === charId);
-                        if (char) {
-                            initialMembers.push({
-                                slotIndex: 0,
-                                id: char.id,
-                                name: char.name,
-                                job: char.job,
-                                level: char.level,
-                                accountName: currentUserData.name,
-                                isCreator: true
-                            });
+                    const isSelfJoin = selfJoinCheck ? selfJoinCheck.checked : true;
+                    if (isSelfJoin) {
+                        const charName = document.getElementById('create-char-name').value.trim();
+                        const charJob = document.getElementById('create-char-job').value;
+                        const charLevel = document.getElementById('create-char-level').value.trim();
+
+                        if (!charName || !charLevel) {
+                            alert("請填寫出戰角色的遊戲ID與等級，或取消勾選「發起人同時入座」！");
+                            return;
                         }
+
+                        setSavedChar(charName, charJob, charLevel);
+                        initialMembers.push({
+                            slotIndex: 0,
+                            name: charName,
+                            job: charJob,
+                            level: charLevel,
+                            clientId: myClientId,
+                            isCreator: true
+                        });
                     }
 
                     // Parse dateObj for weekday and exact timestamp
@@ -386,7 +332,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         timeStr: timeStr,
                         time: fullTimeText,
                         scheduledTimestamp: !isNaN(dObj.getTime()) ? dObj.getTime() : Date.now(),
-                        creator: currentUserData.name,
+                        creator: creatorName,
+                        creatorClientId: myClientId,
                         isConfirmed: false,
                         members: initialMembers,
                         createdAt: Date.now()
@@ -407,36 +354,44 @@ document.addEventListener('DOMContentLoaded', () => {
                 e.preventDefault();
                 const raidId = document.getElementById('join-raid-id').value;
                 const slotIdx = parseInt(document.getElementById('join-slot-index').value) || 0;
-                const charId = document.getElementById('join-character').value;
-                if (!charId) {
-                    alert("請選擇出戰角色！");
+                const charName = document.getElementById('join-char-name').value.trim();
+                const charJob = document.getElementById('join-char-job').value;
+                const charLevel = document.getElementById('join-char-level').value.trim();
+
+                if (!charName || !charLevel) {
+                    alert("請輸入遊戲ID與等級！");
                     return;
                 }
 
-                const char = currentUserData.characters.find(c => c.id === charId);
-                if (!char) return;
+                setSavedChar(charName, charJob, charLevel);
 
                 const raid = raidsDB[raidId];
                 if (raid) {
                     let members = raid.members || [];
-                    // Check if this specific character is already joined
-                    if (members.some(m => m.name === char.name)) {
-                        alert(`角色「${char.name}」已經在此隊伍中了！`);
+                    // Check if this character name is already joined
+                    if (members.some(m => m.name === charName)) {
+                        alert(`角色「${charName}」已經在此隊伍中了！`);
                         return;
                     }
-                                        const maxSlots = (raid.boss === '龍王') ? 12 : (raid.maxPlayers || 6);
+                    // Check if this slot is already taken
+                    if (members.some(m => (m.slotIndex !== undefined ? m.slotIndex : -1) === slotIdx)) {
+                        alert("此位置已被其他隊友搶先報名！請選擇其他空位。");
+                        return;
+                    }
+
+                    const maxSlots = (raid.boss === '龍王') ? 12 : (raid.maxPlayers || 6);
                     if (members.length >= maxSlots) {
                         alert("隊伍已滿額！");
                         joinModal.style.display = 'none';
                         return;
                     }
 
-                    members.push({ slotIndex: slotIdx,
-                        id: char.id,
-                        name: char.name,
-                        job: char.job,
-                        level: char.level,
-                        accountName: currentUserData.name
+                    members.push({
+                        slotIndex: slotIdx,
+                        name: charName,
+                        job: charJob,
+                        level: charLevel,
+                        clientId: myClientId
                     });
 
                     db.ref(`raids/${raidId}/members`).set(members);
@@ -447,35 +402,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     window.openJoinModal = function(raidId, slotIndex) {
-        if (!currentUserData.characters || currentUserData.characters.length === 0) {
-            alert("請先到「1. 我的角色」設定您的遊戲角色！");
-            const profileTabBtn = document.querySelector('[data-target="tab-profile"]');
-            if (profileTabBtn) profileTabBtn.click();
-            return;
-        }
-
         document.getElementById('join-raid-id').value = raidId;
         document.getElementById('join-slot-index').value = (slotIndex !== undefined) ? slotIndex : 0;
         const raid = raidsDB[raidId];
         const isDragonKing = raid && raid.boss === '龍王';
+        const teamName = isDragonKing ? ((slotIndex || 0) < 6 ? '第一隊 ' : '第二隊 ') : '';
         const slotNum = isDragonKing ? ((slotIndex || 0) < 6 ? (slotIndex || 0) + 1 : (slotIndex || 0) - 5) : (slotIndex || 0) + 1;
         const descEl = document.getElementById('join-slot-desc');
         if (descEl) {
-            descEl.textContent = "報名位置：第 " + slotNum + " 位。請選擇出戰角色。";
+            descEl.textContent = `報名位置：${teamName}第 ${slotNum} 位。填寫後系統將為您自動記憶。`;
         }
-        const select = document.getElementById('join-character');
-        select.innerHTML = '';
-        currentUserData.characters.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.id;
-            opt.textContent = `${c.name} (${c.job} Lv.${c.level})`;
-            select.appendChild(opt);
-        });
+
+        // Prefill saved character info
+        const saved = getSavedChar();
+        const nameInput = document.getElementById('join-char-name');
+        const jobSelect = document.getElementById('join-char-job');
+        const levelInput = document.getElementById('join-char-level');
+
+        if (nameInput) nameInput.value = saved.name || '';
+        if (jobSelect && saved.job) jobSelect.value = saved.job;
+        if (levelInput) levelInput.value = saved.level || '';
+
         document.getElementById('join-raid-modal').style.display = 'flex';
     };
 
     window.leaveRaid = function(raidId, memberName) {
-        if (confirm(`確定要將角色「${memberName}」退出此隊伍嗎？`)) {
+        if (confirm(`確定要退出/移除角色「${memberName}」嗎？`)) {
             const raid = raidsDB[raidId];
             if (raid && raid.members) {
                 const newMembers = raid.members.filter(m => m.name !== memberName);
@@ -519,6 +471,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    // --- Tab 1: Recruitment Board ---
     function renderRecruitBoard() {
         const container = document.getElementById('recruit-container');
         if (!container) return;
@@ -531,28 +484,30 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const myCreatorName = getSavedCreator();
+
         raids.forEach(raid => {
             const members = raid.members || [];
             const isDragonKing = (raid.boss === '龍王');
             const maxSlots = isDragonKing ? 12 : (raid.maxPlayers || 6);
             const isFull = members.length >= maxSlots;
-            const isCreator = raid.creator === currentUserData.name;
+            const isCreator = (raid.creatorClientId && raid.creatorClientId === myClientId) || (raid.creator && raid.creator === myCreatorName);
 
             const renderSlot = (slotIdx) => {
                 const m = members.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
                 const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
                 if (m) {
-                    // m is already defined
+                    const canLeave = (m.clientId && m.clientId === myClientId) || isCreator;
                     return `
                         <div style="background: rgba(255,255,255,0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.12);">
                             <div>
                                 <strong style="color: var(--primary-color);">${m.job}</strong> 
                                 <span style="color: #fff; font-weight: 600; margin-left: 0.3rem;">${m.name}</span> 
                                 <span style="color: var(--text-muted); font-size: 0.8rem;">(Lv.${m.level})</span>
-                                ${m.isCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;">👑</span>' : ''}
+                                ${m.isCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
                             </div>
-                            ${m.accountName === currentUserData.name && !m.isCreator ? `
-                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;">退出</button>
+                            ${canLeave ? `
+                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;" title="退出該席位">退出</button>
                             ` : ''}
                         </div>
                     `;
@@ -609,8 +564,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 card.classList.add('dragon-recruit-card');
             }
 
-            const gamesDisplay = raid.gamesCount ? ` ${raid.gamesCount}場` : '';
-
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items: baseline; margin-bottom: 0.8rem; border-bottom: 1px solid var(--card-border); padding-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
                     <h3 style="margin:0; color:var(--primary-color); font-size: 1.2rem;">[${raid.boss}]${raid.gamesCount || 7}場</h3>
@@ -627,7 +580,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // --- Tab 3: Confirmed & Historical Teams ---
+    // --- Tab 2: Confirmed & Historical Teams ---
     function renderConfirmedTeams() {
         const container = document.getElementById('confirmed-teams-container');
         const historyContainer = document.getElementById('historical-teams-container');
@@ -667,7 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
         let activeCount = 0;
         let historyCount = 0;
 
-        sortedTeams.forEach((team, teamIndex) => {
+        sortedTeams.forEach((team) => {
             try {
                 const isHistory = !!team.isHistorical;
                 const targetContainer = isHistory ? historyContainer : container;
@@ -734,13 +687,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         memberSlot.style.borderRadius = '8px';
                         memberSlot.style.border = '1px solid var(--card-border)';
 
-                        const m = teamMembers.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === memberIndex);
-                        if (m) {
-                            const m = teamMembers[memberIndex];
+                        const member = teamMembers.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === memberIndex);
+                        if (member) {
                             memberSlot.style.background = '#ffffff';
                             memberSlot.innerHTML = `
-                                <div style="font-weight: 600; color: #4a4559;">${m.name} ${m.isCreator ? '👑' : ''}</div>
-                                <div style="font-size: 0.85rem; color: #4a4559;">Lv.${m.level || '?'} / ${m.job || '冒險家'}</div>
+                                <div style="font-weight: 600; color: #4a4559;">${member.name} ${member.isCreator ? '👑' : ''}</div>
+                                <div style="font-size: 0.85rem; color: #4a4559;">Lv.${member.level || '?'} / ${member.job || '冒險家'}</div>
                             `;
                         } else {
                             memberSlot.style.background = 'transparent';
@@ -914,18 +866,11 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- Tab 4: Changelog ---
-    let editingLogTimestamp = null;
-
+    // --- Tab 3: Changelog ---
     function renderChangelogs() {
-        const form = document.getElementById('changelog-form');
         const container = document.getElementById('changelog-container');
         if (!container) return;
         container.innerHTML = '';
-
-        if (form) {
-            form.style.display = (sessionName === 'Lumi' || sessionName === 'Admin' || sessionName === 'Ru') ? 'flex' : 'none';
-        }
 
         if (changelogs.length === 0) {
             container.innerHTML = '<p class="empty-state" style="color:var(--text-muted); padding: 1rem;">目前沒有更新紀錄。</p>';
@@ -955,11 +900,34 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function setupChangelogForm() {
+        const toggleBtn = document.getElementById('btn-toggle-changelog-form');
         const form = document.getElementById('changelog-form');
+        const authorInput = document.getElementById('changelog-author');
+
+        if (authorInput) {
+            authorInput.value = getSavedCreator() || '管理員';
+        }
+
+        if (toggleBtn && form) {
+            toggleBtn.addEventListener('click', () => {
+                if (form.style.display === 'none' || !form.style.display) {
+                    const pass = prompt("請輸入管理者通行碼以發布更新日誌：");
+                    if (pass === 'soulmine' || pass === 'admin' || pass === 'Lumi' || pass === 'Ru') {
+                        form.style.display = 'flex';
+                    } else if (pass !== null) {
+                        alert("通行碼錯誤！");
+                    }
+                } else {
+                    form.style.display = 'none';
+                }
+            });
+        }
+
         if (!form) return;
         form.addEventListener('submit', (e) => {
             e.preventDefault();
             const title = document.getElementById('changelog-title').value.trim();
+            const author = (authorInput ? authorInput.value.trim() : '') || '管理員';
             const content = document.getElementById('changelog-content').value.trim();
             if (!title || !content) return;
 
@@ -968,12 +936,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 content,
                 timestamp: Date.now(),
                 date: new Date().toLocaleDateString('zh-TW'),
-                author: sessionName || '管理員'
+                author: author
             };
 
             changelogs.unshift(newLog);
             db.ref('changelog').set(changelogs);
             form.reset();
+            form.style.display = 'none';
             renderChangelogs();
             alert('更新日誌已發佈！');
         });
