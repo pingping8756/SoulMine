@@ -145,11 +145,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         setupRaidModals();
+        setupAdminAuth();
         setupChangelogForm();
         updateUI();
     }
 
     function updateUI() {
+        updateAdminUI();
         renderRecruitBoard();
         renderConfirmedTeams();
         renderChangelogs();
@@ -497,7 +499,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 const m = members.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
                 const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
                 if (m) {
-                    const canLeave = (m.clientId && m.clientId === myClientId) || isCreator;
                     return `
                         <div style="background: rgba(255,255,255,0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.12);">
                             <div>
@@ -506,9 +507,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <span style="color: var(--text-muted); font-size: 0.8rem;">(Lv.${m.level})</span>
                                 ${m.isCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
                             </div>
-                            ${canLeave ? `
-                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;" title="退出該席位">退出</button>
-                            ` : ''}
+                            <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;" title="退出或移除此席位">退出</button>
                         </div>
                     `;
                 } else {
@@ -547,15 +546,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             }
 
-            let creatorActions = '';
-            if (isCreator) {
-                creatorActions = `
-                    <div style="display:flex; gap:0.5rem; margin-top: 0.6rem;">
-                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex:2; padding: 0.6rem; font-size: 0.95rem;">✅ 確認出團</button>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:1; border-color: var(--danger-color); color: var(--danger-color); padding: 0.6rem; font-size: 0.95rem;">刪除</button>
-                    </div>
-                `;
-            }
+            const actionsHtml = `
+                <div style="display:flex; gap:0.5rem; margin-top: 0.8rem;">
+                    <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex:2; padding: 0.65rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; color: #fff;">✅ 確認出團</button>
+                    <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:1; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.95rem; cursor: pointer;">刪除</button>
+                </div>
+            `;
 
             const card = document.createElement('div');
             card.className = 'glass-card';
@@ -570,11 +566,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <span style="font-weight:bold; font-size: 1.05rem; color: #fff;">${raid.time}</span>
                 </div>
                 <div style="margin-bottom: 0.8rem; color: var(--text-muted); font-size: 0.9rem; display: flex; justify-content: space-between;">
-                    <span>發起人：<strong style="color: #fff;">${raid.creator}</strong></span>
+                    <span>發起人：<strong style="color: #fff;">${raid.creator || '公會成員'}</strong></span>
                     <span>成員：<strong style="color: ${isFull ? 'var(--danger-color)' : 'var(--success-color)'}; font-size: 1rem;">${members.length}</strong> / ${maxSlots}</span>
                 </div>
                 ${slotsHtml}
-                ${creatorActions}
+                ${actionsHtml}
             `;
             container.appendChild(card);
         });
@@ -866,11 +862,83 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Admin Authentication & Controls ---
+    function isAdmin() {
+        return localStorage.getItem('soulmine_is_admin') === 'true';
+    }
+
+    function setAdmin(val) {
+        if (val) {
+            localStorage.setItem('soulmine_is_admin', 'true');
+        } else {
+            localStorage.removeItem('soulmine_is_admin');
+        }
+    }
+
+    function updateAdminUI() {
+        const btn = document.getElementById('btn-admin-auth');
+        const form = document.getElementById('changelog-form');
+        const authorInput = document.getElementById('changelog-author');
+
+        if (btn) {
+            if (isAdmin()) {
+                btn.innerHTML = '👑 管理員在線中 (點此登出)';
+                btn.style.borderColor = 'var(--success-color)';
+                btn.style.color = 'var(--success-color)';
+                btn.style.background = 'rgba(74, 222, 128, 0.15)';
+                btn.style.fontWeight = 'bold';
+            } else {
+                btn.innerHTML = '🔑 管理員登入';
+                btn.style.borderColor = 'var(--card-border)';
+                btn.style.color = 'var(--text-muted)';
+                btn.style.background = 'rgba(255,255,255,0.06)';
+                btn.style.fontWeight = 'normal';
+            }
+        }
+
+        if (form) {
+            form.style.display = isAdmin() ? 'flex' : 'none';
+        }
+        if (authorInput && !authorInput.value) {
+            authorInput.value = getSavedCreator() || 'Lumi';
+        }
+    }
+
+    function setupAdminAuth() {
+        const btn = document.getElementById('btn-admin-auth');
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            if (isAdmin()) {
+                if (confirm('確定要登出管理員身分嗎？')) {
+                    setAdmin(false);
+                    alert('已退出管理員身分。');
+                    updateAdminUI();
+                    renderChangelogs();
+                }
+            } else {
+                const pass = prompt('請輸入管理員密碼：');
+                if (pass !== null) {
+                    const clean = pass.trim().toLowerCase();
+                    if (clean === 'soulmine' || clean === 'admin' || clean === 'lumi' || clean === 'ru' || clean === '1234') {
+                        setAdmin(true);
+                        alert('🎉 管理員身分驗證成功！已啟用管理與更新維護權限。');
+                        updateAdminUI();
+                        renderChangelogs();
+                    } else {
+                        alert('密碼錯誤！請重新嘗試。');
+                    }
+                }
+            }
+        });
+    }
+
     // --- Tab 3: Changelog ---
     function renderChangelogs() {
         const container = document.getElementById('changelog-container');
         if (!container) return;
         container.innerHTML = '';
+
+        updateAdminUI();
 
         if (changelogs.length === 0) {
             container.innerHTML = '<p class="empty-state" style="color:var(--text-muted); padding: 1rem;">目前沒有更新紀錄。</p>';
@@ -887,45 +955,49 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateObj = new Date(ts);
             const dateStr = log.date || `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2,'0')}/${dateObj.getDate().toString().padStart(2,'0')}`;
 
+            const deleteBtnHtml = isAdmin() ? `
+                <button onclick="deleteChangelog(${ts})" style="background:transparent; border:1px solid var(--danger-color); color:var(--danger-color); border-radius:6px; padding:0.25rem 0.6rem; font-size:0.8rem; cursor:pointer; font-weight:bold;">🗑️ 刪除日誌</button>
+            ` : '';
+
             card.innerHTML = `
                 <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
                     <h3 style="margin: 0; color: #0f172a !important; font-size: 1.25rem !important; font-weight: 700 !important;">${log.title}</h3>
                     <span style="color: #64748b !important; font-size: 0.9rem !important; font-weight: 600 !important;">${dateStr}</span>
                 </div>
                 <div style="color: #334155 !important; font-size: 1rem !important; line-height: 1.7 !important; white-space: pre-wrap !important; font-weight: 500 !important; margin-top: 0.5rem !important;">${log.content}</div>
-                <div style="margin-top: 1rem !important; font-size: 0.85rem !important; color: #64748b !important; text-align: right !important; font-weight: 600 !important;">更新者: ${log.author || '系統'}</div>
+                <div style="margin-top: 1rem !important; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 0.6rem;">
+                    <span style="font-size: 0.85rem !important; color: #64748b !important; font-weight: 600 !important;">更新者: ${log.author || '系統'}</span>
+                    ${deleteBtnHtml}
+                </div>
             `;
             container.appendChild(card);
         });
     }
 
+    window.deleteChangelog = function(ts) {
+        if (!isAdmin()) {
+            alert('只有管理員才能刪除更新日誌！');
+            return;
+        }
+        if (confirm('確定要刪除這筆更新日誌嗎？此動作無法復原。')) {
+            changelogs = changelogs.filter(c => (c.timestamp || c.id) !== ts);
+            db.ref('changelog').set(changelogs);
+            renderChangelogs();
+            alert('日誌已成功刪除！');
+        }
+    };
+
     function setupChangelogForm() {
-        const toggleBtn = document.getElementById('btn-toggle-changelog-form');
         const form = document.getElementById('changelog-form');
         const authorInput = document.getElementById('changelog-author');
-
-        if (authorInput) {
-            authorInput.value = getSavedCreator() || '管理員';
-        }
-
-        if (toggleBtn && form) {
-            toggleBtn.addEventListener('click', () => {
-                if (form.style.display === 'none' || !form.style.display) {
-                    const pass = prompt("請輸入管理者通行碼以發布更新日誌：");
-                    if (pass === 'soulmine' || pass === 'admin' || pass === 'Lumi' || pass === 'Ru') {
-                        form.style.display = 'flex';
-                    } else if (pass !== null) {
-                        alert("通行碼錯誤！");
-                    }
-                } else {
-                    form.style.display = 'none';
-                }
-            });
-        }
 
         if (!form) return;
         form.addEventListener('submit', (e) => {
             e.preventDefault();
+            if (!isAdmin()) {
+                alert('請先以管理員身分登入！');
+                return;
+            }
             const title = document.getElementById('changelog-title').value.trim();
             const author = (authorInput ? authorInput.value.trim() : '') || '管理員';
             const content = document.getElementById('changelog-content').value.trim();
@@ -942,9 +1014,8 @@ document.addEventListener('DOMContentLoaded', () => {
             changelogs.unshift(newLog);
             db.ref('changelog').set(changelogs);
             form.reset();
-            form.style.display = 'none';
             renderChangelogs();
-            alert('更新日誌已發佈！');
+            alert('🎉 更新日誌已成功發佈！');
         });
     }
 });

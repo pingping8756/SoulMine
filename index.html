@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=81">
+    <link rel="stylesheet" href="style.css?v=83">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -26,33 +26,37 @@
                     <label>發起人稱呼</label>
                     <input type="text" id="raid-creator-name" placeholder="例如: 小明" required>
                 </div>
-                <div class="form-group">
-                    <label>討伐目標</label>
-                    <select id="raid-boss" required style="width: 100%;">
-                        <option value="樹王">樹王</option>
-                        <option value="困拉">困拉</option>
-                        <option value="普拉">普拉</option>
-                        <option value="龍王">龍王</option>
-                        <option value="炎魔">炎魔</option>
-                        <option value="蝴蝶">蝴蝶</option>
-                    </select>
+                <div style="display: flex; gap: 0.8rem;">
+                    <div class="form-group" style="flex: 1.2;">
+                        <label>討伐目標</label>
+                        <select id="raid-boss" required style="width: 100%;">
+                            <option value="樹王">樹王</option>
+                            <option value="困拉">困拉</option>
+                            <option value="普拉">普拉</option>
+                            <option value="龍王">龍王</option>
+                            <option value="炎魔">炎魔</option>
+                            <option value="蝴蝶">蝴蝶</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>出團場次</label>
+                        <select id="raid-games" required style="width: 100%;">
+                            <option value="7">7 場</option>
+                            <option value="14">14 場</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>出團場次</label>
-                    <select id="raid-games" required style="width: 100%;">
-                        <option value="7">7 場</option>
-                        <option value="14">14 場</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>出團日期</label>
-                    <input type="text" id="raid-date" required placeholder="點擊選擇日期">
-                </div>
-                <div class="form-group">
-                    <label>出團時段</label>
-                    <select id="raid-time-select" required style="width: 100%;">
-                        <option value="">請先選擇出團日期</option>
-                    </select>
+                <div style="display: flex; gap: 0.8rem;">
+                    <div class="form-group" style="flex: 1;">
+                        <label>出團日期</label>
+                        <input type="text" id="raid-date" required placeholder="點擊選擇日期" style="width: 100%;">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label>出團時段</label>
+                        <select id="raid-time-select" required style="width: 100%;">
+                            <option value="">請先選擇出團日期</option>
+                        </select>
+                    </div>
                 </div>
                 <div class="form-group" style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
                     <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.5rem; font-weight: 600; color: #fff;">
@@ -133,7 +137,12 @@
 
     <div class="app-container" id="main-app">
         <header class="app-header">
-            <h1>🎃 SoulMine 揪團佈告欄 👻</h1>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem;">
+                <h1 style="margin: 0; font-size: clamp(1.4rem, 4vw, 2.2rem);">🎃 SoulMine 揪團佈告欄 👻</h1>
+                <button id="btn-admin-auth" class="btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 20px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s;">
+                    🔑 管理員登入
+                </button>
+            </div>
             <nav class="tabs">
                 <button class="tab-btn active" data-target="tab-recruit">1. 招募大廳</button>
                 <button class="tab-btn" data-target="tab-status">2. 出團看板</button>
@@ -181,28 +190,28 @@
             <!-- Tab 3: Changelog -->
             <section id="tab-changelog" class="tab-content">
                 <div class="glass-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
                         <div>
                             <h2 style="margin: 0;">更新日誌</h2>
                             <p class="subtitle" style="margin: 0;">紀錄系統的更新與重要變更。</p>
                         </div>
-                        <button id="btn-toggle-changelog-form" class="btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem; border-color: var(--card-border);">⚙️ 管理者發佈</button>
                     </div>
                     
-                    <form id="changelog-form" style="display: none; flex-direction: column; gap: 1rem; margin-bottom: 2rem; background: rgba(255,255,255,0.03); padding: 1.2rem; border-radius: 8px; border: 1px solid var(--card-border);">
+                    <form id="changelog-form" style="display: none; flex-direction: column; gap: 1rem; margin-bottom: 2rem; background: rgba(255,255,255,0.05); padding: 1.5rem; border-radius: 12px; border: 1px solid var(--primary-color);">
+                        <h3 style="margin: 0; color: var(--primary-color);">📝 管理員發布更新日誌</h3>
                         <div class="input-group">
                             <label>更新標題</label>
                             <input type="text" id="changelog-title" placeholder="輸入標題..." required>
                         </div>
                         <div class="input-group">
                             <label>發布者稱呼</label>
-                            <input type="text" id="changelog-author" placeholder="例: Lumi / Ru" required>
+                            <input type="text" id="changelog-author" placeholder="例: Lumi" required>
                         </div>
                         <div class="input-group">
                             <label>更新內容</label>
                             <textarea id="changelog-content" placeholder="輸入詳細更新內容..." rows="4" required style="width:100%; padding: 0.8rem; border: 1px solid var(--input-border); border-radius: 8px; font-family: inherit; font-size: 1rem; background: var(--bg-main); color: var(--text-main);"></textarea>
                         </div>
-                        <button type="submit" class="btn-primary">新增紀錄</button>
+                        <button type="submit" class="btn-primary">確認發佈日誌</button>
                     </form>
 
                     <div id="changelog-container" style="display: flex; flex-direction: column; gap: 1rem;">
@@ -214,9 +223,9 @@
     </div>
     
     <!-- Firebase -->
-    <link rel="stylesheet" href="style.css?v=81">
+    <link rel="stylesheet" href="style.css?v=83">
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=81" defer></script>
+    <script src="app.js?v=83" defer></script>
 </body>
 </html>
