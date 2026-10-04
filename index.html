@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=83">
+    <link rel="stylesheet" href="style.css?v=106">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -16,122 +16,299 @@
     <script src="https://npmcdn.com/flatpickr/dist/l10n/zh-tw.js"></script>
 </head>
 <body>
-    <!-- Create Raid Modal -->
-    <div id="create-raid-modal" class="modal-overlay" style="display:none; z-index: 1000;">
-        <div class="glass-card modal-content" style="max-width: 500px; padding: 2rem;">
-            <h2>➕ 建立新出團</h2>
-            <p class="subtitle" style="margin-bottom: 1.5rem;">設定出團目標與時間，招募隊友！</p>
-            <form id="create-raid-form">
-                <div class="form-group">
-                    <label>發起人稱呼</label>
-                    <input type="text" id="raid-creator-name" placeholder="例如: 小明" required>
+
+
+    <!-- Join Raid Modal (Character Card Picker) -->
+    <div id="join-raid-modal" class="modal-overlay" style="display:none; z-index: 1000;">
+        <div class="glass-card modal-content" style="max-width: 620px; max-height: 90vh; padding: 1.5rem; display: flex; flex-direction: column; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); color: #0f172a;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
+                <h2 style="margin: 0; font-size: 1.35rem; color: #0f172a; font-weight: 800;">👥 挑選出戰角色</h2>
+                <button type="button" id="btn-close-join-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.2rem 0.5rem;">&times;</button>
+            </div>
+            <p id="join-slot-desc" style="color: #475569; font-size: 0.88rem; font-weight: 600; margin: 0 0 0.8rem 0;">點擊角色卡即可直接入座。</p>
+            
+            <input type="hidden" id="join-raid-id">
+            <input type="hidden" id="join-slot-index">
+
+            <!-- Search box -->
+            <div style="margin-bottom: 0.6rem;">
+                <input type="text" id="roster-search-input" placeholder="🔍 快速搜尋 ID 或職業 (例: 黑騎、主教、IE)..." style="width: 100%; padding: 0.55rem 0.85rem; border-radius: 8px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 0.92rem; font-weight: 600;">
+            </div>
+
+            <!-- Scrollable 3-section roster list -->
+            <div id="roster-cards-container" style="flex: 1; overflow-y: auto; padding: 0.6rem; min-height: 280px; max-height: 52vh; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 8px;">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- Manual Custom Entry Toggle & Admin Manage Button -->
+            <div style="margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1.5px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="display: flex; gap: 0.8rem; align-items: center;">
+                    <button type="button" id="btn-toggle-custom-input" style="background: none; border: none; color: #475569; cursor: pointer; font-size: 0.85rem; text-decoration: underline; padding: 0; font-weight: 700;">
+                        ✍️ 手動輸入角色卡
+                    </button>
+                    <button type="button" id="btn-join-open-roster-modal" class="btn-roster-manage-trigger" style="display: none; background: #fff7ed; border: 1.5px solid #fed7aa; color: #c2410c; border-radius: 6px; padding: 0.25rem 0.65rem; font-size: 0.8rem; font-weight: 800; cursor: pointer;">
+                        ⚙️ 管理角色卡資料
+                    </button>
                 </div>
-                <div style="display: flex; gap: 0.8rem;">
-                    <div class="form-group" style="flex: 1.2;">
-                        <label>討伐目標</label>
-                        <select id="raid-boss" required style="width: 100%;">
-                            <option value="樹王">樹王</option>
-                            <option value="困拉">困拉</option>
-                            <option value="普拉">普拉</option>
-                            <option value="龍王">龍王</option>
-                            <option value="炎魔">炎魔</option>
-                            <option value="蝴蝶">蝴蝶</option>
+                <button type="button" id="btn-cancel-join" class="btn-secondary" style="padding: 0.45rem 1.2rem; font-size: 0.88rem; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; font-weight: 700; border-radius: 8px; cursor: pointer;">取消</button>
+            </div>
+
+            <!-- Hidden Custom Input Form (opens on click) -->
+            <form id="join-raid-form" style="display: none; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1.5px dashed #cbd5e1;">
+                <div class="form-group" style="margin-bottom: 0.6rem;">
+                    <label style="font-size: 0.85rem; color: #0f172a; font-weight: 700; margin-bottom: 0.3rem;">遊戲ID</label>
+                    <input type="text" id="join-char-name" placeholder="請輸入遊戲名稱" style="background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; font-weight: 600;">
+                </div>
+                <div style="display: flex; gap: 0.8rem; margin-bottom: 0.8rem;">
+                    <div class="form-group" style="flex: 1; margin: 0;">
+                        <label style="font-size: 0.85rem; color: #0f172a; font-weight: 700; margin-bottom: 0.3rem;">職業</label>
+                        <select id="join-char-job" style="width: 100%; background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; font-weight: 600;">
+                            <option value="黑騎士">黑騎士</option>
+                            <option value="聖騎士">聖騎士</option>
+                            <option value="英雄">英雄</option>
+                            <option value="箭神">箭神</option>
+                            <option value="神射手">神射手</option>
+                            <option value="神偷">神偷</option>
+                            <option value="夜使者">夜使者</option>
+                            <option value="槍神">槍神</option>
+                            <option value="拳霸">拳霸</option>
+                            <option value="火毒">火毒</option>
+                            <option value="冰雷">冰雷</option>
+                            <option value="主教">主教</option>
                         </select>
                     </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>出團場次</label>
-                        <select id="raid-games" required style="width: 100%;">
-                            <option value="7">7 場</option>
-                            <option value="14">14 場</option>
-                        </select>
+                    <div class="form-group" style="flex: 1; margin: 0;">
+                        <label style="font-size: 0.85rem; color: #0f172a; font-weight: 700; margin-bottom: 0.3rem;">等級</label>
+                        <input type="number" id="join-char-level" placeholder="例如: 120" min="1" max="250" style="background: #ffffff; color: #0f172a; border: 1.5px solid #cbd5e1; font-weight: 600;">
                     </div>
                 </div>
-                <div style="display: flex; gap: 0.8rem;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>出團日期</label>
-                        <input type="text" id="raid-date" required placeholder="點擊選擇日期" style="width: 100%;">
-                    </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>出團時段</label>
-                        <select id="raid-time-select" required style="width: 100%;">
-                            <option value="">請先選擇出團日期</option>
-                        </select>
-                    </div>
-                </div>
-                <div class="form-group" style="background: rgba(255, 255, 255, 0.05); padding: 1rem; border-radius: 8px; border: 1px solid rgba(255, 255, 255, 0.1);">
-                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; margin-bottom: 0.5rem; font-weight: 600; color: #fff;">
-                        <input type="checkbox" id="create-join-self" checked style="width: 18px; height: 18px; accent-color: var(--primary-color);">
-                        發起人同時入座（如僅代開時段請取消勾選）
-                    </label>
-                    <div id="create-self-char-fields" style="display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0.5rem;">
-                        <input type="text" id="create-char-name" placeholder="遊戲ID (例: 煞氣a明)">
-                        <div style="display: flex; gap: 0.8rem;">
-                            <select id="create-char-job" style="flex: 1;">
-                                <option value="主教">主教</option>
-                                <option value="箭神">箭神</option>
-                                <option value="神射手">神射手</option>
-                                <option value="英雄">英雄</option>
-                                <option value="聖騎士">聖騎士</option>
-                                <option value="黑騎士">黑騎士</option>
-                                <option value="夜使者">夜使者</option>
-                                <option value="暗影神偷">暗影神偷</option>
-                                <option value="冰雷">冰雷</option>
-                                <option value="火毒">火毒</option>
-                                <option value="拳霸">拳霸</option>
-                                <option value="槍神">槍神</option>
-                            </select>
-                            <input type="number" id="create-char-level" placeholder="等級 (例: 120)" min="1" max="250" style="flex: 1;">
-                        </div>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button type="button" id="btn-cancel-create" class="btn-secondary" style="flex: 1;">取消</button>
-                    <button type="submit" class="btn-primary" style="flex: 1;">發佈招募</button>
-                </div>
+                <button type="submit" class="btn-primary" style="width: 100%; padding: 0.55rem; font-size: 0.9rem; font-weight: 700; background: #16a34a; color: #ffffff; border: none; border-radius: 6px; cursor: pointer;">確認手動送出</button>
             </form>
         </div>
     </div>
 
-    <!-- Join Raid Modal -->
-    <div id="join-raid-modal" class="modal-overlay" style="display:none; z-index: 1000;">
-        <div class="glass-card modal-content" style="max-width: 420px; padding: 2rem;">
-            <h2>報名出團</h2>
-            <p id="join-slot-desc" class="subtitle" style="margin-bottom: 1.5rem;">請填寫角色資訊加入該位置（系統將自動記憶）。</p>
-            <form id="join-raid-form">
-                <input type="hidden" id="join-raid-id">
-                <input type="hidden" id="join-slot-index">
-                <div class="form-group">
-                    <label>遊戲ID</label>
-                    <input type="text" id="join-char-name" placeholder="請輸入遊戲名稱" required>
+    <!-- Create Raid Modal (Two-Column Interactive Team Planner Popup) -->
+    <div id="create-raid-modal" class="modal-overlay" style="display:none; z-index: 1000;">
+        <div class="glass-card modal-content create-raid-modal-content" style="max-width: 960px; width: 95%; max-height: 90vh; padding: 1.4rem; display: flex; flex-direction: column; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); color: #0f172a; overflow-y: auto;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.6rem;">
+                <div>
+                    <h2 style="margin: 0; font-size: 1.35rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
+                        <span style="color: #ea580c;">⚔️ 建立出團與席位挑選</span>
+                        <span style="font-size: 0.82rem; color: #c2410c; font-weight: 700; background: #ffedd5; border: 1px solid #fed7aa; padding: 0.15rem 0.6rem; border-radius: 12px;">組長挑人面板</span>
+                    </h2>
                 </div>
-                <div style="display: flex; gap: 0.8rem;">
-                    <div class="form-group" style="flex: 1;">
-                        <label>職業</label>
-                        <select id="join-char-job" required style="width: 100%;">
-                            <option value="主教">主教</option>
-                            <option value="箭神">箭神</option>
-                            <option value="神射手">神射手</option>
-                            <option value="英雄">英雄</option>
-                            <option value="聖騎士">聖騎士</option>
-                            <option value="黑騎士">黑騎士</option>
-                            <option value="夜使者">夜使者</option>
-                            <option value="暗影神偷">暗影神偷</option>
-                            <option value="冰雷">冰雷</option>
-                            <option value="火毒">火毒</option>
-                            <option value="拳霸">拳霸</option>
-                            <option value="槍神">槍神</option>
-                        </select>
+                <button type="button" id="btn-close-create-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.2rem 0.5rem;">&times;</button>
+            </div>
+
+            <!-- Draft Notice Banner -->
+            <div id="create-draft-banner" style="display: none; background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 8px; padding: 0.4rem 0.8rem; margin-bottom: 0.6rem; font-size: 0.85rem; color: #1e40af; justify-content: space-between; align-items: center;">
+                <span id="draft-banner-text">💾 發現上次未完成的出團暫存草稿！</span>
+                <div style="display: flex; gap: 0.4rem;">
+                    <button type="button" id="btn-load-draft" style="background: #2563eb; color: #fff; border: none; border-radius: 6px; padding: 0.25rem 0.65rem; font-size: 0.8rem; font-weight: 700; cursor: pointer;">📂 載入草稿</button>
+                    <button type="button" id="btn-discard-draft" style="background: #e2e8f0; color: #475569; border: none; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.8rem; cursor: pointer;">✕ 清除</button>
+                </div>
+            </div>
+
+            <!-- Two-Column Body -->
+            <div class="create-raid-modal-body">
+                <!-- Left Column: Boss, Games, Date, Time (Dropdowns) + Slots -->
+                <div class="create-raid-left-col" style="background: #f8fafc; padding: 0.85rem; border-radius: 10px; border: 1px solid #e2e8f0; border-right: 1.5px solid #cbd5e1;">
+                    <!-- Boss & Target Games (Same Row) -->
+                    <div style="display: flex; gap: 0.6rem;">
+                        <div class="form-group" style="flex: 1.35; margin: 0;">
+                            <label style="font-size: 0.88rem; font-weight: 800; color: #0f172a;">討伐 Boss</label>
+                            <select id="raid-boss" style="width: 100%; padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.9rem; background: #fff; border: 1.5px solid #94a3b8; color: #0f172a; font-weight: 700;">
+                                <option value="克雷塞爾">🌲 克雷塞爾</option>
+                                <option value="普通拉圖斯">⌛ 普通拉圖斯</option>
+                                <option value="困難拉圖斯">⏰ 困難拉圖斯</option>
+                                <option value="暗黑龍王(12人)">🐉 暗黑龍王(12人)</option>
+                                <option value="普通殘暴炎魔">🔥 普通殘暴炎魔</option>
+                                <option value="困難殘暴炎魔">🌋 困難殘暴炎魔</option>
+                                <option value="艾畢奈亞">🦋 艾畢奈亞</option>
+                            </select>
+                        </div>
+                        <div class="form-group" style="flex: 1; margin: 0;">
+                            <label style="font-size: 0.88rem; font-weight: 800; color: #0f172a;">出團場次</label>
+                            <select id="raid-games" style="width: 100%; padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.9rem; background: #fff; border: 1.5px solid #94a3b8; color: #0f172a; font-weight: 700;">
+                                <option value="7" selected>7 場 (預設)</option>
+                                <option value="1">1 場</option>
+                                <option value="2">2 場</option>
+                                <option value="3">3 場</option>
+                                <option value="4">4 場</option>
+                                <option value="5">5 場</option>
+                                <option value="6">6 場</option>
+                                <option value="10">10 場</option>
+                                <option value="14">14 場</option>
+                            </select>
+                        </div>
                     </div>
-                    <div class="form-group" style="flex: 1;">
-                        <label>等級</label>
-                        <input type="number" id="join-char-level" placeholder="例如: 120" min="1" max="250" required>
+
+                    <!-- Date & Time (Dropdowns) -->
+                    <div style="display: flex; gap: 0.6rem;">
+                        <div class="form-group" style="flex: 1.1; margin: 0;">
+                            <label style="font-size: 0.88rem; font-weight: 800; color: #0f172a;">出團日期</label>
+                            <input type="text" id="raid-date" required placeholder="點擊選擇日期" style="width: 100%; padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.9rem; background: #fff; border: 1.5px solid #94a3b8; color: #0f172a; font-weight: 700;">
+                        </div>
+                        <div class="form-group" style="flex: 1; margin: 0;">
+                            <label style="font-size: 0.88rem; font-weight: 800; color: #0f172a;">出團時段</label>
+                            <select id="raid-time-select" required style="width: 100%; padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.9rem; background: #fff; border: 1.5px solid #94a3b8; color: #0f172a; font-weight: 700;">
+                                <option value="">請先選擇日期</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Team Slots Assigned by Leader (3x2 Grid) -->
+                    <div style="margin-top: 0.2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.35rem;">
+                            <label style="font-size: 0.88rem; font-weight: 800; color: #0f172a;">席位安排</label>
+                            <span id="create-slots-count-badge" style="font-size: 0.8rem; color: #15803d; font-weight: 700;">已排 0 / 6 人</span>
+                        </div>
+                        <div id="create-team-slots-container">
+                            <!-- Populated dynamically via JS with .create-slots-grid-3x2 -->
+                        </div>
                     </div>
                 </div>
-                <div style="display: flex; gap: 1rem; margin-top: 1.5rem;">
-                    <button type="button" id="btn-cancel-join" class="btn-secondary" style="flex: 1;">取消</button>
-                    <button type="submit" class="btn-primary" style="flex: 1;">確認報名</button>
+
+                <!-- Right Column: Character Selection Keys -->
+                <div class="create-raid-right-col">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+                        <span style="font-size: 0.95rem; font-weight: 800; color: #0f172a;">👥 點選右側人物入座</span>
+                        <span id="roster-active-slot-hint" style="font-size: 0.82rem; color: #c2410c; font-weight: 700;">正在指定：席位 1</span>
+                    </div>
+
+                    <!-- Search Box & Admin Manage Button -->
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <input type="text" id="create-roster-search" placeholder="🔍 快速搜尋 ID 或職業 (例: 黑騎、主教、IE)..." style="flex: 1; padding: 0.45rem 0.75rem; border-radius: 8px; border: 1.5px solid #94a3b8; background: #ffffff; color: #0f172a; font-size: 0.88rem; font-weight: 600;">
+                        <button type="button" id="btn-create-open-roster-modal" class="btn-roster-manage-trigger" style="display: none; background: #fff7ed; border: 1.5px solid #fed7aa; color: #c2410c; border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.82rem; font-weight: 800; cursor: pointer; white-space: nowrap;">
+                            ⚙️ 管理角色卡
+                        </button>
+                    </div>
+
+                    <!-- Category Filter Tabs -->
+                    <div id="create-roster-cat-group" class="btn-select-group" style="margin-bottom: 0.3rem;">
+                        <button type="button" class="btn-select-chip active" data-cat="all">全部 (39)</button>
+                        <button type="button" class="btn-select-chip" data-cat="力職" style="color: #c2410c; font-weight: 700;">💪 力職 (10)</button>
+                        <button type="button" class="btn-select-chip" data-cat="敏職" style="color: #15803d; font-weight: 700;">🎯 敏職 (16)</button>
+                        <button type="button" class="btn-select-chip" data-cat="法職" style="color: #7e22ce; font-weight: 700;">✨ 法職 (13)</button>
+                    </div>
+
+                    <!-- Scrollable Character Button Keys Area -->
+                    <div id="create-roster-keys-container" style="flex: 1; overflow-y: auto; padding-right: 0.3rem; min-height: 260px; max-height: 480px;">
+                        <!-- Populated dynamically via JS -->
+                    </div>
+
+                    <!-- Manual Custom Character Input (Collapsed) -->
+                    <div style="margin-top: 0.4rem; padding-top: 0.4rem; border-top: 1.5px solid #e2e8f0;">
+                        <button type="button" id="btn-toggle-create-custom-char" style="background: none; border: none; color: #475569; cursor: pointer; font-size: 0.82rem; text-decoration: underline; padding: 0; font-weight: 600;">
+                            ✍️ 手動輸入角色卡...
+                        </button>
+                        <div id="create-custom-char-box" style="display: none; margin-top: 0.5rem; background: #f1f5f9; padding: 0.6rem; border-radius: 8px; border: 1.5px dashed #cbd5e1;">
+                            <div style="display: flex; gap: 0.4rem; margin-bottom: 0.4rem;">
+                                <input type="text" id="create-custom-name" placeholder="遊戲ID" style="flex: 1.2; padding: 0.35rem 0.5rem; font-size: 0.85rem; background: #fff; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 600;">
+                                <select id="create-custom-job" style="flex: 1; padding: 0.35rem 0.5rem; font-size: 0.85rem; background: #fff; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 600;">
+                                    <option value="黑騎士">黑騎士</option>
+                                    <option value="聖騎士">聖騎士</option>
+                                    <option value="英雄">英雄</option>
+                                    <option value="箭神">箭神</option>
+                                    <option value="神射手">神射手</option>
+                                    <option value="神偷">神偷</option>
+                                    <option value="夜使者">夜使者</option>
+                                    <option value="槍神">槍神</option>
+                                    <option value="拳霸">拳霸</option>
+                                    <option value="火毒">火毒</option>
+                                    <option value="冰雷">冰雷</option>
+                                    <option value="主教">主教</option>
+                                </select>
+                                <input type="number" id="create-custom-level" placeholder="等級" min="1" max="250" style="width: 70px; padding: 0.35rem 0.5rem; font-size: 0.85rem; background: #fff; border: 1px solid #cbd5e1; color: #0f172a; font-weight: 600;">
+                            </div>
+                            <button type="button" id="btn-add-custom-char-to-slot" class="btn-primary" style="width: 100%; padding: 0.45rem; font-size: 0.85rem; font-weight: 700; background: #16a34a; color: #ffffff; border: none; border-radius: 6px; cursor: pointer;">➕ 新增角色卡並入座</button>
+                        </div>
+                    </div>
                 </div>
-            </form>
+            </div>
+
+            <!-- Footer Action -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1.5px solid #e2e8f0; flex-wrap: wrap; gap: 0.5rem;">
+                <div id="create-raid-summary-text" style="font-size: 0.88rem; color: #475569; font-weight: 600;">
+                    已排入 <strong id="create-summary-count" style="color: #15803d; font-weight: 800;">0</strong> 人 (剩餘席位開放隊友自由報名)
+                </div>
+                <div style="display: flex; gap: 0.6rem; align-items: center;">
+                    <button type="button" id="btn-cancel-create" class="btn-secondary" style="padding: 0.45rem 1rem; font-size: 0.9rem; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; font-weight: 700; border-radius: 8px; cursor: pointer;">取消</button>
+                    <button type="button" id="btn-confirm-create-raid" class="btn-primary" style="padding: 0.45rem 1.6rem; font-size: 0.95rem; font-weight: 700; background: #16a34a; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);">💾 暫存草稿</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Character Roster Management Modal -->
+    <div id="roster-manage-modal" class="modal-overlay" style="display:none; z-index: 1000;">
+        <div class="glass-card modal-content" style="max-width: 760px; width: 95%; max-height: 90vh; padding: 1.4rem; display: flex; flex-direction: column; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35); color: #0f172a; border-radius: 16px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.5rem;">
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <h2 style="margin: 0; font-size: 1.3rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 0.4rem;">
+                        <span>🎴 角色卡資料庫管理</span>
+                    </h2>
+                    <span style="font-size: 0.78rem; background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; padding: 0.15rem 0.55rem; border-radius: 12px; font-weight: 800;">管理員權限</span>
+                </div>
+                <button type="button" id="btn-close-roster-mg-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.2rem 0.5rem;">&times;</button>
+            </div>
+
+            <!-- Form: Add or Edit Character Card -->
+            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.8rem; margin-bottom: 0.8rem;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                    <strong id="roster-mg-form-title" style="font-size: 0.9rem; color: #0f172a; font-weight: 800;">➕ 新增角色卡至資料庫</strong>
+                    <button type="button" id="btn-roster-mg-cancel-edit" style="display: none; background: none; border: none; color: #ef4444; font-size: 0.8rem; cursor: pointer; text-decoration: underline; font-weight: 700;">取消編輯</button>
+                </div>
+                <input type="hidden" id="roster-mg-editing-original-id">
+                <input type="hidden" id="roster-mg-editing-original-job">
+                <div style="display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center;">
+                    <input type="text" id="roster-mg-name" placeholder="遊戲ID" style="flex: 1.2; min-width: 120px; padding: 0.45rem 0.7rem; font-size: 0.88rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; color: #0f172a; font-weight: 700;">
+                    <select id="roster-mg-job" style="flex: 1; min-width: 100px; padding: 0.45rem 0.7rem; font-size: 0.88rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; color: #0f172a; font-weight: 700;">
+                        <option value="黑騎士">黑騎士</option>
+                        <option value="聖騎士">聖騎士</option>
+                        <option value="英雄">英雄</option>
+                        <option value="箭神">箭神</option>
+                        <option value="神射手">神射手</option>
+                        <option value="神偷">神偷</option>
+                        <option value="夜使者">夜使者</option>
+                        <option value="槍神">槍神</option>
+                        <option value="拳霸">拳霸</option>
+                        <option value="火毒">火毒</option>
+                        <option value="冰雷">冰雷</option>
+                        <option value="主教">主教</option>
+                    </select>
+                    <input type="number" id="roster-mg-level" placeholder="等級" min="1" max="250" style="width: 80px; padding: 0.45rem 0.7rem; font-size: 0.88rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; color: #0f172a; font-weight: 700;">
+                    <button type="button" id="btn-roster-mg-submit" class="btn-primary" style="padding: 0.45rem 1.2rem; font-size: 0.88rem; font-weight: 700; background: #16a34a; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">
+                        ➕ 新增角色
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filter and Search -->
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.5rem; margin-bottom: 0.6rem; flex-wrap: wrap;">
+                <input type="text" id="roster-mg-search" placeholder="🔍 搜尋 ID 或職業..." style="flex: 1; min-width: 180px; padding: 0.4rem 0.7rem; border-radius: 6px; border: 1.5px solid #cbd5e1; background: #ffffff; color: #0f172a; font-size: 0.88rem; font-weight: 600;">
+                <div id="roster-mg-cat-filters" style="display: flex; gap: 0.3rem;">
+                    <button type="button" class="btn-select-chip active" data-cat="all" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; background: #ff7518; color: #fff; border: 1px solid #ff7518; border-radius: 6px; font-weight: 700; cursor: pointer;">全部</button>
+                    <button type="button" class="btn-select-chip" data-cat="力職" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; background: #f1f5f9; color: #c2410c; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer;">💪 力職</button>
+                    <button type="button" class="btn-select-chip" data-cat="敏職" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; background: #f1f5f9; color: #15803d; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer;">🎯 敏職</button>
+                    <button type="button" class="btn-select-chip" data-cat="法職" style="padding: 0.25rem 0.6rem; font-size: 0.8rem; background: #f1f5f9; color: #7e22ce; border: 1px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer;">✨ 法職</button>
+                </div>
+            </div>
+
+            <!-- Scrollable Characters List Container -->
+            <div id="roster-mg-list-container" style="flex: 1; overflow-y: auto; max-height: 48vh; border: 1.5px solid #e2e8f0; border-radius: 8px; background: #ffffff;">
+                <!-- Dynamically populated via JS -->
+            </div>
+
+            <!-- Footer -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.8rem; padding-top: 0.6rem; border-top: 1.5px solid #e2e8f0;">
+                <div id="roster-mg-count-text" style="font-size: 0.85rem; color: #64748b; font-weight: 600;">
+                    共 0 位角色
+                </div>
+                <button type="button" id="btn-close-roster-mg" class="btn-secondary" style="padding: 0.4rem 1.2rem; font-size: 0.88rem; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                    關閉
+                </button>
+            </div>
         </div>
     </div>
 
@@ -139,31 +316,176 @@
         <header class="app-header">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem;">
                 <h1 style="margin: 0; font-size: clamp(1.4rem, 4vw, 2.2rem);">🎃 SoulMine 揪團佈告欄 👻</h1>
-                <button id="btn-admin-auth" class="btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 20px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s;">
-                    🔑 管理員登入
-                </button>
+                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                    <button id="btn-open-roster-modal" class="btn-secondary btn-roster-manage-trigger" style="display: none; font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 20px; border: 1.5px solid #f97316; background: #fff7ed; color: #c2410c; cursor: pointer; font-weight: 800; transition: all 0.2s;">
+                        🎴 管理角色卡資料
+                    </button>
+                    <button id="btn-admin-auth" class="btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 20px; border: 1px solid var(--card-border); background: rgba(255,255,255,0.06); cursor: pointer; transition: all 0.2s;">
+                        🔑 管理員登入
+                    </button>
+                </div>
             </div>
             <nav class="tabs">
-                <button class="tab-btn active" data-target="tab-recruit">1. 招募大廳</button>
-                <button class="tab-btn" data-target="tab-status">2. 出團看板</button>
-                <button class="tab-btn" data-target="tab-changelog">3. 更新日誌</button>
+                <button class="tab-btn active" data-target="tab-survey">1. 時間調查</button>
+                <button class="tab-btn" data-target="tab-recruit">2. 突襲王專區</button>
+                <button class="tab-btn" data-target="tab-status">3. 出團看板</button>
+                <button class="tab-btn" data-target="tab-changelog">4. 更新日誌</button>
             </nav>
         </header>
 
         <main class="content-area">
-            <!-- Tab 1: Recruitment Board -->
-            <section id="tab-recruit" class="tab-content active">
-                <div class="glass-card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
-                        <div>
-                            <h2 style="margin: 0;">📋 招募大廳</h2>
-                            <p class="subtitle" style="margin: 0;">目前正在尋找隊友的隊伍，點擊「➕ 點擊報名」即可加入。</p>
+            <!-- Tab 1: Survey & Availability Aggregation -->
+            <section id="tab-survey" class="tab-content active">
+                <div class="survey-page-container">
+                    <!-- Left: Questionnaire Form Card -->
+                    <div class="survey-form-card">
+                        <div style="text-align: center; margin-bottom: 1.2rem;">
+                            <h2 style="margin: 0; font-size: 1.55rem; color: #0f172a; font-weight: 900; letter-spacing: 2px;">
+                                <span style="color: #f59e0b;">✨</span> 一 問卷 一 <span style="color: #f59e0b;">✨</span>
+                            </h2>
+                            <p style="color: #64748b; font-size: 0.88rem; margin: 0.3rem 0 0 0;">統整大家方便打王的時間，方便組長排團！</p>
                         </div>
-                        <button id="btn-open-create-modal" class="btn-primary" style="font-size: 1.1rem; padding: 0.8rem 1.5rem; background: var(--success-color); border-color: var(--success-color); color: #111; font-weight: bold; box-shadow: 0 4px 15px rgba(86, 211, 100, 0.4);">➕ 開啟新招募</button>
+
+                        <form id="raid-survey-form">
+                            <!-- 1. 你是誰？ -->
+                            <div class="survey-step-box blue">
+                                <div class="survey-step-header">
+                                    <span class="survey-step-num bg-blue">1</span>
+                                    <span>你是誰？</span>
+                                </div>
+                                <div class="survey-step-body">
+                                    <input type="text" id="survey-user-name" required placeholder="請輸入您的名字..." style="width: 100%; padding: 0.6rem 0.85rem; font-size: 0.95rem; border-radius: 8px; border: 1.5px solid #94a3b8; background: #fff; color: #0f172a; font-weight: 700;">
+                                </div>
+                            </div>
+
+                            <!-- 2. 週二到週一 每天各一個打勾的格子 -->
+                            <div class="survey-step-box green">
+                                <div class="survey-step-header">
+                                    <span class="survey-step-num bg-green">2</span>
+                                    <span>週二到週一 可打王時段</span>
+                                </div>
+                                <div class="survey-step-body">
+                                    <p style="font-size: 0.8rem; color: #64748b; margin: 0 0 0.55rem 0;">平日預設為晚上，週六日提供下午與晚上（可複選）：</p>
+                                    <div class="survey-slots-grid">
+                                        <label class="survey-slot-chip">
+                                            <input type="checkbox" name="survey-slot" value="週二(晚)">
+                                            <span>週二(晚)</span>
+                                        </label>
+                                        <label class="survey-slot-chip">
+                                            <input type="checkbox" name="survey-slot" value="週三(晚)">
+                                            <span>週三(晚)</span>
+                                        </label>
+                                        <label class="survey-slot-chip">
+                                            <input type="checkbox" name="survey-slot" value="週四(晚)">
+                                            <span>週四(晚)</span>
+                                        </label>
+                                        <label class="survey-slot-chip">
+                                            <input type="checkbox" name="survey-slot" value="週五(晚)">
+                                            <span>週五(晚)</span>
+                                        </label>
+                                        <label class="survey-slot-chip" style="border-color: #fdba74;">
+                                            <input type="checkbox" name="survey-slot" value="週六(下午)">
+                                            <span style="color: #c2410c;">週六(下午)</span>
+                                        </label>
+                                        <label class="survey-slot-chip" style="border-color: #fdba74;">
+                                            <input type="checkbox" name="survey-slot" value="週六(晚)">
+                                            <span>週六(晚)</span>
+                                        </label>
+                                        <label class="survey-slot-chip" style="border-color: #fdba74;">
+                                            <input type="checkbox" name="survey-slot" value="週日(下午)">
+                                            <span style="color: #c2410c;">週日(下午)</span>
+                                        </label>
+                                        <label class="survey-slot-chip" style="border-color: #fdba74;">
+                                            <input type="checkbox" name="survey-slot" value="週日(晚)">
+                                            <span>週日(晚)</span>
+                                        </label>
+                                        <label class="survey-slot-chip">
+                                            <input type="checkbox" name="survey-slot" value="週一(晚)">
+                                            <span>週一(晚)</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 3. 是否吃卷？ -->
+                            <div class="survey-step-box orange">
+                                <div class="survey-step-header">
+                                    <span class="survey-step-num bg-orange">3</span>
+                                    <span>是否吃卷？</span>
+                                </div>
+                                <div class="survey-step-body">
+                                    <div class="survey-scroll-options">
+                                        <label class="survey-scroll-opt">
+                                            <input type="radio" name="survey-scroll" value="是" checked>
+                                            <span>是</span>
+                                        </label>
+                                        <label class="survey-scroll-opt">
+                                            <input type="radio" name="survey-scroll" value="否">
+                                            <span>否</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- 4. 其他事項 / 備註 -->
+                            <div class="survey-step-box purple">
+                                <div class="survey-step-header">
+                                    <span class="survey-step-num bg-purple">4</span>
+                                    <span>其他事項 / 備註</span>
+                                </div>
+                                <div class="survey-step-body">
+                                    <textarea id="survey-user-notes" rows="2" placeholder="請輸入您的回答... (例如: 週六可能要9點後、只能打1場、或其他備註)" style="width: 100%; padding: 0.55rem 0.8rem; font-size: 0.9rem; border-radius: 8px; border: 1.5px solid #94a3b8; background: #fff; color: #0f172a; font-weight: 500; resize: vertical;"></textarea>
+                                </div>
+                            </div>
+
+                            <!-- Submit Button -->
+                            <button type="submit" id="btn-submit-survey" class="btn-primary" style="width: 100%; padding: 0.75rem; font-size: 1.05rem; font-weight: 800; background: #16a34a; color: #fff; border: none; border-radius: 10px; cursor: pointer; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.35); transition: all 0.2s ease;">
+                                📝 送出 / 更新我的問卷
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Right: Detailed Respondents List (Weekly Matrix Table) -->
+                    <div class="survey-stats-container">
+                        <!-- Detailed Respondents List (Weekly Matrix Table) -->
+                        <div class="glass-card" style="margin-top: 0; padding: 1.2rem; background: #ffffff !important; color: #0f172a !important; border: 1.5px solid #cbd5e1; border-radius: 14px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.6rem;">
+                                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                                    <h4 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: 900; display: flex; align-items: center; gap: 0.4rem;">
+                                        <span>👥 成員填寫名單明細</span>
+                                    </h4>
+                                    <span id="survey-week-range-badge" style="font-size: 0.8rem; background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; padding: 0.15rem 0.55rem; border-radius: 6px; font-weight: 700;">週二 ～ 週一</span>
+                                    <span id="survey-total-respondents" style="font-size: 0.8rem; background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; padding: 0.15rem 0.6rem; border-radius: 12px; font-weight: 800;">已回覆 0 人</span>
+                                </div>
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+                                    <div id="survey-admin-actions" style="display: none;">
+                                        <button type="button" id="btn-clear-all-surveys" class="btn-secondary" style="font-size: 0.8rem; padding: 0.35rem 0.7rem; color: #ef4444; border: 1px solid #fca5a5; background: #fef2f2; cursor: pointer; border-radius: 6px; font-weight: 700;">
+                                            🗑️ 重設新週問卷
+                                        </button>
+                                    </div>
+                                    <button type="button" id="btn-copy-survey-text" class="btn-secondary" style="font-size: 0.82rem; padding: 0.35rem 0.75rem; background: #f8fafc; color: #1e293b; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;">
+                                        📋 複製時段統整文字
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="survey-respondents-list" class="survey-matrix-wrapper">
+                                <!-- Dynamically populated Matrix Table via JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 2: 突襲王專區 (Recruitment & Boss Area) -->
+            <section id="tab-recruit" class="tab-content">
+                <!-- Active Recruitment Teams Area -->
+                <div class="glass-card">
+                    <div id="recruit-header-area">
+                        <!-- JS 動態渲染標題、返回按鈕與開啟招募按鈕 -->
                     </div>
                     
-                    <div id="recruit-container" style="display: grid; gap: 1.5rem; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));">
-                        <!-- JS 會動態渲染招募中的隊伍 -->
+                    <div id="recruit-container">
+                        <!-- JS 動態渲染 Boss 分類卡片或招募中的隊伍清單 -->
                     </div>
                 </div>
             </section>
@@ -223,9 +545,8 @@
     </div>
     
     <!-- Firebase -->
-    <link rel="stylesheet" href="style.css?v=83">
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=83" defer></script>
+    <script src="app.js?v=106" defer></script>
 </body>
 </html>
