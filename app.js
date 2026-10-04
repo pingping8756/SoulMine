@@ -581,6 +581,10 @@ document.addEventListener('DOMContentLoaded', () => {
         return isAdmin() || !!getLoggedInUser();
     }
 
+    function getCurrentEffectiveUser() {
+        return getLoggedInUser() || (isAdmin() ? getAdminUser() : '') || localStorage.getItem('soulmine_admin_user') || localStorage.getItem('soulmine_logged_user') || sessionStorage.getItem('artale_session') || '';
+    }
+
     // --- Realtime Sync ---
     db.ref('/').on('value', (snapshot) => {
         const data = snapshot.val() || {};
@@ -1659,12 +1663,13 @@ document.addEventListener('DOMContentLoaded', () => {
             let targetIdx = createRaidState.activeSlotIndex;
             if (targetIdx < 0 || targetIdx >= maxSlots) targetIdx = 0;
 
+            const currentOrganizer = getCurrentEffectiveUser();
             createRaidState.slots[targetIdx] = {
                 slotIndex: targetIdx,
                 name: charId,
                 job: charJob,
                 level: charLevel,
-                isCreator: (targetIdx === 0)
+                isCreator: Boolean(currentOrganizer && charId.toLowerCase() === currentOrganizer.toLowerCase())
             };
 
             // Advance active slot to the next empty slot
@@ -1768,12 +1773,12 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // --- Open Create Raid Modal ---
-        window.openCreateRaidModal = function(preferredBoss) {
+        // --- Open Create Raid Modal (支援帶入複製隊伍 copyFromTeam) ---
+        window.openCreateRaidModal = function(preferredBoss, copyFromTeam = null) {
             if (!canCreateTeam()) {
                 if (typeof window.openGeneralLoginModal === 'function') {
                     window.openGeneralLoginModal(() => {
-                        window.openCreateRaidModal(preferredBoss);
+                        window.openCreateRaidModal(preferredBoss, copyFromTeam);
                     });
                 } else {
                     alert('建立隊伍需先登入帳號！');
@@ -1781,45 +1786,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            const targetBoss = preferredBoss || "克雷塞爾";
+            const targetBoss = (copyFromTeam && copyFromTeam.boss) ? normalizeBossName(copyFromTeam.boss) : (preferredBoss || "克雷塞爾");
+            const targetGames = (copyFromTeam && copyFromTeam.gamesCount) ? copyFromTeam.gamesCount : 7;
             createRaidState.boss = targetBoss;
-            createRaidState.games = 7;
-            createRaidState.activeSlotIndex = 0;
+            createRaidState.games = targetGames;
             createRaidState.searchKeyword = "";
             createRaidState.filterCat = "all";
 
             // Sync Dropdowns on the left
             if (bossSelect) bossSelect.value = targetBoss;
-            if (gamesSelect) gamesSelect.value = "7";
+            if (gamesSelect) gamesSelect.value = String(targetGames);
 
             const createSearchInput = document.getElementById('create-roster-search');
             if (createSearchInput) createSearchInput.value = '';
 
             const maxSlots = isDragonKingBoss(targetBoss) ? 12 : 6;
-            createRaidState.slots = Array.from({ length: maxSlots }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '' }));
 
-            // Auto-fill slot 0 with organizer's saved character or logged-in user if available
-            const saved = getSavedChar();
-            const loggedName = getLoggedInUser() || (isAdmin() ? getAdminUser() : '');
-            if (saved.name) {
-                createRaidState.slots[0] = {
-                    slotIndex: 0,
-                    name: saved.name,
-                    job: saved.job || '黑騎士',
-                    level: saved.level || 120,
-                    isCreator: true
-                };
-                createRaidState.activeSlotIndex = 1; // start picking for slot 2
-            } else if (loggedName) {
-                const foundRoster = CHARACTER_ROSTER.find(c => c.name.toLowerCase() === loggedName.toLowerCase());
-                createRaidState.slots[0] = {
-                    slotIndex: 0,
-                    name: loggedName,
-                    job: foundRoster ? foundRoster.job : '黑騎士',
-                    level: foundRoster ? foundRoster.level : 120,
-                    isCreator: true
-                };
-                createRaidState.activeSlotIndex = 1;
+            const loggedName = getCurrentEffectiveUser();
+
+            if (copyFromTeam && copyFromTeam.members) {
+                const sourceMembers = Array.isArray(copyFromTeam.members) ? copyFromTeam.members : Object.values(copyFromTeam.members);
+                createRaidState.slots = Array.from({ length: maxSlots }, (_, i) => {
+                    const found = sourceMembers.find((m, idx) => (m && (m.slotIndex !== undefined ? m.slotIndex : idx) === i));
+                    if (found && found.name) {
+                        return {
+                            slotIndex: i,
+                            name: found.name,
+                            job: found.job || '',
+                            level: found.level || 120,
+                            isCreator: Boolean(loggedName && found.name.toLowerCase() === loggedName.toLowerCase())
+                        };
+                    }
+                    return { slotIndex: i, name: '', job: '', level: '' };
+                });
+                const firstEmpty = createRaidState.slots.findIndex(s => !s.name);
+                createRaidState.activeSlotIndex = firstEmpty !== -1 ? firstEmpty : 0;
+            } else {
+                createRaidState.slots = Array.from({ length: maxSlots }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '' }));
+
+                // Auto-fill slot 0 with organizer's saved character or logged-in user if available
+                const saved = getSavedChar();
+                if (saved.name) {
+                    createRaidState.slots[0] = {
+                        slotIndex: 0,
+                        name: saved.name,
+                        job: saved.job || '黑騎士',
+                        level: saved.level || 120,
+                        isCreator: Boolean(loggedName && saved.name.toLowerCase() === loggedName.toLowerCase())
+                    };
+                    createRaidState.activeSlotIndex = 1; // start picking for slot 2
+                } else if (loggedName) {
+                    const foundRoster = CHARACTER_ROSTER.find(c => c.name.toLowerCase() === loggedName.toLowerCase());
+                    createRaidState.slots[0] = {
+                        slotIndex: 0,
+                        name: loggedName,
+                        job: foundRoster ? foundRoster.job : '黑騎士',
+                        level: foundRoster ? foundRoster.level : 120,
+                        isCreator: true
+                    };
+                    createRaidState.activeSlotIndex = 1;
+                } else {
+                    createRaidState.activeSlotIndex = 0;
+                }
             }
 
             // Reset cat buttons
@@ -1829,7 +1857,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Reset Date & Time
+            // Reset Date & Time (複製時預設為今天，方便重新選定新出團時間)
             createRaidState.dateObj = new Date();
             if (raidDatePicker) raidDatePicker.setDate(new Date());
             updateCreateTimeDropdown(new Date());
@@ -1965,12 +1993,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    // Determine creator name from Slot 0 or first assigned member
-                    const slot0 = createRaidState.slots[0];
-                    const creatorName = (slot0 && slot0.name) ? slot0.name : (getSavedCreator() || '隊長');
+                    // Determine creator name strictly from logged-in account ID (隊伍建立者為當前登入的帳號 ID，絕非第 1 位入座成員)
+                    const loggedId = getCurrentEffectiveUser();
+                    const creatorName = loggedId || '公會成員';
                     setSavedCreator(creatorName);
 
                     // Save Slot 0 character as saved char if present
+                    const slot0 = createRaidState.slots[0];
                     if (slot0 && slot0.name) {
                         setSavedChar(slot0.name, slot0.job, slot0.level);
                     }
@@ -1987,14 +2016,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     const weekDay = weekDays[schedDate.getDay()];
                     const fullTimeText = `${m}/${d} (${weekDay}) ${createRaidState.timeStr}`;
 
-                    const finalMembers = validMembers.map(m => ({
-                        slotIndex: m.slotIndex,
-                        name: m.name,
-                        job: m.job,
-                        level: m.level,
-                        clientId: m.slotIndex === 0 ? myClientId : 'assigned',
-                        isCreator: (m.slotIndex === 0)
-                    }));
+                    const finalMembers = validMembers.map(m => {
+                        const isThisCreator = Boolean(m.name && creatorName && m.name.toLowerCase() === creatorName.toLowerCase());
+                        return {
+                            slotIndex: m.slotIndex,
+                            name: m.name,
+                            job: m.job,
+                            level: m.level,
+                            clientId: isThisCreator ? myClientId : 'assigned',
+                            isCreator: isThisCreator
+                        };
+                    });
 
                     const newRaidRef = db.ref('raids').push();
                     newRaidRef.set({
@@ -2310,16 +2342,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!raid) return;
 
         if (confirm("確認出團後，隊伍將正式成團並移至「出團看板」，確定出團？")) {
+            const raidMembers = raid.members || [];
+            const firstMemberName = (raidMembers[0] && raidMembers[0].name) ? raidMembers[0].name : '';
+            const currentLoggedIn = getCurrentEffectiveUser();
+            let effectiveCreator = raid.creator;
+            if (currentLoggedIn && (!effectiveCreator || effectiveCreator === '隊長' || effectiveCreator === '未知' || (firstMemberName && effectiveCreator === firstMemberName))) {
+                effectiveCreator = currentLoggedIn;
+            }
+            if (!effectiveCreator) effectiveCreator = currentLoggedIn || '公會成員';
+
             const newTeam = {
                 boss: raid.boss,
                 timeslot: raid.time,
                 timeText: raid.time,
                 scheduledTimestamp: raid.scheduledTimestamp || Date.now(),
-                members: raid.members || [],
+                members: raidMembers,
                 gamesCount: raid.gamesCount || 7,
                 rolledChannels: [Math.floor(Math.random() * 2000) + 1],
                 finalChannel: null,
-                creator: raid.creator,
+                creator: effectiveCreator,
                 createdAt: raid.createdAt || Date.now(),
                 isHistorical: false
             };
@@ -2337,6 +2378,17 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteRaid = function(raidId) {
         if (confirm("確定要刪除這個招募隊伍嗎？")) {
             db.ref(`raids/${raidId}`).remove();
+        }
+    };
+
+    window.copyRaidToCreate = function(raidId) {
+        const raid = raidsDB[raidId];
+        if (!raid) {
+            alert('找不到該隊伍資料！');
+            return;
+        }
+        if (typeof window.openCreateRaidModal === 'function') {
+            window.openCreateRaidModal(raid.boss, raid);
         }
     };
 
@@ -2548,10 +2600,23 @@ document.addEventListener('DOMContentLoaded', () => {
             const maxSlots = isDragonKing ? 12 : (raid.maxPlayers || 6);
             const isFull = members.length >= maxSlots;
 
+            const currentLoggedIn = getCurrentEffectiveUser();
+            const firstMemberName = (members[0] && members[0].name) ? members[0].name : '';
+            let displayCreator = raid.creator;
+            if (currentLoggedIn && (!displayCreator || displayCreator === '隊長' || displayCreator === '未知' || (firstMemberName && displayCreator === firstMemberName))) {
+                displayCreator = currentLoggedIn;
+                if (raid.creator !== currentLoggedIn && typeof db !== 'undefined' && db && db.ref) {
+                    raid.creator = currentLoggedIn;
+                    db.ref(`raids/${raid.id}/creator`).set(currentLoggedIn);
+                }
+            }
+            if (!displayCreator) displayCreator = '公會成員';
+
             const renderSlot = (slotIdx) => {
                 const m = members.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
                 const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
                 if (m) {
+                    const isActuallyCreator = Boolean(m.name && displayCreator && m.name.toLowerCase() === displayCreator.toLowerCase());
                     if (isExpired) {
                         return `
                             <div style="background: rgba(255,255,255,0.03); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.06);">
@@ -2559,7 +2624,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <strong style="color: #94a3b8;">${m.job}</strong> 
                                     <span style="color: #cbd5e1; font-weight: 500; margin-left: 0.3rem;">${m.name}</span> 
                                     <span style="color: #64748b; font-size: 0.8rem;">(Lv.${m.level})</span>
-                                    ${m.isCreator ? '<span style="color:#94a3b8; font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
+                                    ${isActuallyCreator ? '<span style="color:#94a3b8; font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
                                 </div>
                                 <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:0.8rem; padding: 0.2rem 0.4rem;" title="移除此席位">退出</button>
                             </div>
@@ -2571,7 +2636,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <strong style="color: var(--primary-color);">${m.job}</strong> 
                                 <span style="color: #fff; font-weight: 600; margin-left: 0.3rem;">${m.name}</span> 
                                 <span style="color: var(--text-muted); font-size: 0.8rem;">(Lv.${m.level})</span>
-                                ${m.isCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
+                                ${isActuallyCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
                             </div>
                             <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;" title="退出或移除此席位">退出</button>
                         </div>
@@ -2620,18 +2685,20 @@ document.addEventListener('DOMContentLoaded', () => {
             let actionsHtml = '';
             if (isExpired) {
                 actionsHtml = `
-                    <div style="display:flex; gap:0.5rem; margin-top: 0.8rem; align-items: center;">
-                        <div style="flex:2; text-align: center; font-size: 0.85rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 0.65rem; font-weight: 600;">
+                    <div style="display:flex; gap:0.5rem; margin-top: 0.8rem; align-items: center; flex-wrap: wrap;">
+                        <div style="flex:2; min-width: 120px; text-align: center; font-size: 0.85rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 0.65rem; font-weight: 600;">
                             ⏳ 時段已過．已流團
                         </div>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:1; border: 1px solid rgba(239,68,68,0.5); color: #ef4444; background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; cursor: pointer;" title="提前手動刪除此流團紀錄">刪除</button>
+                        <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex:1.2; min-width: 95px; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer;" title="以此隊伍名單重新開團">📋 複製重開</button>
+                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:0.8; min-width: 65px; border: 1px solid rgba(239,68,68,0.5); color: #ef4444; background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; cursor: pointer;" title="提前手動刪除此流團紀錄">刪除</button>
                     </div>
                 `;
             } else {
                 actionsHtml = `
-                    <div style="display:flex; gap:0.5rem; margin-top: 0.8rem;">
-                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex:2; padding: 0.65rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; color: #fff;">✅ 確認出團</button>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:1; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.95rem; cursor: pointer;">刪除</button>
+                    <div style="display:flex; gap:0.5rem; margin-top: 0.8rem; flex-wrap: wrap;">
+                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex:2; min-width: 110px; padding: 0.65rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; color: #fff;">✅ 確認出團</button>
+                        <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex:1.2; min-width: 95px; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer;" title="複製原班人馬建立新出團">📋 複製隊伍</button>
+                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:0.8; min-width: 65px; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.95rem; cursor: pointer;">刪除</button>
                     </div>
                 `;
             }
@@ -2659,7 +2726,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${titleHtml}
                 </div>
                 <div style="margin-bottom: 0.8rem; color: ${isExpired ? '#64748b' : 'var(--text-muted)'}; font-size: 0.9rem; display: flex; justify-content: space-between;">
-                    <span>發起人：<strong style="color: ${isExpired ? '#94a3b8' : '#fff'};">${raid.creator || '公會成員'}</strong></span>
+                    <span>發起人：<strong style="color: ${isExpired ? '#94a3b8' : '#fff'};">${displayCreator}</strong></span>
                     <span>成員：<strong style="color: ${isExpired ? '#94a3b8' : (isFull ? 'var(--danger-color)' : 'var(--success-color)')}; font-size: 1rem;">${members.length}</strong> / ${maxSlots}</span>
                 </div>
                 ${slotsHtml}
@@ -2708,6 +2775,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (historyContainer) historyContainer.innerHTML = '';
 
         const now = Date.now();
+        const currentLoggedIn = getCurrentEffectiveUser();
         let changed = false;
         let validTeams = [];
 
@@ -2724,6 +2792,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     changed = true;
                 }
             }
+
+            // Auto-heal legacy teams where creator was incorrectly assigned as slot 0 member or default '隊長'/'未知'
+            const teamMembers = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
+            const firstMemberName = (teamMembers[0] && teamMembers[0].name) ? teamMembers[0].name : '';
+            if (currentLoggedIn && (!team.creator || team.creator === '隊長' || team.creator === '未知' || (firstMemberName && team.creator === firstMemberName))) {
+                team.creator = currentLoggedIn;
+                changed = true;
+            }
+
             validTeams.push(team);
         });
 
@@ -2750,6 +2827,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 else activeCount++;
 
                 const teamMembers = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
+                const displayCreator = team.creator || currentLoggedIn || '公會成員';
                 const bossName = normalizeBossName(team.boss || '克雷塞爾');
                 const isDragonKing = isDragonKingBoss(bossName);
 
@@ -2808,9 +2886,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const member = teamMembers.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === memberIndex);
                         if (member) {
+                            const isActuallyCreator = Boolean(member.name && displayCreator && member.name.toLowerCase() === displayCreator.toLowerCase());
                             memberSlot.style.background = '#ffffff';
                             memberSlot.innerHTML = `
-                                <div style="font-weight: 600; color: #4a4559;">${member.name} ${member.isCreator ? '👑' : ''}</div>
+                                <div style="font-weight: 600; color: #4a4559;">${member.name} ${isActuallyCreator ? '👑' : ''}</div>
                                 <div style="font-size: 0.85rem; color: #4a4559;">Lv.${member.level || '?'} / ${member.job || '冒險家'}</div>
                             `;
                         } else {
@@ -2943,17 +3022,33 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.appendChild(channelSection);
                 }
 
-                // Creator & Delete options
+                // Creator & Action options (複製隊伍 / 刪除紀錄)
                 const footer = document.createElement('div');
                 footer.style.display = 'flex';
                 footer.style.justifyContent = 'space-between';
                 footer.style.alignItems = 'center';
                 footer.style.marginTop = '1rem';
+                footer.style.flexWrap = 'wrap';
+                footer.style.gap = '0.6rem';
 
                 footer.innerHTML = `
-                    <span style="font-size: 0.8rem; color: var(--text-muted);">建立者: ${team.creator || '未知'}</span>
-                    <button class="delete-team-btn" style="background: transparent; border: 1px solid var(--danger-color); color: #ff6666; border-radius: 6px; padding: 0.3rem 0.8rem; cursor: pointer; font-size: 0.85rem;">刪除紀錄</button>
+                    <span style="font-size: 0.85rem; color: var(--text-muted);">建立者: ${displayCreator}</span>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button type="button" class="copy-team-btn" style="background: var(--primary-color); border: none; color: #fff; border-radius: 6px; padding: 0.35rem 0.85rem; cursor: pointer; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 0.3rem;" title="複製原班人馬建立新出團">
+                            📋 複製隊伍
+                        </button>
+                        <button type="button" class="delete-team-btn" style="background: transparent; border: 1px solid var(--danger-color); color: #ff6666; border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.85rem;">
+                            刪除紀錄
+                        </button>
+                    </div>
                 `;
+
+                const copyBtn = footer.querySelector('.copy-team-btn');
+                if (copyBtn) {
+                    copyBtn.onclick = () => {
+                        window.openCreateRaidModal(team.boss, team);
+                    };
+                }
 
                 footer.querySelector('.delete-team-btn').onclick = () => {
                     if (confirm("確定要刪除這筆出團紀錄嗎？")) {
