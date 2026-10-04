@@ -113,7 +113,7 @@ const BOSS_LIST = [
     { name: "克雷塞爾", icon: "🌲", color: "#4ade80" },
     { name: "普通拉圖斯", icon: "⌛", color: "#fbbf24" },
     { name: "困難拉圖斯", icon: "⏰", color: "#f87171" },
-    { name: "暗黑龍王(12人)", icon: "🐉", color: "#c084fc" },
+    { name: "闇黑龍王", icon: "🐉", color: "#c084fc" },
     { name: "普通殘暴炎魔", icon: "🔥", color: "#fb923c" },
     { name: "困難殘暴炎魔", icon: "🌋", color: "#ef4444" },
     { name: "艾畢奈亞", icon: "🦋", color: "#f472b6" }
@@ -125,7 +125,7 @@ function normalizeBossName(name) {
     if (name.includes("樹王") || name.includes("克雷塞爾")) return "克雷塞爾";
     if (name === "普拉" || name.includes("普通拉圖斯")) return "普通拉圖斯";
     if (name === "困拉" || name.includes("困難拉圖斯")) return "困難拉圖斯";
-    if (name.includes("龍王")) return "暗黑龍王(12人)";
+    if (name.includes("龍王") || name.includes("黑龍")) return "闇黑龍王";
     if (name === "普炎" || name === "炎魔" || name.includes("普通殘暴炎魔") || name.includes("普通炎魔")) return "普通殘暴炎魔";
     if (name === "困炎" || name.includes("困難殘暴炎魔") || name.includes("困難炎魔")) return "困難殘暴炎魔";
     if (name.includes("蝴蝶") || name.includes("畢奈亞")) return "艾畢奈亞";
@@ -172,52 +172,53 @@ function getHighContrastJobColor(job) {
     return '#c2410c';
 }
 
-// --- Character Roster (120+ Ordered by 力職 ➔ 敏職 ➔ 法職) ---
+// --- Character Roster (Ordered by 力職 ➔ 敏職 ➔ 法職) ---
+const CURRENT_ROSTER_VERSION = 2;
 let CHARACTER_ROSTER = [
     // --- 力職 (10位: 火/黑騎 ➔ 聖騎 ➔ 英雄) ---
     { id: "Eric", job: "黑騎士", level: 180, category: "力職" },
-    { id: "飲盡茶乳消雪離", job: "黑騎士", level: 165, category: "力職" },
-    { id: "Ohoh", job: "黑騎士", level: 163, category: "力職" },
+    { id: "大鎖", job: "黑騎士", level: 165, category: "力職" },
+    { id: "Ohni", job: "黑騎士", level: 163, category: "力職" },
     { id: "長吉毛毛娃", job: "黑騎士", level: 158, category: "力職" },
-    { id: "微唐去泳", job: "黑騎士", level: 147, category: "力職" },
+    { id: "汪德", job: "黑騎士", level: 147, category: "力職" },
     { id: "漢堡王", job: "黑騎士", level: 145, category: "力職" },
-    { id: "聖騎殷", job: "聖騎士", level: 162, category: "力職" },
-    { id: "賈斯汀", job: "聖騎士", level: 140, category: "力職" },
-    { id: "你的激勵機", job: "英雄", level: 168, category: "力職" },
-    { id: "毛起來毛毛蟲", job: "英雄", level: 152, category: "力職" },
+    { id: "小茵", job: "聖騎士", level: 162, category: "力職" },
+    { id: "小皮", job: "聖騎士", level: 140, category: "力職" },
+    { id: "Eric", job: "英雄", level: 168, category: "力職" },
+    { id: "毛毛蟲", job: "英雄", level: 152, category: "力職" },
 
     // --- 敏職 (16位: 眼 ➔ 盜賊 ➔ 海盜) ---
     { id: "IE", job: "神射手", level: 175, category: "敏職" },
-    { id: "殷殷", job: "箭神", level: 174, category: "敏職" },
+    { id: "小茵", job: "箭神", level: 174, category: "敏職" },
     { id: "毛毛蟲", job: "神射手", level: 168, category: "敏職" },
-    { id: "賈斯汀", job: "箭神", level: 160, category: "敏職" },
-    { id: "新時代甘眼症", job: "箭神", level: 153, category: "敏職" },
-    { id: "Lumii", job: "箭神", level: 138, category: "敏職" },
-    { id: "檳榔交出來", job: "神偷", level: 180, category: "敏職" },
-    { id: "一刀貝果", job: "神偷", level: 163, category: "敏職" },
-    { id: "To偷哭kU", job: "神偷", level: 151, category: "敏職" },
-    { id: "賣泡泡糖的阿偉", job: "神偷", level: 149, category: "敏職" },
+    { id: "小皮", job: "箭神", level: 160, category: "敏職" },
+    { id: "阿甘", job: "箭神", level: 153, category: "敏職" },
+    { id: "Lumi", job: "箭神", level: 138, category: "敏職" },
+    { id: "阿仁", job: "神偷", level: 180, category: "敏職" },
+    { id: "Bagle", job: "神偷", level: 163, category: "敏職" },
+    { id: "DerDer", job: "神偷", level: 151, category: "敏職" },
+    { id: "阿偉", job: "神偷", level: 149, category: "敏職" },
     { id: "阿甘", job: "夜使者", level: 174, category: "敏職" },
-    { id: "誰的幸運機", job: "夜使者", level: 163, category: "敏職" },
-    { id: "BagelLucky", job: "夜使者", level: 121, category: "敏職" },
+    { id: "Eric", job: "夜使者", level: 163, category: "敏職" },
+    { id: "Bagle", job: "夜使者", level: 121, category: "敏職" },
     { id: "WonderW", job: "槍神", level: 170, category: "敏職" },
-    { id: "拳霸仁", job: "拳霸", level: 167, category: "敏職" },
-    { id: "賈斯汀", job: "拳霸", level: 140, category: "敏職" },
+    { id: "阿仁", job: "拳霸", level: 167, category: "敏職" },
+    { id: "小皮", job: "拳霸", level: 140, category: "敏職" },
 
     // --- 法職 (13位: 火毒 ➔ 冰雷 ➔ 主教) ---
     { id: "Bagel", job: "火毒", level: 174, category: "法職" },
-    { id: "蕾蕾", job: "冰雷", level: 169, category: "法職" },
-    { id: "野原嘻之助", job: "冰雷", level: 164, category: "法職" },
+    { id: "Eric", job: "冰雷", level: 169, category: "法職" },
+    { id: "CC", job: "冰雷", level: 164, category: "法職" },
     { id: "極氏倫", job: "冰雷", level: 153, category: "法職" },
-    { id: "手臂花顏", job: "主教", level: 174, category: "法職" },
-    { id: "雷格嘻嘻", job: "主教", level: 165, category: "法職" },
+    { id: "小龜", job: "主教", level: 174, category: "法職" },
+    { id: "CC", job: "主教", level: 165, category: "法職" },
     { id: "Ohni", job: "主教", level: 162, category: "法職" },
     { id: "Lumi", job: "主教", level: 155, category: "法職" },
-    { id: "BagelPray", job: "主教", level: 137, category: "法職" },
-    { id: "77", job: "主教", level: 132, category: "法職" },
+    { id: "Bagle", job: "主教", level: 137, category: "法職" },
+    { id: "Eric", job: "主教", level: 132, category: "法職" },
     { id: "毛毛蟲", job: "主教", level: 132, category: "法職" },
-    { id: "誰的門機", job: "主教", level: 131, category: "法職" },
-    { id: "男模觀世音", job: "主教", level: 131, category: "法職" }
+    { id: "小茵", job: "主教", level: 131, category: "法職" },
+    { id: "阿仁", job: "主教", level: 131, category: "法職" }
 ];
 
 function getCategoryByJob(job) {
@@ -240,8 +241,10 @@ function syncRosterToFirebase() {
     try {
         if (typeof db !== 'undefined' && db && db.ref) {
             db.ref('custom_roster').set(CHARACTER_ROSTER);
+            db.ref('roster_version').set(CURRENT_ROSTER_VERSION);
         }
         localStorage.setItem('soulmine_custom_roster_cache', JSON.stringify(CHARACTER_ROSTER));
+        localStorage.setItem('soulmine_custom_roster_ver', String(CURRENT_ROSTER_VERSION));
     } catch(e) {
         console.warn("Failed to sync roster to Firebase", e);
     }
@@ -260,6 +263,15 @@ function saveCustomCharacter(charObj) {
 
 function initCustomCharacters() {
     try {
+        const cachedVer = localStorage.getItem('soulmine_custom_roster_ver');
+        if (cachedVer !== String(CURRENT_ROSTER_VERSION)) {
+            localStorage.removeItem('soulmine_custom_roster_cache');
+            localStorage.removeItem('soulmine_custom_roster');
+            localStorage.setItem('soulmine_custom_roster_ver', String(CURRENT_ROSTER_VERSION));
+            syncRosterToFirebase();
+            return;
+        }
+
         const cached = localStorage.getItem('soulmine_custom_roster_cache');
         if (cached) {
             const parsed = JSON.parse(cached);
@@ -311,22 +323,268 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentJoinRaidId = null;
     let currentJoinSlotIdx = 0;
 
-    // --- Survey Form & Time Availability Logic (打王時間調查) ---
-    const ALL_SURVEY_SLOTS = [
-        { key: "週二(晚)", label: "週二 (晚)" },
-        { key: "週三(晚)", label: "週三 (晚)" },
-        { key: "週四(晚)", label: "週四 (晚)" },
-        { key: "週五(晚)", label: "週五 (晚)" },
-        { key: "週六(下午)", label: "週六 (下午)", isSpecial: true },
-        { key: "週六(晚)", label: "週六 (晚)" },
-        { key: "週日(下午)", label: "週日 (下午)", isSpecial: true },
-        { key: "週日(晚)", label: "週日 (晚)" },
-        { key: "週一(晚)", label: "週一 (晚)" }
-    ];
+    // --- Taiwan Holidays (國定假日連動日曆) ---
+    const FALLBACK_HOLIDAYS = {
+        // 2025
+        "20250101": "元旦", "20250125": "春節", "20250126": "春節", "20250127": "春節", "20250128": "除夕", "20250129": "春節", "20250130": "春節", "20250131": "春節", "20250201": "春節", "20250202": "春節", "20250228": "和平紀念日", "20250403": "清明連假", "20250404": "兒童節", "20250405": "清明節", "20250406": "清明連假", "20250530": "端午連假", "20250531": "端午節", "20251006": "中秋節", "20251010": "國慶日",
+        // 2026
+        "20260101": "元旦", "20260214": "春節", "20260215": "春節", "20260216": "除夕", "20260217": "春節", "20260218": "春節", "20260219": "春節", "20260220": "春節", "20260227": "和平紀念日", "20260228": "和平紀念日", "20260403": "清明連假", "20260404": "兒童節", "20260405": "清明節", "20260406": "清明連假", "20260619": "端午節", "20260925": "中秋節", "20261009": "補假", "20261010": "國慶日",
+        // 2027
+        "20270101": "元旦", "20270205": "小年夜", "20270206": "除夕", "20270207": "春節", "20270208": "春節", "20270209": "春節", "20270228": "和平紀念日", "20270404": "兒童節", "20270405": "清明節", "20270609": "端午節", "20270915": "中秋節", "20271010": "國慶日"
+    };
+
+    let taiwanHolidaysCache = {};
+
+    async function initTaiwanHolidays(year) {
+        if (taiwanHolidaysCache[year]) return;
+        try {
+            const localCached = localStorage.getItem(`soulmine_tw_holidays_${year}`);
+            if (localCached) {
+                taiwanHolidaysCache[year] = JSON.parse(localCached);
+            }
+        } catch(e) {}
+
+        try {
+            const res = await fetch(`https://cdn.jsdelivr.net/gh/ruyut/TaiwanCalendar/data/${year}.json`);
+            if (res.ok) {
+                const data = await res.json();
+                const map = {};
+                data.forEach(item => {
+                    if (item.isHoliday) {
+                        map[item.date] = item.description || '國定假日';
+                    }
+                });
+                taiwanHolidaysCache[year] = map;
+                try {
+                    localStorage.setItem(`soulmine_tw_holidays_${year}`, JSON.stringify(map));
+                } catch(e) {}
+                if (typeof window.renderSurveyFormSlots === 'function') window.renderSurveyFormSlots();
+                if (typeof renderSurveySummary === 'function') renderSurveySummary();
+            }
+        } catch(err) {
+            console.warn("Could not fetch online TaiwanCalendar:", err);
+        }
+    }
+
+    // Preload current and next year holidays
+    const currentYear = new Date().getFullYear();
+    initTaiwanHolidays(currentYear);
+    initTaiwanHolidays(currentYear + 1);
+
+    function checkDateHoliday(d) {
+        const day = d.getDay(); // 0 is Sun, 6 is Sat
+        const yyyy = d.getFullYear();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        const dateKey = `${yyyy}${mm}${dd}`;
+
+        let desc = '';
+        const cached = taiwanHolidaysCache[yyyy];
+        if (cached && cached[dateKey]) {
+            desc = cached[dateKey];
+        } else if (FALLBACK_HOLIDAYS[dateKey]) {
+            desc = FALLBACK_HOLIDAYS[dateKey];
+        }
+
+        const isWeekend = (day === 0 || day === 6);
+        const isSpecialHoliday = (!!desc && !isWeekend);
+
+        return {
+            isHoliday: isWeekend || !!desc,
+            isWeekend: isWeekend,
+            isSpecialHoliday: isSpecialHoliday,
+            holidayName: desc
+        };
+    }
+
+    // --- Survey Form & Time Availability Logic (週二起算，往後四週，國定假日連動) ---
+    function getTuesdayOfWeek(date = new Date()) {
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        const day = d.getDay(); // 0: Sun, 1: Mon, 2: Tue, ..., 6: Sat
+        const diff = (day >= 2) ? -(day - 2) : -(day + 5);
+        d.setDate(d.getDate() + diff);
+        return d;
+    }
+
+    function formatDateISO(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const dt = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${dt}`;
+    }
+
+    function formatDateSimple(ts) {
+        if (!ts) return '';
+        const d = new Date(ts);
+        const m = d.getMonth() + 1;
+        const dt = d.getDate();
+        const h = String(d.getHours()).padStart(2, '0');
+        const min = String(d.getMinutes()).padStart(2, '0');
+        return `${m}/${dt} ${h}:${min}`;
+    }
+
+    const TARGET_DEFAULT_WEEK_ID = "2026-10-06";
+
+    // Generate 4 to 5 Tuesday cycles starting with 10/06 as default
+    function getSurveyWeekOptions() {
+        const baseTue = new Date(2026, 9, 6); // 2026-10-06
+        baseTue.setHours(0, 0, 0, 0);
+        const options = [];
+
+        for (let w = 0; w < 4; w++) {
+            const tue = new Date(baseTue.getTime() + w * 7 * 86400000);
+            const mon = new Date(tue.getTime() + 6 * 86400000);
+            
+            const tueM = tue.getMonth() + 1;
+            const tueD = tue.getDate();
+            const monM = mon.getMonth() + 1;
+            const monD = mon.getDate();
+
+            const weekId = formatDateISO(tue); // e.g. "2026-10-06"
+            let tag = '';
+            if (w === 0) tag = '【本週】';
+            else if (w === 1) tag = '【下週】';
+            else tag = `【第 ${w + 1} 週】`;
+
+            options.push({
+                weekId: weekId,
+                tueDate: tue,
+                label: `📅 ${tueM}/${tueD}(二) ～ ${monM}/${monD}(一) ${tag}`,
+                shortLabel: `${tueM}/${tueD}(二) ~ ${monM}/${monD}(一)`,
+                isDefault: (w === 0)
+            });
+        }
+
+        return options;
+    }
+
+    function getWeekDaysDetails(weekId) {
+        let tue;
+        if (weekId) {
+            const parts = weekId.split('-');
+            if (parts.length === 3) {
+                tue = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+            }
+        }
+        if (!tue || isNaN(tue.getTime())) {
+            tue = getTuesdayOfWeek(new Date());
+        }
+        tue.setHours(0, 0, 0, 0);
+
+        const DAY_NAMES = ["二", "三", "四", "五", "六", "日", "一"];
+        const days = [];
+
+        for (let i = 0; i < 7; i++) {
+            const cur = new Date(tue.getTime() + i * 86400000);
+            const m = cur.getMonth() + 1;
+            const dt = cur.getDate();
+            const dayName = DAY_NAMES[i];
+            const hol = checkDateHoliday(cur);
+
+            const dateLabel = `${m}/${dt}(${dayName})`; // e.g. "10/4(日)"
+            const isMultiSlot = hol.isWeekend || hol.isSpecialHoliday;
+
+            const daySlots = [];
+            if (isMultiSlot) {
+                daySlots.push({
+                    key: `${dateLabel}_午`,
+                    period: "午",
+                    dayName: dayName,
+                    label: `${dateLabel} 午`,
+                    isWeekend: hol.isWeekend,
+                    isSpecialHoliday: hol.isSpecialHoliday,
+                    holidayName: hol.holidayName
+                });
+                daySlots.push({
+                    key: `${dateLabel}_晚`,
+                    period: "晚",
+                    dayName: dayName,
+                    label: `${dateLabel} 晚`,
+                    isWeekend: hol.isWeekend,
+                    isSpecialHoliday: hol.isSpecialHoliday,
+                    holidayName: hol.holidayName
+                });
+            } else {
+                daySlots.push({
+                    key: `${dateLabel}_晚`,
+                    period: "晚",
+                    dayName: dayName,
+                    label: `${dateLabel}`,
+                    isWeekend: false,
+                    isSpecialHoliday: false,
+                    holidayName: ''
+                });
+            }
+
+            days.push({
+                dateObj: cur,
+                m: m,
+                dt: dt,
+                dayName: dayName,
+                dateLabel: dateLabel,
+                dateStr: `${m}月${dt}日`,
+                shortDate: `${m}/${dt}`,
+                isWeekend: hol.isWeekend,
+                isSpecialHoliday: hol.isSpecialHoliday,
+                holidayName: hol.holidayName,
+                slots: daySlots
+            });
+        }
+        return days;
+    }
+
+    function isUserSlotChecked(userSlots, slotDef, dayDef) {
+        if (!userSlots || !Array.isArray(userSlots) || !slotDef) return false;
+        // 1. Direct match on key or label or underscore
+        if (userSlots.includes(slotDef.key) || userSlots.includes(slotDef.label) || userSlots.includes(slotDef.key.replace('_', ' '))) {
+            return true;
+        }
+        // 2. Legacy fallback
+        if (slotDef.period === '午') {
+            if (userSlots.includes(`週${slotDef.dayName}(下午)`) || 
+                userSlots.includes(`週${slotDef.dayName}(午)`) ||
+                userSlots.includes(`${slotDef.dayName}(午)`) ||
+                userSlots.includes(`${slotDef.dayName}(下午)`)) {
+                return true;
+            }
+        } else if (slotDef.period === '晚') {
+            if (userSlots.includes(`週${slotDef.dayName}(晚)`) ||
+                userSlots.includes(`${slotDef.dayName}(晚)`)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    let currentSurveyFormWeekId = TARGET_DEFAULT_WEEK_ID;
+    let currentMatrixWeekId = TARGET_DEFAULT_WEEK_ID;
+
+    // --- Accounts & User Session ---
+    let accountsDB = {};
+
+    function getLoggedInUser() {
+        return localStorage.getItem('soulmine_logged_user') || sessionStorage.getItem('artale_session') || '';
+    }
+
+    function setLoggedInUser(name) {
+        if (name) {
+            localStorage.setItem('soulmine_logged_user', name);
+            sessionStorage.setItem('artale_session', name);
+        } else {
+            localStorage.removeItem('soulmine_logged_user');
+            sessionStorage.removeItem('artale_session');
+        }
+    }
+
+    function canCreateTeam() {
+        return isAdmin() || !!getLoggedInUser();
+    }
 
     // --- Realtime Sync ---
     db.ref('/').on('value', (snapshot) => {
         const data = snapshot.val() || {};
+        accountsDB = data.accounts || {};
         raidsDB = data.raids || {};
         surveyResponses = data.surveys || {};
         
@@ -338,7 +596,12 @@ document.addEventListener('DOMContentLoaded', () => {
         changelogs = Array.isArray(rawChangelogs) ? rawChangelogs.filter(c => c !== null && c !== undefined) : Object.values(rawChangelogs);
         
         // Sync custom/updated character roster from Firebase
-        if (data.custom_roster) {
+        if (!data.roster_version || data.roster_version < CURRENT_ROSTER_VERSION) {
+            db.ref('custom_roster').set(CHARACTER_ROSTER);
+            db.ref('roster_version').set(CURRENT_ROSTER_VERSION);
+            localStorage.setItem('soulmine_custom_roster_cache', JSON.stringify(CHARACTER_ROSTER));
+            localStorage.setItem('soulmine_custom_roster_ver', String(CURRENT_ROSTER_VERSION));
+        } else if (data.custom_roster) {
             const rawRoster = Array.isArray(data.custom_roster) ? data.custom_roster : Object.values(data.custom_roster);
             if (rawRoster && rawRoster.length > 0) {
                 CHARACTER_ROSTER = rawRoster.map(c => ({
@@ -373,6 +636,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const targetId = btn.dataset.target;
                     const targetEl = document.getElementById(targetId);
                     if (targetEl) targetEl.classList.add('active');
+                    if (targetId === 'tab-recruit') {
+                        currentSelectedBoss = null;
+                    }
                     updateUI();
                 });
             });
@@ -380,6 +646,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupSurveyForm();
             setupRaidModals();
             setupAdminAuth();
+            setupGeneralLoginModal();
             setupRosterManagement();
             setupChangelogForm();
             updateUI();
@@ -413,22 +680,154 @@ document.addEventListener('DOMContentLoaded', () => {
         const form = document.getElementById('raid-survey-form');
         const nameInput = document.getElementById('survey-user-name');
         const notesInput = document.getElementById('survey-user-notes');
-        const chips = document.querySelectorAll('.survey-slot-chip');
+        const weekSelect = document.getElementById('survey-week-select');
+        const holidayHint = document.getElementById('survey-week-holiday-hint');
+        const slotsContainer = document.getElementById('survey-slots-container');
 
-        // Checkbox interactive styling
-        chips.forEach(chip => {
-            const cb = chip.querySelector('input[type="checkbox"]');
-            if (cb) {
-                cb.addEventListener('change', () => {
-                    chip.classList.toggle('checked', cb.checked);
+        // Populate Week Options (4~5 Tuesday-start cycles)
+        const weekOptions = getSurveyWeekOptions();
+        if (weekSelect) {
+            weekSelect.innerHTML = weekOptions.map(opt => `
+                <option value="${opt.weekId}" ${opt.isDefault ? 'selected' : ''}>${opt.label}</option>
+            `).join('');
+
+            const defOpt = weekOptions.find(o => o.isDefault) || weekOptions[0];
+            currentSurveyFormWeekId = defOpt.weekId;
+            currentMatrixWeekId = defOpt.weekId;
+
+            weekSelect.addEventListener('change', () => {
+                currentSurveyFormWeekId = weekSelect.value;
+                currentMatrixWeekId = weekSelect.value;
+                renderSurveyFormSlots();
+                checkAndPrefillCurrentResponse();
+                // Also sync modal select if open
+                const modalSelect = document.getElementById('survey-matrix-week-select');
+                if (modalSelect) modalSelect.value = currentSurveyFormWeekId;
+                renderSurveySummary();
+            });
+        }
+
+        // Render dynamic slots based on selected week & holiday status
+        function renderSurveyFormSlots() {
+            if (!slotsContainer) return;
+            const targetWeekId = currentSurveyFormWeekId || (weekOptions[0] && weekOptions[0].weekId);
+            const days = getWeekDaysDetails(targetWeekId);
+
+            // Check if any day is a special holiday
+            const specialHolidays = days.filter(d => d.isSpecialHoliday);
+            if (holidayHint) {
+                if (specialHolidays.length > 0) {
+                    const holNames = specialHolidays.map(d => `${d.dateLabel} ${d.holidayName}`).join('、');
+                    holidayHint.innerHTML = `㊗️ 本週含國定假日：<strong>${escapeHtml(holNames)}</strong>`;
+                } else {
+                    holidayHint.innerHTML = '';
+                }
+            }
+
+            // Build slot chips
+            let html = '';
+            days.forEach(d => {
+                d.slots.forEach(s => {
+                    const isWk = s.isWeekend;
+                    const isHol = s.isSpecialHoliday;
+                    const holCornerText = (s.holidayName && (s.holidayName.includes('補') || s.holidayName.includes('連假'))) ? '補' : (s.holidayName ? s.holidayName.slice(0, 2) : '補');
+                    const tagHtml = isHol ? `<span class="slot-holiday-corner-badge" style="background: #ef4444 !important; color: #ffffff !important;" title="${escapeHtml(s.holidayName || '補假')}">${escapeHtml(holCornerText)}</span>` : '';
+                    html += `
+                        <label class="survey-slot-chip ${isWk ? 'weekend' : ''} ${isHol ? 'holiday' : ''}" data-slot-key="${s.key}">
+                            ${tagHtml}
+                            <input type="checkbox" name="survey-slot" value="${s.key}">
+                            <span>${s.label}</span>
+                        </label>
+                    `;
+                });
+            });
+
+            slotsContainer.innerHTML = html;
+
+            // Re-bind change listeners
+            slotsContainer.querySelectorAll('.survey-slot-chip').forEach(chip => {
+                const cb = chip.querySelector('input[type="checkbox"]');
+                if (cb) {
+                    cb.addEventListener('change', () => {
+                        chip.classList.toggle('checked', cb.checked);
+                    });
+                }
+            });
+        }
+        window.renderSurveyFormSlots = renderSurveyFormSlots;
+        renderSurveyFormSlots();
+
+        function checkAndPrefillCurrentResponse() {
+            const curName = (nameInput ? nameInput.value : '').trim();
+            if (!curName) return;
+            const targetWeekId = currentSurveyFormWeekId;
+            const defaultWeekId = weekOptions[0]?.weekId;
+
+            const existing = Object.values(surveyResponses || {}).find(r => 
+                r && r.name === curName && (r.weekId === targetWeekId || (!r.weekId && targetWeekId === defaultWeekId))
+            );
+
+            if (existing) {
+                if (notesInput && !notesInput.value) notesInput.value = existing.notes || '';
+                const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]');
+                scrollRadios.forEach(r => {
+                    r.checked = (r.value === existing.scroll);
+                });
+                const userSlots = existing.slots || [];
+                const days = getWeekDaysDetails(targetWeekId);
+                slotsContainer.querySelectorAll('.survey-slot-chip').forEach(chip => {
+                    const cb = chip.querySelector('input[type="checkbox"]');
+                    const key = cb ? cb.value : '';
+                    // find matching slot def
+                    let slotDef = null;
+                    let dayDef = null;
+                    for (const d of days) {
+                        for (const s of d.slots) {
+                            if (s.key === key) {
+                                slotDef = s;
+                                dayDef = d;
+                                break;
+                            }
+                        }
+                        if (slotDef) break;
+                    }
+                    if (cb && slotDef) {
+                        cb.checked = isUserSlotChecked(userSlots, slotDef, dayDef);
+                        chip.classList.toggle('checked', cb.checked);
+                    }
                 });
             }
-        });
+        }
 
-        // Pre-fill user name
-        const myName = getMySurveyName();
-        if (nameInput && myName) {
-            nameInput.value = myName;
+        if (nameInput) {
+            nameInput.addEventListener('blur', checkAndPrefillCurrentResponse);
+        }
+
+        // Reset survey form helper to keep it completely clean
+        function resetSurveyForm() {
+            if (form) form.reset();
+            if (nameInput) nameInput.value = '';
+            if (notesInput) notesInput.value = '';
+            if (slotsContainer) {
+                slotsContainer.querySelectorAll('.survey-slot-chip').forEach(chip => {
+                    const cb = chip.querySelector('input[type="checkbox"]');
+                    if (cb) cb.checked = false;
+                    chip.classList.remove('checked');
+                });
+            }
+            const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]');
+            scrollRadios.forEach(r => {
+                r.checked = (r.value === '是');
+            });
+        }
+        window.resetSurveyForm = resetSurveyForm;
+
+        // Ensure form is completely empty/clean by default upon page open
+        resetSurveyForm();
+
+        const btnResetSurvey = document.getElementById('btn-reset-survey-form');
+        if (btnResetSurvey) {
+            btnResetSurvey.onclick = resetSurveyForm;
         }
 
         // Form Submit
@@ -442,7 +841,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const selectedSlots = [];
-                document.querySelectorAll('input[name="survey-slot"]:checked').forEach(cb => {
+                slotsContainer.querySelectorAll('input[name="survey-slot"]:checked').forEach(cb => {
                     selectedSlots.push(cb.value);
                 });
 
@@ -455,23 +854,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]:checked');
                 const scrollPref = scrollRadios.length > 0 ? scrollRadios[0].value : "是";
                 const notes = (notesInput ? notesInput.value : '').trim();
+                const targetWeekId = currentSurveyFormWeekId || weekOptions[0].weekId;
+                const activeOpt = weekOptions.find(o => o.weekId === targetWeekId) || weekOptions[0];
 
                 localStorage.setItem('soulmine_survey_user_name', name);
                 setSavedCreator(name);
 
-                // Find existing key by name if already submitted
-                const existingKey = Object.keys(surveyResponses).find(k => surveyResponses[k] && surveyResponses[k].name === name);
+                // Find existing key by name & weekId if already submitted
+                const existingKey = Object.keys(surveyResponses).find(k => {
+                    const r = surveyResponses[k];
+                    if (!r || r.name !== name) return false;
+                    const rWeek = r.weekId || weekOptions[0].weekId;
+                    return rWeek === targetWeekId;
+                });
+
                 const ref = existingKey ? db.ref(`surveys/${existingKey}`) : db.ref('surveys').push();
 
                 ref.set({
                     id: ref.key,
                     name: name,
+                    weekId: targetWeekId,
+                    weekLabel: activeOpt.label,
                     slots: selectedSlots,
                     scroll: scrollPref,
                     notes: notes,
                     updatedAt: Date.now()
                 }).then(() => {
-                    alert(`✅【${name}】的問卷已成功送出！`);
+                    alert(`✅【${name}】的【${activeOpt.shortLabel}】問卷已成功送出！`);
+                    resetSurveyForm();
                 }).catch(err => {
                     alert("送出失敗：" + err.message);
                 });
@@ -482,10 +892,23 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnClearSurveys = document.getElementById('btn-clear-all-surveys');
         if (btnClearSurveys) {
             btnClearSurveys.onclick = () => {
-                if (confirm("⚠️ 警告：確定要清空本週所有成員的問卷調查紀錄嗎？（重設新的一週）")) {
-                    db.ref('surveys').remove().then(() => {
-                        alert("已重設本週問卷紀錄！");
+                const targetWeekId = currentMatrixWeekId || currentSurveyFormWeekId;
+                if (confirm(`⚠️ 警告：確定要清空所選週次(${targetWeekId})的所有問卷紀錄嗎？`)) {
+                    // Remove records for this week
+                    const updates = {};
+                    Object.entries(surveyResponses || {}).forEach(([k, r]) => {
+                        const rWeek = r.weekId || weekOptions[0].weekId;
+                        if (rWeek === targetWeekId) {
+                            updates[`surveys/${k}`] = null;
+                        }
                     });
+                    if (Object.keys(updates).length > 0) {
+                        db.ref().update(updates).then(() => {
+                            alert("已重設該週次問卷紀錄！");
+                        });
+                    } else {
+                        alert("該週次目前無資料！");
+                    }
                 }
             };
         }
@@ -494,36 +917,44 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnCopySurvey = document.getElementById('btn-copy-survey-text');
         if (btnCopySurvey) {
             btnCopySurvey.onclick = () => {
-                const responses = Object.values(surveyResponses || {});
+                const targetWeekId = currentMatrixWeekId || currentSurveyFormWeekId || TARGET_DEFAULT_WEEK_ID;
+                const weekOpt = weekOptions.find(o => o.weekId === targetWeekId) || weekOptions[0];
+                const responses = Object.values(surveyResponses || {}).filter(r => {
+                    const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
+                    if (targetWeekId === TARGET_DEFAULT_WEEK_ID) {
+                        return (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29");
+                    }
+                    return rWeek === targetWeekId;
+                });
+
                 if (responses.length === 0) {
-                    alert("目前尚無成員填寫問卷！");
+                    alert(`目前【${weekOpt.shortLabel}】尚無成員填寫問卷！`);
                     return;
                 }
-                const weekDays = getSurveyWeekDates();
-                const getNames = (filterFn) => responses.filter(filterFn).map(r => r.name).join(', ') || '無';
 
-                let text = `【SoulMine 本週可打王時段統整】\n`;
-                text += `📅 週期：${weekDays[0].dateStr}(二) ~ ${weekDays[6].dateStr}(一) | 共 ${responses.length} 人填寫\n\n`;
-                text += `● ${weekDays[0].dateStr} (二) [${responses.filter(r => (r.slots || []).includes("週二(晚)")).length}人]：${getNames(r => (r.slots || []).includes("週二(晚)"))}\n`;
-                text += `● ${weekDays[1].dateStr} (三) [${responses.filter(r => (r.slots || []).includes("週三(晚)")).length}人]：${getNames(r => (r.slots || []).includes("週三(晚)"))}\n`;
-                text += `● ${weekDays[2].dateStr} (四) [${responses.filter(r => (r.slots || []).includes("週四(晚)")).length}人]：${getNames(r => (r.slots || []).includes("週四(晚)"))}\n`;
-                text += `● ${weekDays[3].dateStr} (五) [${responses.filter(r => (r.slots || []).includes("週五(晚)")).length}人]：${getNames(r => (r.slots || []).includes("週五(晚)"))}\n`;
-                
-                const satCount = responses.filter(r => (r.slots || []).includes("週六(下午)") || (r.slots || []).includes("週六(晚)")).length;
-                const satAftCount = responses.filter(r => (r.slots || []).includes("週六(下午)")).length;
-                const satEveCount = responses.filter(r => (r.slots || []).includes("週六(晚)")).length;
-                text += `● ${weekDays[4].dateStr} (六) [${satCount}人] (午:${satAftCount}, 晚:${satEveCount})：${getNames(r => (r.slots || []).includes("週六(下午)") || (r.slots || []).includes("週六(晚)"))}\n`;
+                const weekDays = getWeekDaysDetails(targetWeekId);
+                let text = `【SoulMine 可打王時段統整】\n`;
+                text += `📅 週期：${weekDays[0].dateLabel} ~ ${weekDays[6].dateLabel} | 共 ${responses.length} 人填寫\n\n`;
 
-                const sunCount = responses.filter(r => (r.slots || []).includes("週日(下午)") || (r.slots || []).includes("週日(晚)")).length;
-                const sunAftCount = responses.filter(r => (r.slots || []).includes("週日(下午)")).length;
-                const sunEveCount = responses.filter(r => (r.slots || []).includes("週日(晚)")).length;
-                text += `● ${weekDays[5].dateStr} (日) [${sunCount}人] (午:${sunAftCount}, 晚:${sunEveCount})：${getNames(r => (r.slots || []).includes("週日(下午)") || (r.slots || []).includes("週日(晚)"))}\n`;
-
-                text += `● ${weekDays[6].dateStr} (一) [${responses.filter(r => (r.slots || []).includes("週一(晚)")).length}人]：${getNames(r => (r.slots || []).includes("週一(晚)"))}\n`;
+                weekDays.forEach(d => {
+                    if (d.isWeekend || d.isSpecialHoliday) {
+                        const aftSlot = d.slots[0];
+                        const eveSlot = d.slots[1];
+                        const aftMembers = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d)).map(r => r.name);
+                        const eveMembers = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).map(r => r.name);
+                        const anyMembers = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d) || isUserSlotChecked(r.slots, eveSlot, d)).map(r => r.name);
+                        const holTag = d.isSpecialHoliday ? ` [㊗️${d.holidayName}]` : '';
+                        text += `● ${d.dateLabel}${holTag} [${anyMembers.length}人] (午:${aftMembers.length}, 晚:${eveMembers.length})：${anyMembers.join(', ') || '無'}\n`;
+                    } else {
+                        const eveSlot = d.slots[0];
+                        const members = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).map(r => r.name);
+                        text += `● ${d.dateLabel} [${members.length}人]：${members.join(', ') || '無'}\n`;
+                    }
+                });
 
                 if (navigator.clipboard && navigator.clipboard.writeText) {
                     navigator.clipboard.writeText(text).then(() => {
-                        alert("✅ 已成功複製本週時段名單至剪貼簿！可直接貼至 LINE 或 Discord！");
+                        alert("✅ 已成功複製所選週次時段名單至剪貼簿！可直接貼至 LINE 或 Discord！");
                     }).catch(() => {
                         prompt("請手動複製下方名單：", text);
                     });
@@ -531,6 +962,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     prompt("請手動複製下方名單：", text);
                 }
             };
+        }
+
+        // Setup Detail Modal
+        const btnOpenDetail = document.getElementById('btn-open-survey-detail');
+        if (btnOpenDetail) {
+            btnOpenDetail.onclick = () => {
+                const modal = document.getElementById('survey-detail-modal');
+                if (modal) {
+                    modal.style.display = 'flex';
+                    // Sync modal week select
+                    const modalWeekSelect = document.getElementById('survey-matrix-week-select');
+                    if (modalWeekSelect && currentSurveyFormWeekId) {
+                        modalWeekSelect.value = currentSurveyFormWeekId;
+                        currentMatrixWeekId = currentSurveyFormWeekId;
+                    }
+                    renderSurveySummary();
+                }
+            };
+        }
+
+        const btnCloseDetailX = document.getElementById('btn-close-survey-detail-x');
+        if (btnCloseDetailX) {
+            btnCloseDetailX.onclick = () => {
+                const modal = document.getElementById('survey-detail-modal');
+                if (modal) modal.style.display = 'none';
+            };
+        }
+
+        const btnCloseDetail = document.getElementById('btn-close-survey-detail');
+        if (btnCloseDetail) {
+            btnCloseDetail.onclick = () => {
+                const modal = document.getElementById('survey-detail-modal');
+                if (modal) modal.style.display = 'none';
+            };
+        }
+
+        const surveyDetailModal = document.getElementById('survey-detail-modal');
+        if (surveyDetailModal) {
+            surveyDetailModal.addEventListener('click', (e) => {
+                if (e.target === surveyDetailModal) {
+                    surveyDetailModal.style.display = 'none';
+                }
+            });
         }
     }
 
@@ -540,8 +1014,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const nameInput = document.getElementById('survey-user-name');
         const notesInput = document.getElementById('survey-user-notes');
+        const weekSelect = document.getElementById('survey-week-select');
         if (nameInput) nameInput.value = item.name || '';
         if (notesInput) notesInput.value = item.notes || '';
+
+        // Switch to the week of this response
+        if (item.weekId && weekSelect) {
+            weekSelect.value = item.weekId;
+            currentSurveyFormWeekId = item.weekId;
+            if (typeof window.renderSurveyFormSlots === 'function') {
+                window.renderSurveyFormSlots();
+            }
+        }
 
         const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]');
         scrollRadios.forEach(r => {
@@ -549,15 +1033,36 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const selectedSlots = item.slots || [];
-        document.querySelectorAll('.survey-slot-chip').forEach(chip => {
-            const cb = chip.querySelector('input[type="checkbox"]');
-            if (cb) {
-                cb.checked = selectedSlots.includes(cb.value);
-                chip.classList.toggle('checked', cb.checked);
-            }
-        });
+        const days = getWeekDaysDetails(currentSurveyFormWeekId);
+        const slotsContainer = document.getElementById('survey-slots-container');
+        if (slotsContainer) {
+            slotsContainer.querySelectorAll('.survey-slot-chip').forEach(chip => {
+                const cb = chip.querySelector('input[type="checkbox"]');
+                const keyVal = cb ? cb.value : '';
+                let slotDef = null;
+                let dayDef = null;
+                for (const d of days) {
+                    for (const s of d.slots) {
+                        if (s.key === keyVal) {
+                            slotDef = s;
+                            dayDef = d;
+                            break;
+                        }
+                    }
+                    if (slotDef) break;
+                }
+                if (cb && slotDef) {
+                    cb.checked = isUserSlotChecked(selectedSlots, slotDef, dayDef);
+                    chip.classList.toggle('checked', cb.checked);
+                }
+            });
+        }
 
-        const formCard = document.querySelector('.survey-form-card');
+        // Close detail modal so user can view and edit the main horizontal form
+        const modal = document.getElementById('survey-detail-modal');
+        if (modal) modal.style.display = 'none';
+
+        const formCard = document.querySelector('.survey-horizontal-card') || document.querySelector('.survey-form-card');
         if (formCard) formCard.scrollIntoView({ behavior: 'smooth' });
     };
 
@@ -567,114 +1072,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Helper to calculate weekly cycle days (週二 ~ 週一)
-    function getSurveyWeekDates() {
-        const now = new Date();
-        const day = now.getDay(); // 0: Sun, 1: Mon, 2: Tue, 3: Wed, 4: Thu, 5: Fri, 6: Sat
-        
-        // MapleStory weekly boss resets on Tuesday at 00:00
-        // If today is Sun(0) or Mon(1), look forward to upcoming Tuesday (+2 or +1)
-        // If today is Tue(2), it's today (0)
-        // If today is Wed(3)~Sat(6), it's the Tuesday of the current week (-(day - 2))
-        const d = new Date(now);
-        let diffToTue = 0;
-        if (day === 0) {
-            diffToTue = 2;
-        } else if (day === 1) {
-            diffToTue = 1;
-        } else {
-            diffToTue = -(day - 2);
-        }
-        d.setDate(d.getDate() + diffToTue);
-
-        const daysDef = [
-            { dayName: "二", slotKey: "週二(晚)", isWeekend: false },
-            { dayName: "三", slotKey: "週三(晚)", isWeekend: false },
-            { dayName: "四", slotKey: "週四(晚)", isWeekend: false },
-            { dayName: "五", slotKey: "週五(晚)", isWeekend: false },
-            { dayName: "六", slotKeyAft: "週六(下午)", slotKeyEve: "週六(晚)", isWeekend: true },
-            { dayName: "日", slotKeyAft: "週日(下午)", slotKeyEve: "週日(晚)", isWeekend: true },
-            { dayName: "一", slotKey: "週一(晚)", isWeekend: false }
-        ];
-
-        return daysDef.map((item, idx) => {
-            const cur = new Date(d);
-            cur.setDate(d.getDate() + idx);
-            const m = cur.getMonth() + 1;
-            const dt = cur.getDate();
-            return {
-                ...item,
-                dateStr: `${m}月${dt}日`,
-                shortDate: `${m}/${dt}`
-            };
-        });
-    }
-
     function renderSurveySummary() {
         const totalBadge = document.getElementById('survey-total-respondents');
-        const rangeBadge = document.getElementById('survey-week-range-badge');
-        const grid = document.getElementById('survey-timeslot-stats-grid');
         const list = document.getElementById('survey-respondents-list');
+        const modalWeekSelect = document.getElementById('survey-matrix-week-select');
         if (!list) return;
 
-        const weekDays = getSurveyWeekDates();
-        if (rangeBadge && weekDays.length === 7) {
-            rangeBadge.textContent = `${weekDays[0].dateStr}(二) ～ ${weekDays[6].dateStr}(一)`;
+        const weekOptions = getSurveyWeekOptions();
+        const defaultWeekId = weekOptions[0].weekId;
+
+        // Initialize modal week dropdown if empty or mismatch
+        if (modalWeekSelect) {
+            if (modalWeekSelect.options.length !== weekOptions.length) {
+                modalWeekSelect.innerHTML = weekOptions.map(opt => `
+                    <option value="${opt.weekId}">${opt.label}</option>
+                `).join('');
+                if (currentMatrixWeekId) modalWeekSelect.value = currentMatrixWeekId;
+            }
+            if (!modalWeekSelect.onchange) {
+                modalWeekSelect.onchange = () => {
+                    currentMatrixWeekId = modalWeekSelect.value;
+                    renderSurveySummary();
+                };
+            }
         }
 
-        const responses = Object.entries(surveyResponses).map(([k, v]) => ({ key: k, ...v }));
-        if (totalBadge) totalBadge.textContent = `已回覆 ${responses.length} 人`;
+        const activeWeekId = currentMatrixWeekId || modalWeekSelect?.value || currentSurveyFormWeekId || defaultWeekId;
+        const weekDays = getWeekDaysDetails(activeWeekId);
 
-        // 1. Calculate slot counts for top cards
-        const slotMap = {};
-        ALL_SURVEY_SLOTS.forEach(s => {
-            slotMap[s.key] = [];
-        });
-
-        responses.forEach(r => {
-            (r.slots || []).forEach(slotKey => {
-                if (slotMap[slotKey]) {
-                    slotMap[slotKey].push(r.name);
+        // Filter responses for this chosen week (or default if legacy without weekId)
+        const responses = Object.entries(surveyResponses || {})
+            .map(([k, v]) => ({ key: k, ...v }))
+            .filter(r => {
+                const rWeek = r.weekId || defaultWeekId;
+                if (activeWeekId === defaultWeekId) {
+                    return (rWeek === defaultWeekId || rWeek === "2026-09-29");
                 }
+                return rWeek === activeWeekId;
             });
-        });
 
-        let maxCount = 0;
-        Object.values(slotMap).forEach(arr => {
-            if (arr.length > maxCount) maxCount = arr.length;
-        });
+        if (totalBadge) totalBadge.textContent = `已回覆 ${responses.length} 人`;
+        const countPill = document.getElementById('survey-count-pill');
+        if (countPill) countPill.textContent = `${responses.length}人填寫`;
 
-        if (grid) {
-            grid.innerHTML = '';
-            ALL_SURVEY_SLOTS.forEach(s => {
-                const members = slotMap[s.key] || [];
-                const count = members.length;
-                const isPopular = (maxCount >= 3 && count === maxCount);
-
-                const card = document.createElement('div');
-                card.className = `survey-slot-stat-card ${isPopular ? 'popular' : ''}`;
-                card.innerHTML = `
-                    <div class="stat-slot-title">
-                        <span style="color:${s.isSpecial ? '#ea580c' : '#0f172a'};">${s.label}</span>
-                        <span class="stat-slot-count ${count > 0 ? 'high' : 'zero'}">${count > 0 ? (isPopular ? `🔥 ${count}人` : `${count}人`) : '0人'}</span>
-                    </div>
-                    <div class="stat-slot-members">
-                        ${members.length > 0 
-                            ? members.map(m => `<span class="stat-member-tag">${escapeHtml(m)}</span>`).join('') 
-                            : '<span style="color:#94a3b8; font-size:0.75rem;">尚無人勾選</span>'}
-                    </div>
-                `;
-                grid.appendChild(card);
-            });
-        }
-
-        // 2. Render Matrix Table (週二 ~ 週一 排班明細總表)
+        // Render Matrix Table (週二 ~ 週一 排班明細總表)
         list.innerHTML = '';
         if (responses.length === 0) {
             list.innerHTML = `
                 <div style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
-                    <p style="font-size: 1.05rem; font-weight: 700; margin: 0 0 0.4rem 0;">📝 目前尚無人填寫本週問卷</p>
-                    <p style="font-size: 0.85rem; margin: 0;">請在左側輸入名字並勾選可出團時段送出！</p>
+                    <p style="font-size: 1.05rem; font-weight: 700; margin: 0 0 0.4rem 0;">📝 本週次尚無人填寫問卷</p>
+                    <p style="font-size: 0.85rem; margin: 0;">請在首頁輸入名字並勾選可出團時段送出，或切換上方週次檢視！</p>
                 </div>
             `;
             return;
@@ -690,75 +1137,53 @@ document.addEventListener('DOMContentLoaded', () => {
             return (a.updatedAt || 0) - (b.updatedAt || 0);
         });
 
-        // Calculate bottom counts
-        const tueCount = responses.filter(r => (r.slots || []).includes("週二(晚)")).length;
-        const wedCount = responses.filter(r => (r.slots || []).includes("週三(晚)")).length;
-        const thuCount = responses.filter(r => (r.slots || []).includes("週四(晚)")).length;
-        const friCount = responses.filter(r => (r.slots || []).includes("週五(晚)")).length;
-        const satAftCount = responses.filter(r => (r.slots || []).includes("週六(下午)")).length;
-        const satEveCount = responses.filter(r => (r.slots || []).includes("週六(晚)")).length;
-        const satCount = responses.filter(r => (r.slots || []).includes("週六(下午)") || (r.slots || []).includes("週六(晚)")).length;
-        const sunAftCount = responses.filter(r => (r.slots || []).includes("週日(下午)")).length;
-        const sunEveCount = responses.filter(r => (r.slots || []).includes("週日(晚)")).length;
-        const sunCount = responses.filter(r => (r.slots || []).includes("週日(下午)") || (r.slots || []).includes("週日(晚)")).length;
-        const monCount = responses.filter(r => (r.slots || []).includes("週一(晚)")).length;
-
+        // Generate Table Rows
         const rowsHtml = responses.map(r => {
             const isMe = (r.name === myName);
             const canManage = isMe || adminUser;
             const slots = r.slots || [];
 
-            const nameBadge = (extra = '') => `<span class="matrix-name-text">${escapeHtml(r.name)}${extra}</span>`;
+            // "是"為黑字體，"否"為紅字體
+            const isScrollYes = (r.scroll === '是');
+            const rowClass = isScrollYes ? 'scroll-yes' : 'scroll-no';
+            const rowColor = isScrollYes ? '#0f172a' : '#dc2626';
 
-            // Day 0: Tue
-            const tueHas = slots.includes("週二(晚)");
-            const tueContent = tueHas ? nameBadge() : '<span class="matrix-empty-cell">-</span>';
+            const nameBadge = (extra = '') => `<span class="matrix-name-text" style="color: ${rowColor}; font-weight: 800;">${escapeHtml(r.name)}${extra}</span>`;
 
-            // Day 1: Wed
-            const wedHas = slots.includes("週三(晚)");
-            const wedContent = wedHas ? nameBadge() : '<span class="matrix-empty-cell">-</span>';
+            // Day cells
+            const dayCellsHtml = weekDays.map(d => {
+                const isMultiSlot = d.isWeekend || d.isSpecialHoliday;
+                let cellContent = '<span class="matrix-empty-cell">-</span>';
 
-            // Day 2: Thu
-            const thuHas = slots.includes("週四(晚)");
-            const thuContent = thuHas ? nameBadge() : '<span class="matrix-empty-cell">-</span>';
+                if (isMultiSlot) {
+                    const aftSlot = d.slots[0];
+                    const eveSlot = d.slots[1];
+                    const aftChecked = isUserSlotChecked(slots, aftSlot, d);
+                    const eveChecked = isUserSlotChecked(slots, eveSlot, d);
 
-            // Day 3: Fri
-            const friHas = slots.includes("週五(晚)");
-            const friContent = friHas ? nameBadge() : '<span class="matrix-empty-cell">-</span>';
+                    let cornerBadge = '';
+                    if (aftChecked && eveChecked) {
+                        cornerBadge = '<span class="matrix-cell-corner-badge all" title="全天">全</span>';
+                    } else if (aftChecked) {
+                        cornerBadge = '<span class="matrix-cell-corner-badge afternoon" title="下午">午</span>';
+                    } else if (eveChecked) {
+                        cornerBadge = '<span class="matrix-cell-corner-badge evening" title="晚上">晚</span>';
+                    }
 
-            // Day 4: Sat
-            const satAft = slots.includes("週六(下午)");
-            const satEve = slots.includes("週六(晚)");
-            let satContent = '<span class="matrix-empty-cell">-</span>';
-            if (satAft && satEve) {
-                satContent = nameBadge(' <span class="matrix-time-pill all">全天</span>');
-            } else if (satAft) {
-                satContent = nameBadge(' <span class="matrix-time-pill afternoon">午</span>');
-            } else if (satEve) {
-                satContent = nameBadge(' <span class="matrix-time-pill evening">晚</span>');
-            }
+                    if (aftChecked || eveChecked) {
+                        cellContent = `<span class="matrix-name-text" style="color: ${rowColor}; font-weight: 800;">${escapeHtml(r.name)}</span>${cornerBadge}`;
+                    }
+                } else {
+                    const eveSlot = d.slots[0];
+                    const eveChecked = isUserSlotChecked(slots, eveSlot, d);
+                    if (eveChecked) {
+                        cellContent = `<span class="matrix-name-text" style="color: ${rowColor}; font-weight: 800;">${escapeHtml(r.name)}</span>`;
+                    }
+                }
 
-            // Day 5: Sun
-            const sunAft = slots.includes("週日(下午)");
-            const sunEve = slots.includes("週日(晚)");
-            let sunContent = '<span class="matrix-empty-cell">-</span>';
-            if (sunAft && sunEve) {
-                sunContent = nameBadge(' <span class="matrix-time-pill all">全天</span>');
-            } else if (sunAft) {
-                sunContent = nameBadge(' <span class="matrix-time-pill afternoon">午</span>');
-            } else if (sunEve) {
-                sunContent = nameBadge(' <span class="matrix-time-pill evening">晚</span>');
-            }
-
-            // Day 6: Mon
-            const monHas = slots.includes("週一(晚)");
-            const monContent = monHas ? nameBadge() : '<span class="matrix-empty-cell">-</span>';
-
-            // Scroll (吃卷)
-            const scrollBadge = `<span class="matrix-badge-scroll ${r.scroll === '是' ? 'yes' : 'no'}">${r.scroll === '是' ? '是' : '否'}</span>`;
-
-            // Notes (備註)
-            const notesContent = r.notes ? `<div class="matrix-notes-cell" title="${escapeHtml(r.notes)}">${escapeHtml(r.notes)}</div>` : '<span style="color:#cbd5e1;">-</span>';
+                const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
+                return `<td class="col-day ${isHolidayCol ? 'col-weekend' : ''}" style="color: ${rowColor};">${cellContent}</td>`;
+            }).join('');
 
             // Actions (操作)
             const actionsContent = canManage ? `
@@ -766,52 +1191,99 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="matrix-action-btn" title="刪除此紀錄" style="color:#ef4444;" onclick="window.deleteSurveyResponse('${r.key}', '${escapeHtml(r.name)}')">✕</button>
             ` : '<span style="color:#cbd5e1;">-</span>';
 
-            return `
-                <tr class="survey-matrix-row ${isMe ? 'is-my-row' : ''}">
-                    <td class="col-member">
-                        <span class="matrix-name-text">
+            // Member Cell with Floating Tooltip (滑鼠指到成員名單時出現浮動小框框)
+            const memberCellHtml = `
+                <td class="col-member" style="color: ${rowColor};">
+                    <div class="matrix-member-cell">
+                        <span class="matrix-name-text" style="color: ${rowColor}; font-weight: 800;">
                             ${escapeHtml(r.name)}
-                            ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.68rem; font-weight:800; padding:0.05rem 0.35rem; border-radius:8px;">我</small>' : ''}
+                            ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.68rem; font-weight:800; padding:0.05rem 0.35rem; border-radius:8px; margin-left:3px;">我</small>' : ''}
                         </span>
-                    </td>
-                    <td>${tueContent}</td>
-                    <td>${wedContent}</td>
-                    <td>${thuContent}</td>
-                    <td>${friContent}</td>
-                    <td class="col-weekend">${satContent}</td>
-                    <td class="col-weekend">${sunContent}</td>
-                    <td>${monContent}</td>
-                    <td>${scrollBadge}</td>
-                    <td>${notesContent}</td>
-                    <td>${actionsContent}</td>
+                        
+                        <!-- Floating Tooltip Popover -->
+                        <div class="matrix-floating-tooltip">
+                            <div class="tooltip-title">
+                                <span>👤 ${escapeHtml(r.name)}</span>
+                                <span style="font-size:0.72rem; color:#94a3b8;">${formatDateSimple(r.updatedAt)}</span>
+                            </div>
+                            <div class="tooltip-field">
+                                <strong>🎟️ 突襲券：</strong>
+                                <span style="color:${isScrollYes ? '#4ade80' : '#f87171'}; font-weight:800;">${isScrollYes ? '願意吃券' : '不吃券'}</span>
+                            </div>
+                            <div class="tooltip-field">
+                                <strong>📝 備註說明：</strong>
+                                <div class="tooltip-notes-box">${escapeHtml(r.notes || '無特殊備註')}</div>
+                            </div>
+                        </div>
+                    </div>
+                </td>
+            `;
+
+            return `
+                <tr class="survey-matrix-row ${isMe ? 'is-my-row' : ''} ${rowClass}" style="color: ${rowColor};">
+                    ${memberCellHtml}
+                    ${dayCellsHtml}
+                    <td class="col-action">${actionsContent}</td>
                 </tr>
             `;
         }).join('');
 
+        // Header Date Columns
+        const headerThs = weekDays.map(d => {
+            const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
+            let holCornerBadge = '';
+            if (d.isSpecialHoliday) {
+                const badgeText = (d.holidayName && (d.holidayName.includes('補') || d.holidayName.includes('連假'))) ? '補' : (d.holidayName ? d.holidayName.slice(0, 2) : '補');
+                holCornerBadge = `<span class="matrix-holiday-corner-badge" style="background: #ef4444 !important; color: #ffffff !important;" title="${escapeHtml(d.holidayName || '補假')}">${escapeHtml(badgeText)}</span>`;
+            }
+            return `<th class="col-day ${isHolidayCol ? 'col-weekend' : ''}" style="position: relative;"><span>${d.dateLabel}</span>${holCornerBadge}</th>`;
+        }).join('');
+
+        // Footer Daily Counts
+        const footerTds = weekDays.map(d => {
+            const isMultiSlot = d.isWeekend || d.isSpecialHoliday;
+            const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
+            if (isMultiSlot) {
+                const aftSlot = d.slots[0];
+                const eveSlot = d.slots[1];
+                const aftCount = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d)).length;
+                const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
+                const totalCount = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d) || isUserSlotChecked(r.slots, eveSlot, d)).length;
+                return `
+                    <td class="col-day ${isHolidayCol ? 'col-weekend' : ''}">
+                        <div class="matrix-total-count">${totalCount}</div>
+                        <span class="matrix-total-sub">午:${aftCount} 晚:${eveCount}</span>
+                    </td>
+                `;
+            } else {
+                const eveSlot = d.slots[0];
+                const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
+                return `
+                    <td class="col-day ${isHolidayCol ? 'col-weekend' : ''}">
+                        <div class="matrix-total-count">${eveCount}</div>
+                    </td>
+                `;
+            }
+        }).join('');
+
         list.innerHTML = `
             <table class="survey-matrix-table">
+                <colgroup>
+                    <col class="colgroup-member" style="width: 105px;">
+                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    <col class="colgroup-action" style="width: 78px;">
+                </colgroup>
                 <thead>
                     <tr class="matrix-header-dates">
-                        <th class="col-member" rowspan="2" style="min-width: 95px;">成員名單</th>
-                        <th>${weekDays[0].dateStr}</th>
-                        <th>${weekDays[1].dateStr}</th>
-                        <th>${weekDays[2].dateStr}</th>
-                        <th>${weekDays[3].dateStr}</th>
-                        <th class="col-weekend">${weekDays[4].dateStr}</th>
-                        <th class="col-weekend">${weekDays[5].dateStr}</th>
-                        <th>${weekDays[6].dateStr}</th>
-                        <th class="matrix-fixed-header" rowspan="2" style="width: 55px;">吃卷</th>
-                        <th class="matrix-fixed-header" rowspan="2" style="width: 140px;">備註說明</th>
-                        <th class="matrix-fixed-header" rowspan="2" style="width: 65px;">操作</th>
-                    </tr>
-                    <tr class="matrix-header-days">
-                        <th>二</th>
-                        <th>三</th>
-                        <th>四</th>
-                        <th>五</th>
-                        <th class="col-weekend">六</th>
-                        <th class="col-weekend">日</th>
-                        <th>一</th>
+                        <th class="col-member">成員名單</th>
+                        ${headerThs}
+                        <th class="matrix-fixed-header">操作</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -823,54 +1295,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="matrix-total-label">總填寫</div>
                             <div class="matrix-total-count" style="color:#2563eb;">${responses.length}人</div>
                         </td>
-                        <td><div class="matrix-total-count">${tueCount}</div></td>
-                        <td><div class="matrix-total-count">${wedCount}</div></td>
-                        <td><div class="matrix-total-count">${thuCount}</div></td>
-                        <td><div class="matrix-total-count">${friCount}</div></td>
-                        <td class="col-weekend">
-                            <div class="matrix-total-count">${satCount}</div>
-                            <span class="matrix-total-sub">午:${satAftCount} 晚:${satEveCount}</span>
-                        </td>
-                        <td class="col-weekend">
-                            <div class="matrix-total-count">${sunCount}</div>
-                            <span class="matrix-total-sub">午:${sunAftCount} 晚:${sunEveCount}</span>
-                        </td>
-                        <td><div class="matrix-total-count">${monCount}</div></td>
-                        <td colspan="3" style="text-align:right; font-weight:800; color:#475569; font-size:0.82rem; padding-right:0.6rem;">
-                            合計 ${responses.length} 人填寫
+                        ${footerTds}
+                        <td class="matrix-footer-summary">
+                            合計 ${responses.length} 人
                         </td>
                     </tr>
                 </tfoot>
             </table>
         `;
-
-        // Auto pre-fill Lumi's form on the left if saved in DB
-        const savedName = getMySurveyName();
-        if (savedName) {
-            const mySurvey = responses.find(s => s.name === savedName);
-            const nameInput = document.getElementById('survey-user-name');
-            if (nameInput && !nameInput.value) {
-                nameInput.value = savedName;
-            }
-            if (mySurvey) {
-                const notesInput = document.getElementById('survey-user-notes');
-                if (notesInput && !notesInput.value && mySurvey.notes) {
-                    notesInput.value = mySurvey.notes;
-                }
-                const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]');
-                scrollRadios.forEach(r => {
-                    r.checked = (r.value === mySurvey.scroll);
-                });
-                const mySlots = mySurvey.slots || [];
-                document.querySelectorAll('.survey-slot-chip').forEach(chip => {
-                    const cb = chip.querySelector('input[type="checkbox"]');
-                    if (cb) {
-                        cb.checked = mySlots.includes(cb.value);
-                        chip.classList.toggle('checked', cb.checked);
-                    }
-                });
-            }
-        }
     }
 
     // --- Time Dropdown Logic ---
@@ -1338,6 +1770,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Open Create Raid Modal ---
         window.openCreateRaidModal = function(preferredBoss) {
+            if (!canCreateTeam()) {
+                if (typeof window.openGeneralLoginModal === 'function') {
+                    window.openGeneralLoginModal(() => {
+                        window.openCreateRaidModal(preferredBoss);
+                    });
+                } else {
+                    alert('建立隊伍需先登入帳號！');
+                }
+                return;
+            }
+
             const targetBoss = preferredBoss || "克雷塞爾";
             createRaidState.boss = targetBoss;
             createRaidState.games = 7;
@@ -1355,8 +1798,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const maxSlots = isDragonKingBoss(targetBoss) ? 12 : 6;
             createRaidState.slots = Array.from({ length: maxSlots }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '' }));
 
-            // Auto-fill slot 0 with organizer's saved character if available
+            // Auto-fill slot 0 with organizer's saved character or logged-in user if available
             const saved = getSavedChar();
+            const loggedName = getLoggedInUser() || (isAdmin() ? getAdminUser() : '');
             if (saved.name) {
                 createRaidState.slots[0] = {
                     slotIndex: 0,
@@ -1366,6 +1810,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     isCreator: true
                 };
                 createRaidState.activeSlotIndex = 1; // start picking for slot 2
+            } else if (loggedName) {
+                const foundRoster = CHARACTER_ROSTER.find(c => c.name.toLowerCase() === loggedName.toLowerCase());
+                createRaidState.slots[0] = {
+                    slotIndex: 0,
+                    name: loggedName,
+                    job: foundRoster ? foundRoster.job : '黑騎士',
+                    level: foundRoster ? foundRoster.level : 120,
+                    isCreator: true
+                };
+                createRaidState.activeSlotIndex = 1;
             }
 
             // Reset cat buttons
@@ -1497,6 +1951,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const btnConfirmCreate = document.getElementById('btn-confirm-create-raid');
         if (btnConfirmCreate) {
             btnConfirmCreate.onclick = () => {
+                if (!canCreateTeam()) {
+                    alert("建立隊伍需先登入帳號！");
+                    if (typeof window.openGeneralLoginModal === 'function') {
+                        window.openGeneralLoginModal();
+                    }
+                    return;
+                }
                 try {
                     const validMembers = createRaidState.slots.filter(s => s && s.name);
                     if (validMembers.length === 0) {
@@ -2018,8 +2479,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="margin-bottom: 1.5rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
                         <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            <button onclick="selectBossCategory(null)" class="btn-back-boss" title="返回突襲王列表">
-                                ⬅ 返回所有突襲王
+                            <button onclick="selectBossCategory(null)" class="btn-back-boss" title="返回突襲王專區">
+                                ⬅ 返回突襲王專區
                             </button>
                             <div style="display: flex; align-items: center; gap: 0.6rem;">
                                 <span style="font-size: 1.8rem; line-height: 1;">${currentBossInfo.icon}</span>
@@ -2596,8 +3057,142 @@ document.addEventListener('DOMContentLoaded', () => {
         if (surveyAdmin) {
             surveyAdmin.style.display = isAdmin() ? 'block' : 'none';
         }
+
+        // 5. Header User Session Status button
+        const userBtn = document.getElementById('btn-user-session-status');
+        const loggedUser = getLoggedInUser();
+        if (userBtn) {
+            if (!isAdmin() && loggedUser) {
+                userBtn.style.display = 'inline-flex';
+                userBtn.textContent = `👤 ${loggedUser} (登出)`;
+                userBtn.onclick = () => {
+                    if (confirm(`確定要登出使用者 (${loggedUser}) 嗎？`)) {
+                        setLoggedInUser(null);
+                        alert('已退出登入。');
+                        updateAdminUI();
+                    }
+                };
+            } else {
+                userBtn.style.display = 'none';
+            }
+        }
     }
 
+    // --- General User Login Modal Logic (除了管理員以外的人登入以建立隊伍) ---
+    let generalLoginSuccessCallback = null;
+
+    function openGeneralLoginModal(onSuccess) {
+        generalLoginSuccessCallback = (typeof onSuccess === 'function') ? onSuccess : null;
+        const modal = document.getElementById('general-login-modal');
+        const form = document.getElementById('general-login-form');
+        const errBox = document.getElementById('general-login-error');
+        const nameInput = document.getElementById('general-login-name');
+
+        if (errBox) errBox.style.display = 'none';
+        if (form) form.reset();
+        if (modal) modal.style.display = 'flex';
+        if (nameInput) setTimeout(() => nameInput.focus(), 60);
+    }
+    window.openGeneralLoginModal = openGeneralLoginModal;
+
+    function closeGeneralLoginModal() {
+        const modal = document.getElementById('general-login-modal');
+        if (modal) modal.style.display = 'none';
+        generalLoginSuccessCallback = null;
+    }
+    window.closeGeneralLoginModal = closeGeneralLoginModal;
+
+    function setupGeneralLoginModal() {
+        const modal = document.getElementById('general-login-modal');
+        const closeX = document.getElementById('btn-close-general-login-x');
+        const cancelBtn = document.getElementById('btn-cancel-general-login');
+        const form = document.getElementById('general-login-form');
+        const errBox = document.getElementById('general-login-error');
+
+        if (closeX) closeX.onclick = closeGeneralLoginModal;
+        if (cancelBtn) cancelBtn.onclick = closeGeneralLoginModal;
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) closeGeneralLoginModal();
+            });
+        }
+
+        if (form) {
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                const name = (document.getElementById('general-login-name')?.value || '').trim();
+                const pass = document.getElementById('general-login-pass')?.value || '';
+
+                if (!name) {
+                    alert("請輸入您的名稱！");
+                    return;
+                }
+
+                // If admin credentials entered in general login form, grant admin directly
+                const lowerName = name.toLowerCase();
+                const lowerPass = pass.toLowerCase();
+                if ((lowerName === 'lumi' && lowerPass === 'lumi') ||
+                    (lowerName === 'eric' && lowerPass === 'eric') ||
+                    ((lowerName === 'ohni' || lowerName === '阿甘') && (lowerPass === 'ohni' || lowerPass === '阿甘'))) {
+                    const adminName = (lowerName === 'eric') ? 'Eric' : ((lowerName === 'lumi') ? 'Lumi' : '阿甘');
+                    setAdmin(adminName);
+                    closeGeneralLoginModal();
+                    alert(`🎉 歡迎管理員 ${adminName} 登入！`);
+                    updateAdminUI();
+                    renderChangelogs();
+                    if (typeof window.renderRosterMgList === 'function') window.renderRosterMgList();
+                    if (typeof window.renderCreateRosterKeys === 'function') window.renderCreateRosterKeys();
+                    const cb = generalLoginSuccessCallback;
+                    generalLoginSuccessCallback = null;
+                    if (typeof cb === 'function') cb();
+                    return;
+                }
+
+                // General Login Rule:
+                // 輸入名稱與密碼。如果是首次使用，系統會直接以此建立新帳號。
+                if (accountsDB[name]) {
+                    if (accountsDB[name].password === pass) {
+                        setLoggedInUser(name);
+                        if (errBox) errBox.style.display = 'none';
+                        closeGeneralLoginModal();
+                        alert(`🎉 歡迎 ${name} 登入成功！已可開始建立出團隊伍。`);
+                        updateAdminUI();
+
+                        const cb = generalLoginSuccessCallback;
+                        generalLoginSuccessCallback = null;
+                        if (typeof cb === 'function') cb();
+                    } else {
+                        if (errBox) {
+                            errBox.textContent = '❌ 密碼錯誤！請確認密碼是否正確。';
+                            errBox.style.display = 'block';
+                        }
+                    }
+                } else {
+                    // Register new account directly
+                    const newAcc = {
+                        name: name,
+                        password: pass,
+                        createdAt: Date.now()
+                    };
+                    accountsDB[name] = newAcc;
+                    if (typeof db !== 'undefined' && db && db.ref) {
+                        db.ref(`accounts/${name}`).set(newAcc);
+                    }
+                    setLoggedInUser(name);
+                    if (errBox) errBox.style.display = 'none';
+                    closeGeneralLoginModal();
+                    alert(`🎉 帳號【${name}】註冊成功並已登入！已可開始建立出團隊伍。`);
+                    updateAdminUI();
+
+                    const cb = generalLoginSuccessCallback;
+                    generalLoginSuccessCallback = null;
+                    if (typeof cb === 'function') cb();
+                }
+            };
+        }
+    }
+
+    // --- Admin Authentication Setup (管理員密碼驗證規則維持原樣) ---
     function setupAdminAuth() {
         const btn = document.getElementById('btn-admin-auth');
         if (!btn) return;
