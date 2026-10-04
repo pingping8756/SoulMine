@@ -2765,20 +2765,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const header = document.createElement('div');
-                header.style.display = 'flex';
-                header.style.justifyContent = 'space-between';
-                header.style.alignItems = 'center';
                 header.style.marginBottom = '1rem';
                 header.style.borderBottom = '1px solid var(--card-border)';
                 header.style.paddingBottom = '0.5rem';
 
                 const timeDisplay = team.timeText ? team.timeText : window.formatSlotKeyToText(team.timeslot || "");
                 const channelDisplay = team.finalChannel ? team.finalChannel : (team.channels && team.channels !== '未指定' ? team.channels : '');
-                const channelInfo = channelDisplay ? `<span style="color:var(--primary-color); font-weight:bold;">(頻道: ${channelDisplay})</span>` : '';
+                const channelInfo = channelDisplay ? `<span style="color: var(--primary-color); font-weight: bold; white-space: nowrap; display: inline-block; font-size: 1.05rem;">(頻道: ${channelDisplay})</span>` : '';
 
                 header.innerHTML = `
-                    <h3 style="color: var(--primary-color); margin: 0;">[${bossName}]${team.gamesCount || 7}場 出團時間 ${timeDisplay} ${channelInfo}</h3>
-                    <span style="font-size: 0.9rem; color: var(--text-muted);">共 ${teamMembers.length} 人</span>
+                    <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem 0.6rem; width: 100%;">
+                        <h3 style="color: var(--primary-color); margin: 0; font-size: 1.15rem; font-weight: 800; line-height: 1.4;">[${bossName}]${team.gamesCount || 7}場 ${timeDisplay}</h3>
+                        ${channelInfo}
+                    </div>
                 `;
                 card.appendChild(header);
 
