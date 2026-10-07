@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=123">
+    <link rel="stylesheet" href="style.css?v=140">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -130,7 +130,7 @@
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.6rem;">
                 <div>
                     <h2 style="margin: 0; font-size: 1.35rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
-                        <span style="color: #ea580c;">⚔️ 建立出團與席位挑選</span>
+                        <span id="create-raid-modal-title" style="color: #ea580c;">⚔️ 建立出團與席位挑選</span>
                         <span style="font-size: 0.82rem; color: #c2410c; font-weight: 700; background: #ffedd5; border: 1px solid #fed7aa; padding: 0.15rem 0.6rem; border-radius: 12px;">組長挑人面板</span>
                     </h2>
                 </div>
@@ -192,6 +192,15 @@
                                 <option value="">請先選擇日期</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- Raid Note & Tactics Field (魅惑位/戰術備註) -->
+                    <div class="form-group" style="margin: 0.45rem 0 0.45rem 0;">
+                        <label style="font-size: 0.88rem; font-weight: 800; color: #0f172a; display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                            <span>📝 出團備註 / 戰術指派</span>
+                            <span style="font-size: 0.74rem; color: #64748b; font-weight: 600;">(選填，如魅惑分配、進場提醒)</span>
+                        </label>
+                        <input type="text" id="create-raid-note" placeholder="例如：魅惑1大鎖/魅惑2Eric、進場站位、吃券打手分配..." style="width: 100%; padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.88rem; background: #fff; border: 1.5px solid #94a3b8; color: #0f172a; font-weight: 600; box-sizing: border-box;">
                     </div>
 
                     <!-- Team Slots Assigned by Leader (3x2 Grid) -->
@@ -401,6 +410,119 @@
         </div>
     </div>
 
+    <!-- Survey Pre-Draft Modal (時段快速預排視窗 - 最上層彈窗) -->
+    <div id="survey-predraft-modal" class="modal-overlay" style="display: none; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.75) !important; backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; z-index: 99999999 !important; align-items: center; justify-content: center;">
+        <div class="modal-content" style="max-width: 1180px; width: 95%; max-height: 94vh; background: #ffffff !important; border-radius: 14px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45); display: flex; flex-direction: column; padding: 1.25rem 1.5rem; color: #0f172a !important; overflow: hidden; border: 1.5px solid #cbd5e1;">
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.8rem; margin-bottom: 0.8rem;">
+                <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
+                    <h3 style="margin: 0; font-size: 1.3rem; color: #0f172a; font-weight: 900; display: flex; align-items: center; gap: 0.4rem;">
+                        <span id="predraft-modal-title">🎯 時段快速預排</span>
+                    </h3>
+                    <span id="predraft-timeslot-badge" style="background: #eff6ff; color: #1e40af; border: 1.5px solid #93c5fd; padding: 0.25rem 0.75rem; border-radius: 20px; font-weight: 800; font-size: 0.9rem;">
+                        <!-- e.g. 10/10(五) 晚 -->
+                    </span>
+                    <span id="predraft-members-count-badge" style="background: #f0fdf4; color: #15803d; border: 1.5px solid #86efac; padding: 0.25rem 0.65rem; border-radius: 20px; font-weight: 800; font-size: 0.82rem;">
+                        <!-- 可出團 8 人 -->
+                    </span>
+                </div>
+                <button type="button" id="btn-close-predraft-x" style="background: none; border: none; color: #64748b; font-size: 1.8rem; cursor: pointer; line-height: 1; padding: 0.1rem 0.4rem;" title="關閉預排視窗">&times;</button>
+            </div>
+
+            <!-- Pre-draft Config Bar (選擇突襲王、場次、出團確切時間) -->
+            <div style="background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.75rem 1rem; margin-bottom: 0.9rem; display: flex; gap: 1rem; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label style="font-size: 0.88rem; font-weight: 800; color: #334155; white-space: nowrap;">👑 突襲王：</label>
+                    <select id="predraft-boss-select" style="padding: 0.4rem 0.7rem; font-size: 0.9rem; font-weight: 700; border-radius: 6px; border: 1.5px solid #94a3b8; background: #ffffff; color: #0f172a; cursor: pointer;">
+                        <!-- Boss Options -->
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label style="font-size: 0.88rem; font-weight: 800; color: #334155; white-space: nowrap;">⚔️ 場次：</label>
+                    <select id="predraft-games-select" style="padding: 0.4rem 0.6rem; font-size: 0.9rem; font-weight: 700; border-radius: 6px; border: 1.5px solid #94a3b8; background: #ffffff; color: #0f172a; cursor: pointer;">
+                        <option value="7">7 場</option>
+                        <option value="6">6 場</option>
+                        <option value="5">5 場</option>
+                        <option value="4">4 場</option>
+                        <option value="3">3 場</option>
+                        <option value="2">2 場</option>
+                        <option value="1">1 場</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label style="font-size: 0.88rem; font-weight: 800; color: #334155; white-space: nowrap;">⏰ 出團時間：</label>
+                    <select id="predraft-time-select" style="padding: 0.4rem 0.7rem; font-size: 0.9rem; font-weight: 700; border-radius: 6px; border: 1.5px solid #94a3b8; background: #ffffff; color: #0f172a; cursor: pointer;">
+                        <!-- Populated based on period -->
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.4rem; flex: 1; min-width: 220px;">
+                    <label style="font-size: 0.88rem; font-weight: 800; color: #334155; white-space: nowrap;">📝 備註：</label>
+                    <input type="text" id="predraft-note-input" placeholder="例如：魅惑分配、進場提醒..." style="flex: 1; padding: 0.38rem 0.6rem; font-size: 0.88rem; font-weight: 600; border-radius: 6px; border: 1.5px solid #94a3b8; background: #ffffff; color: #0f172a;">
+                </div>
+                <div style="margin-left: auto; font-size: 0.82rem; color: #64748b; font-weight: 700;">
+                    💡 點選角色卡即可入座或退選
+                </div>
+            </div>
+
+            <!-- Main Content Area: Left Slots (3*2 空格) + Right Available Character Cards (空間各半 1fr 1fr) -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; flex: 1; overflow: hidden; min-height: 0;">
+                <!-- Left: Pre-draft Slots (出戰席位 - 呈現 3*2 空格) -->
+                <div style="display: flex; flex-direction: column; background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.85rem; overflow: hidden;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; padding-bottom: 0.4rem; border-bottom: 1.5px solid #cbd5e1;">
+                        <span id="predraft-slots-header-title" style="font-size: 0.95rem; font-weight: 800; color: #1e293b;">📋 預排出戰席位 (3×2)</span>
+                        <span id="predraft-slot-count-text" style="font-size: 0.85rem; font-weight: 800; color: #16a34a;">已入座 0/6 人</span>
+                    </div>
+                    <!-- Slots Grid Area -->
+                    <div id="predraft-slots-list" class="predraft-slots-scroll-area">
+                        <!-- Rendered dynamically as 3x2 grid via JS -->
+                    </div>
+                    <div style="margin-top: 0.5rem; padding-top: 0.4rem; border-top: 1px dashed #cbd5e1; display: flex; justify-content: space-between; align-items: center;">
+                        <span style="font-size: 0.78rem; color: #64748b;">💡 點右側卡片入座，點 ✕ 退選</span>
+                        <button type="button" id="btn-clear-predraft-slots" style="background: none; border: none; color: #ef4444; font-size: 0.82rem; font-weight: 700; cursor: pointer;">
+                            🗑️ 清空席位
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Right: Available Characters from Survey Respondents (當天可排角色卡 - 空間各半) -->
+                <div style="display: flex; flex-direction: column; background: #ffffff; border: 1.5px solid #e2e8f0; border-radius: 10px; padding: 0.85rem; overflow: hidden;">
+                    <!-- Filter / Stats Bar -->
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; padding-bottom: 0.4rem; border-bottom: 1.5px solid #cbd5e1; flex-wrap: wrap; gap: 0.5rem;">
+                        <div style="font-size: 0.92rem; font-weight: 800; color: #1e293b; display: flex; align-items: center; gap: 0.4rem;">
+                            <span id="predraft-chars-section-title">🎴 當天可出戰角色卡</span>
+                            <span id="predraft-chars-total-badge" style="font-size: 0.78rem; color: #64748b; font-weight: normal;"></span>
+                        </div>
+                        <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                            <input type="text" id="predraft-search-input" placeholder="🔍 搜尋 ID / 職業..." style="padding: 0.25rem 0.55rem; font-size: 0.8rem; border-radius: 6px; border: 1.5px solid #cbd5e1; width: 130px; background: #ffffff; color: #0f172a; font-weight: 600;">
+                            <div id="predraft-cat-filter-group" style="display: flex; gap: 0.25rem;">
+                                <button type="button" class="btn-select-chip active" data-cat="all" style="padding: 0.2rem 0.55rem; font-size: 0.78rem;">全部</button>
+                                <button type="button" class="btn-select-chip" data-cat="力職" style="padding: 0.2rem 0.55rem; font-size: 0.78rem; color: #ea580c; font-weight: 700;">💪 力</button>
+                                <button type="button" class="btn-select-chip" data-cat="敏職" style="padding: 0.2rem 0.55rem; font-size: 0.78rem; color: #16a34a; font-weight: 700;">🎯 敏</button>
+                                <button type="button" class="btn-select-chip" data-cat="法職" style="padding: 0.2rem 0.55rem; font-size: 0.78rem; color: #9333ea; font-weight: 700;">✨ 法</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Characters Scroll Area (統一固定長寬，有空間就上補，依職業與顏色分明) -->
+                    <div id="predraft-characters-container" style="flex: 1; overflow-y: auto; padding-right: 0.3rem;">
+                        <!-- Character card chips rendered dynamically via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Footer Actions -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.8rem; padding-top: 0.7rem; border-top: 1.5px solid #e2e8f0;">
+                <button type="button" id="btn-cancel-predraft" class="btn-secondary" style="padding: 0.45rem 1.2rem; font-size: 0.9rem; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                    取消
+                </button>
+                <button type="button" id="btn-apply-predraft-to-create" class="btn-primary" style="padding: 0.5rem 1.8rem; font-size: 0.98rem; font-weight: 800; background: #16a34a; color: #ffffff; border: none; border-radius: 8px; cursor: pointer; box-shadow: 0 3px 10px rgba(22, 163, 74, 0.35); display: flex; align-items: center; gap: 0.4rem;">
+                    <span id="predraft-apply-btn-text">🚀 直接發佈出隊至看板</span>
+                    <span style="font-size: 0.85rem; opacity: 0.9;">➔</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="app-container" id="main-app">
         <header class="app-header">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem;">
@@ -602,6 +724,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=127" defer></script>
+    <script src="app.js?v=143" defer></script>
 </body>
 </html>

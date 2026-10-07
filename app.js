@@ -173,7 +173,7 @@ function getHighContrastJobColor(job) {
 }
 
 // --- Character Roster (Ordered by 力職 ➔ 敏職 ➔ 法職) ---
-const CURRENT_ROSTER_VERSION = 2;
+const CURRENT_ROSTER_VERSION = 3;
 let CHARACTER_ROSTER = [
     // --- 力職 (10位: 火/黑騎 ➔ 聖騎 ➔ 英雄) ---
     { id: "Eric", job: "黑騎士", level: 180, category: "力職" },
@@ -195,12 +195,12 @@ let CHARACTER_ROSTER = [
     { id: "阿甘", job: "箭神", level: 153, category: "敏職" },
     { id: "Lumi", job: "箭神", level: 138, category: "敏職" },
     { id: "阿仁", job: "神偷", level: 180, category: "敏職" },
-    { id: "Bagle", job: "神偷", level: 163, category: "敏職" },
+    { id: "Bagel", job: "神偷", level: 163, category: "敏職" },
     { id: "DerDer", job: "神偷", level: 151, category: "敏職" },
     { id: "阿偉", job: "神偷", level: 149, category: "敏職" },
     { id: "阿甘", job: "夜使者", level: 174, category: "敏職" },
     { id: "Eric", job: "夜使者", level: 163, category: "敏職" },
-    { id: "Bagle", job: "夜使者", level: 121, category: "敏職" },
+    { id: "Bagel", job: "夜使者", level: 121, category: "敏職" },
     { id: "WonderW", job: "槍神", level: 170, category: "敏職" },
     { id: "阿仁", job: "拳霸", level: 167, category: "敏職" },
     { id: "小皮", job: "拳霸", level: 140, category: "敏職" },
@@ -214,12 +214,39 @@ let CHARACTER_ROSTER = [
     { id: "CC", job: "主教", level: 165, category: "法職" },
     { id: "Ohni", job: "主教", level: 162, category: "法職" },
     { id: "Lumi", job: "主教", level: 155, category: "法職" },
-    { id: "Bagle", job: "主教", level: 137, category: "法職" },
+    { id: "Bagel", job: "主教", level: 137, category: "法職" },
     { id: "Eric", job: "主教", level: 132, category: "法職" },
     { id: "毛毛蟲", job: "主教", level: 132, category: "法職" },
     { id: "小茵", job: "主教", level: 131, category: "法職" },
     { id: "阿仁", job: "主教", level: 131, category: "法職" }
 ];
+
+// --- Member Character Alias / Binding Configuration (問卷填寫名稱 ➔ 綁定角色 ID) ---
+const MEMBER_NAME_ALIASES = {
+    'WonderW': ['WonderW', '汪德'],
+    '汪德': ['WonderW', '汪德'],
+    'Bagel': ['Bagel', 'Bagle', 'BagelPray'],
+    'Bagle': ['Bagel', 'Bagle', 'BagelPray'],
+    'BagelPray': ['Bagel', 'Bagle', 'BagelPray'],
+    '毛毛娃': ['長吉毛毛娃', '毛毛娃'],
+    '長吉毛毛娃': ['長吉毛毛娃', '毛毛娃']
+};
+
+function getMemberBoundRoster(surveyMemberName) {
+    if (!surveyMemberName) return [];
+    const rawName = surveyMemberName.trim();
+    const aliasList = MEMBER_NAME_ALIASES[rawName] || [rawName];
+    const lowerAliases = aliasList.map(a => a.toLowerCase());
+
+    const matched = CHARACTER_ROSTER.filter(c => {
+        const cIdLower = (c.id || '').trim().toLowerCase();
+        if (lowerAliases.includes(cIdLower)) return true;
+        // 包含字串自動匹配（例如問卷填寫「毛毛娃」，自動對應「長吉毛毛娃」）
+        return lowerAliases.some(alias => (alias.length >= 2 && (cIdLower.includes(alias) || alias.includes(cIdLower))));
+    });
+
+    return matched;
+}
 
 function getCategoryByJob(job) {
     if (!job) return '力職';
@@ -314,10 +341,12 @@ document.addEventListener('DOMContentLoaded', () => {
         games: 7,
         dateObj: new Date(),
         timeStr: "20:00",
-        slots: [], // Array of { slotIndex, name, job, level, isCreator }
+        note: "", // Raid note / tactics (如魅惑位、進場順序)
+        slots: [], // Array of { slotIndex, name, job, level, roleTag, isCreator }
         activeSlotIndex: 0,
         filterCat: "all",
-        searchKeyword: ""
+        searchKeyword: "",
+        editingRaidId: null
     };
 
     let currentJoinRaidId = null;
@@ -648,6 +677,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             setupSurveyForm();
+            setupSurveyPreDraftModal();
             setupRaidModals();
             setupAdminAuth();
             setupGeneralLoginModal();
@@ -1232,39 +1262,100 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        // Header Date Columns
-        const headerThs = weekDays.map(d => {
+        // Header Date Columns (含時段預排按鈕)
+        const headerThs = weekDays.map((d, dIdx) => {
             const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
             let holCornerBadge = '';
             if (d.isSpecialHoliday) {
                 const badgeText = (d.holidayName && (d.holidayName.includes('補') || d.holidayName.includes('連假'))) ? '補' : (d.holidayName ? d.holidayName.slice(0, 2) : '補');
                 holCornerBadge = `<span class="matrix-holiday-corner-badge" style="background: #ef4444 !important; color: #ffffff !important;" title="${escapeHtml(d.holidayName || '補假')}">${escapeHtml(badgeText)}</span>`;
             }
-            return `<th class="col-day ${isHolidayCol ? 'col-weekend' : ''}" style="position: relative;"><span>${d.dateLabel}</span>${holCornerBadge}</th>`;
+
+            const isMultiSlot = d.isWeekend || d.isSpecialHoliday;
+            const hasAdmin = typeof isAdmin === 'function' && isAdmin();
+            let predraftBtnHtml = '';
+            if (hasAdmin) {
+                if (isMultiSlot) {
+                    const aftSlot = d.slots[0];
+                    const eveSlot = d.slots[1];
+                    const aftCount = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d)).length;
+                    const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
+
+                    let btns = [];
+                    // 人有超過 6 個再出現預排 (> 6)
+                    if (aftCount > 6) {
+                        btns.push(`<button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '午', ${dIdx})" title="快速預排此時段 (午: ${aftCount}人)">預排(午)</button>`);
+                    }
+                    if (eveCount > 6) {
+                        btns.push(`<button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (晚: ${eveCount}人)">預排(晚)</button>`);
+                    }
+                    if (btns.length > 0) {
+                        predraftBtnHtml = `<div style="display: flex; gap: 2px; justify-content: center; margin-top: 3px;">${btns.join('')}</div>`;
+                    }
+                } else {
+                    const eveSlot = d.slots[0];
+                    const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
+                    // 人有超過 6 個再出現預排 (> 6)
+                    if (eveCount > 6) {
+                        predraftBtnHtml = `
+                            <div style="margin-top: 3px;">
+                                <button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (${eveCount}人)">🎯 預排</button>
+                            </div>
+                        `;
+                    }
+                }
+            }
+
+            return `<th class="col-day ${isHolidayCol ? 'col-weekend' : ''}" style="position: relative;">
+                <span>${d.dateLabel}</span>${holCornerBadge}
+                ${predraftBtnHtml}
+            </th>`;
         }).join('');
 
         // Footer Daily Counts
-        const footerTds = weekDays.map(d => {
+        const footerTds = weekDays.map((d, dIdx) => {
             const isMultiSlot = d.isWeekend || d.isSpecialHoliday;
             const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
+            const hasAdmin = typeof isAdmin === 'function' && isAdmin();
             if (isMultiSlot) {
                 const aftSlot = d.slots[0];
                 const eveSlot = d.slots[1];
                 const aftCount = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d)).length;
                 const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
                 const totalCount = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d) || isUserSlotChecked(r.slots, eveSlot, d)).length;
+
+                let fBtns = [];
+                // 人有超過 6 個再出現預排 (> 6) 且限管理員
+                if (hasAdmin) {
+                    if (aftCount > 6) {
+                        fBtns.push(`<button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '午', ${dIdx})" title="預排(午: ${aftCount}人)">預(午)</button>`);
+                    }
+                    if (eveCount > 6) {
+                        fBtns.push(`<button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="預排(晚: ${eveCount}人)">預(晚)</button>`);
+                    }
+                }
+                const fBtnHtml = fBtns.length > 0 ? `<div style="margin-top: 4px; display: flex; gap: 2px; justify-content: center;">${fBtns.join('')}</div>` : '';
+
                 return `
                     <td class="col-day ${isHolidayCol ? 'col-weekend' : ''}">
                         <div class="matrix-total-count">${totalCount}</div>
                         <span class="matrix-total-sub">午:${aftCount} 晚:${eveCount}</span>
+                        ${fBtnHtml}
                     </td>
                 `;
             } else {
                 const eveSlot = d.slots[0];
                 const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
+                const fBtnHtml = (hasAdmin && eveCount > 6) ? `
+                    <div style="margin-top: 4px;">
+                        <button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="預排(晚: ${eveCount}人)">🎯 預排</button>
+                    </div>
+                ` : '';
+
                 return `
                     <td class="col-day ${isHolidayCol ? 'col-weekend' : ''}">
                         <div class="matrix-total-count">${eveCount}</div>
+                        ${fBtnHtml}
                     </td>
                 `;
             }
@@ -1307,6 +1398,727 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tfoot>
             </table>
         `;
+    }
+
+    // --- Survey Pre-Draft State & Logic (時段快速預排) ---
+    const preDraftState = {
+        editingRaidId: null,
+        dateStr: '',
+        dateLabel: '',
+        period: '晚',
+        dayIndex: 0,
+        dateObj: null,
+        targetTimeStr: '20:00',
+        boss: '克雷塞爾',
+        games: 7,
+        catFilter: 'all',
+        slots: Array.from({ length: 6 }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '' })),
+        availableRespondents: []
+    };
+
+    window.openSurveyPreDraftModal = function(dateStr, dateLabel, period, dayIndex) {
+        if (typeof isAdmin === 'function' && !isAdmin()) {
+            alert("⚠️ 預排功能僅限管理員使用！請先以管理員身分登入。");
+            const adminAuthBtn = document.getElementById('btn-admin-auth');
+            if (adminAuthBtn) adminAuthBtn.click();
+            return;
+        }
+
+        const modal = document.getElementById('survey-predraft-modal');
+        if (!modal) return;
+
+        preDraftState.editingRaidId = null;
+
+        const titleEl = document.getElementById('predraft-modal-title');
+        if (titleEl) titleEl.textContent = '🎯 時段快速預排';
+
+        const applyBtnText = document.getElementById('predraft-apply-btn-text');
+        if (applyBtnText) applyBtnText.textContent = '🚀 直接發佈出隊至看板';
+
+        const charsTitle = document.getElementById('predraft-chars-section-title');
+        if (charsTitle) charsTitle.textContent = '🎴 當天可出戰角色卡';
+
+        const activeWeekId = currentMatrixWeekId || TARGET_DEFAULT_WEEK_ID;
+        const weekDays = getWeekDaysDetails(activeWeekId);
+        const dayDef = weekDays[dayIndex] || weekDays[0];
+
+        preDraftState.dateStr = dateStr;
+        preDraftState.dateLabel = dateLabel;
+        preDraftState.period = period || '晚';
+        preDraftState.dayIndex = dayIndex;
+        preDraftState.dateObj = dayDef.dateObj || new Date();
+        preDraftState.catFilter = 'all';
+
+        // Filter available survey respondents for this specific slot
+        const targetSlotPeriod = period === '午' ? '午' : '晚';
+        let targetSlotDef = null;
+        if (dayDef.isWeekend || dayDef.isSpecialHoliday) {
+            targetSlotDef = (period === '午') ? dayDef.slots[0] : dayDef.slots[1];
+        } else {
+            targetSlotDef = dayDef.slots[0];
+        }
+
+        const responses = Object.values(surveyResponses || {}).filter(r => {
+            const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
+            const weekMatch = (activeWeekId === TARGET_DEFAULT_WEEK_ID) 
+                ? (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29") 
+                : (rWeek === activeWeekId);
+            if (!weekMatch) return false;
+            return isUserSlotChecked(r.slots, targetSlotDef, dayDef);
+        });
+
+        preDraftState.availableRespondents = responses;
+
+        // Reset or init slots based on boss
+        const isDragonKing = isDragonKingBoss(preDraftState.boss);
+        const maxSlots = isDragonKing ? 12 : 6;
+        preDraftState.slots = Array.from({ length: maxSlots }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '' }));
+
+        // Update Badges & UI
+        const badgeEl = document.getElementById('predraft-timeslot-badge');
+        if (badgeEl) {
+            badgeEl.textContent = `📅 ${dateLabel}【${period === '午' ? '下午' : '晚上'}】`;
+        }
+
+        const countBadge = document.getElementById('predraft-members-count-badge');
+        if (countBadge) {
+            countBadge.textContent = `可出團成員 ${responses.length} 人`;
+        }
+
+        // Init Boss Select
+        const bossSelect = document.getElementById('predraft-boss-select');
+        if (bossSelect) {
+            bossSelect.innerHTML = BOSS_LIST.map(b => `
+                <option value="${b.name}" ${b.name === preDraftState.boss ? 'selected' : ''}>${b.icon} ${b.name}</option>
+            `).join('');
+            bossSelect.onchange = () => {
+                preDraftState.boss = bossSelect.value;
+                const newMaxSlots = isDragonKingBoss(preDraftState.boss) ? 12 : 6;
+                const newSlots = [];
+                for (let i = 0; i < newMaxSlots; i++) {
+                    newSlots.push(preDraftState.slots[i] || { slotIndex: i, name: '', job: '', level: '' });
+                }
+                preDraftState.slots = newSlots;
+                renderPreDraftSlots();
+            };
+        }
+
+        // Init Games Select
+        const gamesSelect = document.getElementById('predraft-games-select');
+        if (gamesSelect) {
+            gamesSelect.value = String(preDraftState.games || 7);
+            gamesSelect.onchange = () => {
+                preDraftState.games = parseInt(gamesSelect.value, 10) || 7;
+            };
+        }
+
+        // Init Time Select based on period
+        const timeSelect = document.getElementById('predraft-time-select');
+        if (timeSelect) {
+            timeSelect.innerHTML = '';
+            let tOptions = [];
+            if (period === '午') {
+                tOptions = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'];
+            } else {
+                tOptions = ['19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'];
+            }
+            tOptions.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                timeSelect.appendChild(opt);
+            });
+            const defaultTime = (period === '午') ? '14:00' : '20:00';
+            timeSelect.value = defaultTime;
+            preDraftState.targetTimeStr = defaultTime;
+            timeSelect.onchange = () => {
+                preDraftState.targetTimeStr = timeSelect.value;
+            };
+        }
+
+        // Category Filter Buttons & Search Input
+        preDraftState.catFilter = 'all';
+        preDraftState.searchKeyword = '';
+
+        const noteInputEl = document.getElementById('predraft-note-input');
+        if (noteInputEl) {
+            noteInputEl.value = '';
+        }
+
+        const searchInput = document.getElementById('predraft-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.oninput = () => {
+                preDraftState.searchKeyword = searchInput.value || '';
+                renderPreDraftAvailableCharacters();
+            };
+        }
+
+        const catBtnGroup = document.getElementById('predraft-cat-filter-group');
+        if (catBtnGroup) {
+            catBtnGroup.querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === 'all');
+                btn.onclick = () => {
+                    catBtnGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    preDraftState.catFilter = btn.dataset.cat || 'all';
+                    renderPreDraftAvailableCharacters();
+                };
+            });
+        }
+
+        renderPreDraftSlots();
+        renderPreDraftAvailableCharacters();
+
+        modal.style.display = 'flex';
+    };
+
+    window.handlePreDraftSlotRoleChange = function(slotIdx, val) {
+        if (!preDraftState.slots[slotIdx]) return;
+        if (val === '__custom__') {
+            const currentRole = preDraftState.slots[slotIdx].roleTag || '';
+            const isDk = isDragonKingBoss(preDraftState.boss);
+            const exampleText = isDk ? "魅惑1、煙1、自訂備註" : "吃券打手、自訂備註";
+            const customVal = prompt(`請輸入此席位的自訂定位或備註 (例如: ${exampleText})：`, currentRole);
+            if (customVal !== null) {
+                preDraftState.slots[slotIdx].roleTag = customVal.trim();
+            }
+        } else {
+            preDraftState.slots[slotIdx].roleTag = val;
+        }
+        renderPreDraftSlots();
+    };
+
+    function renderSinglePreDraftSlotHtml(idx, slotNum, teamPrefix) {
+        const s = preDraftState.slots[idx] || { slotIndex: idx, name: '', job: '', level: '', roleTag: '' };
+        const isFilled = !!(s && s.name);
+        const numLabel = teamPrefix ? `${teamPrefix}-${slotNum}` : `#${slotNum}`;
+        const isDragonKing = isDragonKingBoss(preDraftState.boss);
+        const roleTag = s.roleTag || '';
+        const isSeduce = roleTag.includes('魅惑');
+        const isSmoke = roleTag.includes('煙');
+        const standardRoles = ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2'];
+        const isCustom = roleTag && !standardRoles.includes(roleTag);
+
+        const optionsHtml = isDragonKing ? `
+            <option value="">定位</option>
+            <option value="魅惑1" ${roleTag === '魅惑1' ? 'selected' : ''}>💖 魅惑 1</option>
+            <option value="魅惑2" ${roleTag === '魅惑2' ? 'selected' : ''}>💖 魅惑 2</option>
+            <option value="魅惑3" ${roleTag === '魅惑3' ? 'selected' : ''}>💖 魅惑 3</option>
+            <option value="魅惑4" ${roleTag === '魅惑4' ? 'selected' : ''}>💖 魅惑 4</option>
+            <option value="煙1" ${roleTag === '煙1' ? 'selected' : ''}>💨 煙 1</option>
+            <option value="煙2" ${roleTag === '煙2' ? 'selected' : ''}>💨 煙 2</option>
+            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
+            <option value="__custom__">✏️ 自訂...</option>
+        ` : `
+            <option value="">定位</option>
+            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
+            <option value="__custom__">✏️ 自訂...</option>
+        `;
+
+        const roleSelectHtml = `
+            <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${isSeduce ? 'seduce' : ''} ${isSmoke ? 'smoke' : ''}" 
+                    onclick="event.stopPropagation();" 
+                    onchange="event.stopPropagation(); window.handlePreDraftSlotRoleChange(${idx}, this.value);"
+                    title="席位定位/自訂備註">
+                ${optionsHtml}
+            </select>
+        `;
+
+        if (isFilled) {
+            const jobColor = getHighContrastJobColor(s.job);
+            return `
+                <div class="predraft-slot-box filled">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem;">
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; white-space: nowrap;">${numLabel}</span>
+                        ${roleSelectHtml}
+                        <button type="button" onclick="window.removePreDraftSlot(${idx})" style="background: none; border: none; color: #ef4444; font-weight: 800; cursor: pointer; padding: 0 0.15rem; font-size: 0.95rem; line-height: 1;" title="移出席位">✕</button>
+                    </div>
+                    <div style="font-size: 0.92rem; font-weight: 900; color: #0f172a; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0.15rem 0;" title="${escapeHtml(s.name)}">
+                        ${escapeHtml(s.name)}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
+                        <span style="color: ${jobColor}; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.job)}</span>
+                        <span style="color: #64748b; font-weight: 700; white-space: nowrap; margin-left: 0.2rem;">Lv.${s.level}</span>
+                    </div>
+                </div>
+            `;
+        } else {
+            return `
+                <div class="predraft-slot-box empty">
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.2rem;">
+                        <span style="font-size: 0.72rem; font-weight: 800; color: #94a3b8; background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; white-space: nowrap;">${numLabel}</span>
+                        ${roleSelectHtml}
+                    </div>
+                    <span style="font-size: 0.76rem; color: ${isSeduce ? '#db2777' : (isSmoke ? '#475569' : (roleTag ? '#2563eb' : '#94a3b8'))}; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">${roleTag ? `(${escapeHtml(roleTag)})` : '待排空位'}</span>
+                </div>
+            `;
+        }
+    }
+
+    function renderPreDraftSlots() {
+        const list = document.getElementById('predraft-slots-list');
+        const countText = document.getElementById('predraft-slot-count-text');
+        const headerTitle = document.getElementById('predraft-slots-header-title');
+        if (!list) return;
+
+        const isDragonKing = isDragonKingBoss(preDraftState.boss);
+        const maxSlots = isDragonKing ? 12 : 6;
+        const filledCount = preDraftState.slots.filter(s => s && s.name).length;
+
+        if (headerTitle) {
+            headerTitle.textContent = preDraftState.editingRaidId
+                ? (isDragonKing ? '📋 編輯出戰席位 (兩隊 12人)' : '📋 編輯出戰席位 (3×2)')
+                : (isDragonKing ? '📋 預排出戰席位 (兩隊 12人)' : '📋 預排出戰席位 (3×2)');
+        }
+
+        if (countText) {
+            countText.textContent = `已入座 ${filledCount}/${maxSlots} 人`;
+        }
+
+        let html = '';
+        if (isDragonKing) {
+            html += `
+                <div class="predraft-team-block">
+                    <div class="predraft-team-title">
+                        <span>🐉 第一隊 (6人)</span>
+                        <span style="font-size: 0.74rem; color: #64748b; font-weight: 700;">第 1 ~ 6 席</span>
+                    </div>
+                    <div class="predraft-slots-grid-3x2">
+            `;
+            for (let i = 0; i < 6; i++) {
+                html += renderSinglePreDraftSlotHtml(i, i + 1, '隊1');
+            }
+            html += `
+                    </div>
+                </div>
+                <div class="predraft-team-block">
+                    <div class="predraft-team-title">
+                        <span>🐉 第二隊 (6人)</span>
+                        <span style="font-size: 0.74rem; color: #64748b; font-weight: 700;">第 7 ~ 12 席</span>
+                    </div>
+                    <div class="predraft-slots-grid-3x2">
+            `;
+            for (let i = 6; i < 12; i++) {
+                html += renderSinglePreDraftSlotHtml(i, i - 5, '隊2');
+            }
+            html += `
+                    </div>
+                </div>
+            `;
+        } else {
+            // Regular boss: exactly 3x2 grid of 6 slots
+            html += `<div class="predraft-slots-grid-3x2">`;
+            for (let i = 0; i < 6; i++) {
+                html += renderSinglePreDraftSlotHtml(i, i + 1, '');
+            }
+            html += `</div>`;
+        }
+        list.innerHTML = html;
+    }
+
+    window.removePreDraftSlot = function(slotIdx) {
+        if (preDraftState.slots[slotIdx]) {
+            const existingRole = preDraftState.slots[slotIdx].roleTag || '';
+            preDraftState.slots[slotIdx] = { slotIndex: slotIdx, name: '', job: '', level: '', roleTag: existingRole };
+            renderPreDraftSlots();
+            renderPreDraftAvailableCharacters();
+        }
+    };
+
+    function renderPreDraftAvailableCharacters() {
+        const container = document.getElementById('predraft-characters-container');
+        const badgeTotal = document.getElementById('predraft-chars-total-badge');
+        const charsTitle = document.getElementById('predraft-chars-section-title');
+        if (!container) return;
+
+        if (charsTitle) {
+            charsTitle.textContent = '🎴 當天可出戰角色卡';
+        }
+
+        const respondents = preDraftState.availableRespondents || [];
+        const catFilter = preDraftState.catFilter || 'all';
+        const searchKeyword = (preDraftState.searchKeyword || '').trim().toLowerCase();
+
+        let allAvailableCards = [];
+
+        // Gather all bound characters from available respondents (抓該時段有登記的成員角色)
+        respondents.forEach(r => {
+            const boundChars = getMemberBoundRoster(r.name);
+            const isScrollYes = (r.scroll === '是');
+            if (boundChars.length > 0) {
+                boundChars.forEach(c => {
+                    allAvailableCards.push({
+                        ...c,
+                        memberName: r.name,
+                        scroll: r.scroll,
+                        isScrollYes: isScrollYes,
+                        notes: r.notes || ''
+                    });
+                });
+            } else {
+                // If member has no bound roster yet, provide default adventurer card
+                allAvailableCards.push({
+                    id: r.name,
+                    job: '冒險家',
+                    level: 150,
+                    category: '力職',
+                    memberName: r.name,
+                    scroll: r.scroll,
+                    isScrollYes: isScrollYes,
+                    notes: r.notes || ''
+                });
+            }
+        });
+
+        // 若為編輯模式，且隊伍席位已有特定角色（可能在之前已入座），一併納入可選清單以便顯示打勾狀態與退選
+        if (preDraftState.editingRaidId) {
+            preDraftState.slots.forEach(s => {
+                if (s && s.name && !allAvailableCards.some(c => c.id.toLowerCase() === s.name.toLowerCase() && c.job === s.job)) {
+                    allAvailableCards.push({
+                        id: s.name,
+                        job: s.job || '冒險家',
+                        level: s.level || 120,
+                        category: getCategoryByJob(s.job),
+                        memberName: s.name,
+                        scroll: '否',
+                        isScrollYes: false,
+                        notes: ''
+                    });
+                }
+            });
+        }
+
+        if (allAvailableCards.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 3rem 1rem; color: #94a3b8;">
+                    <p style="font-size: 1.05rem; font-weight: 700; margin: 0 0 0.5rem 0;">📝 此時段尚無成員登記有空</p>
+                    <p style="font-size: 0.85rem; margin: 0;">請在問卷總表確認成員是否勾選此時段！</p>
+                </div>
+            `;
+            if (badgeTotal) badgeTotal.textContent = '(共 0 張)';
+            return;
+        }
+
+        // Deduplicate cards so no duplicate character appears in available pool (名字與職業不重複)
+        const seenKeys = new Set();
+        const uniqueCards = [];
+        allAvailableCards.forEach(c => {
+            const key = `${(c.id || '').trim().toLowerCase()}_${(c.job || '').trim()}`;
+            if (!seenKeys.has(key)) {
+                seenKeys.add(key);
+                uniqueCards.push(c);
+            }
+        });
+        allAvailableCards = uniqueCards;
+
+        // Update Category Counts on filter buttons
+        const forceCount = allAvailableCards.filter(c => c.category === '力職').length;
+        const dexCount = allAvailableCards.filter(c => c.category === '敏職').length;
+        const intCount = allAvailableCards.filter(c => c.category === '法職').length;
+
+        const btnAll = document.querySelector('#predraft-cat-filter-group button[data-cat="all"]');
+        const btnForce = document.querySelector('#predraft-cat-filter-group button[data-cat="力職"]');
+        const btnDex = document.querySelector('#predraft-cat-filter-group button[data-cat="敏職"]');
+        const btnInt = document.querySelector('#predraft-cat-filter-group button[data-cat="法職"]');
+        if (btnAll) btnAll.textContent = `全部 (${allAvailableCards.length})`;
+        if (btnForce) btnForce.textContent = `💪 力 (${forceCount})`;
+        if (btnDex) btnDex.textContent = `🎯 敏 (${dexCount})`;
+        if (btnInt) btnInt.textContent = `✨ 法 (${intCount})`;
+
+        if (badgeTotal) {
+            badgeTotal.textContent = `(共 ${allAvailableCards.length} 張)`;
+        }
+
+        // Sort by Job Category (力職 ➔ 敏職 ➔ 法職), then Job priority, then Level descending
+        const CATEGORY_ORDER = { '力職': 1, '敏職': 2, '法職': 3 };
+        const JOB_ORDER_RANK = {
+            '黑騎士': 10, '聖騎士': 11, '英雄': 12,
+            '神射手': 20, '箭神': 21, '神偷': 22, '暗影神偷': 22, '夜使者': 23, '槍神': 24, '拳霸': 25,
+            '主教': 30, '火毒': 31, '火毒魔導士': 31, '火毒大魔導士': 31, '冰雷': 32, '冰雷魔導士': 32, '冰雷大魔導士': 32
+        };
+
+        allAvailableCards.sort((a, b) => {
+            const catA = CATEGORY_ORDER[a.category] || 99;
+            const catB = CATEGORY_ORDER[b.category] || 99;
+            if (catA !== catB) return catA - catB;
+
+            const jobA = JOB_ORDER_RANK[a.job] || 99;
+            const jobB = JOB_ORDER_RANK[b.job] || 99;
+            if (jobA !== jobB) return jobA - jobB;
+
+            if ((b.level || 0) !== (a.level || 0)) {
+                return (b.level || 0) - (a.level || 0);
+            }
+            return (a.id || '').localeCompare(b.id || '');
+        });
+
+        // Filter by category
+        let filteredCards = allAvailableCards;
+        if (catFilter !== 'all') {
+            filteredCards = filteredCards.filter(c => c.category === catFilter);
+        }
+
+        // Filter by search keyword
+        if (searchKeyword) {
+            filteredCards = filteredCards.filter(c => 
+                (c.id && c.id.toLowerCase().includes(searchKeyword)) ||
+                (c.job && c.job.toLowerCase().includes(searchKeyword)) ||
+                (c.memberName && c.memberName.toLowerCase().includes(searchKeyword))
+            );
+        }
+
+        if (filteredCards.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 2.5rem 1rem; color: #94a3b8;">
+                    <p style="font-size: 0.95rem; font-weight: 700; margin: 0 0 0.4rem 0;">🔍 查無符合條件的角色卡</p>
+                    <p style="font-size: 0.8rem; margin: 0;">請調整職業分類或搜尋關鍵字。</p>
+                </div>
+            `;
+            return;
+        }
+
+        const isDragonKing = isDragonKingBoss(preDraftState.boss);
+
+        // Dense flow container: 統一固定長寬，有空間就上補，名字不重複
+        let html = '<div class="predraft-cards-flow">';
+
+        filteredCards.forEach(c => {
+            const slotIdx = preDraftState.slots.findIndex(s => s && s.name === c.id && s.job === c.job);
+            const isSelected = slotIdx !== -1;
+            const slotNum = isSelected ? (isDragonKing ? (slotIdx < 6 ? `隊1-${slotIdx+1}` : `隊2-${slotIdx-5}`) : `#${slotIdx+1}`) : '';
+
+            // Check if another character from the same member is already drafted
+            const memberChars = getMemberBoundRoster(c.memberName);
+            const isSameMemberDrafted = !isSelected && preDraftState.slots.some(s => s && s.name && memberChars.some(mc => mc.id.toLowerCase() === s.name.toLowerCase() && mc.job === s.job));
+
+            const catClass = c.category === '力職' ? 'cat-force' : (c.category === '敏職' ? 'cat-dex' : 'cat-int');
+            const selectedClass = isSelected ? 'selected' : '';
+            const jobColor = getHighContrastJobColor(c.job);
+
+            const scrollTag = c.isScrollYes 
+                ? '<span style="font-size:0.68rem; color:#15803d; background:#dcfce7; padding:1px 4px; border-radius:3px; font-weight:800; white-space:nowrap;">吃券</span>' 
+                : '<span style="font-size:0.68rem; color:#dc2626; background:#fee2e2; padding:1px 4px; border-radius:3px; font-weight:800; white-space:nowrap;">不吃</span>';
+
+            const cardTitle = isSelected 
+                ? `[席位 ${slotNum}] 點擊退選` 
+                : `角色: ${escapeHtml(c.id)} (${escapeHtml(c.job)} Lv.${c.level}) | 擁有者: ${escapeHtml(c.memberName)}${c.notes ? ' | 備註: ' + escapeHtml(c.notes) : ''} (點擊入座)`;
+
+            // 名字不重複：卡片頂部只顯示角色 ID，下方顯示職業與吃券狀態，擁有者在 hover tooltip 中提示
+            html += `
+                <div class="predraft-card-chip ${catClass} ${selectedClass}"
+                     onclick="window.togglePreDraftCharacter('${escapeHtml(c.id)}', '${escapeHtml(c.job)}', ${c.level})"
+                     title="${cardTitle}">
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem;">
+                        <strong style="font-size: 0.88rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(c.id)}</strong>
+                        ${isSelected ? `<span style="background: #16a34a; color: #ffffff; font-size: 0.68rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; white-space: nowrap;">✓ ${slotNum}</span>` : 
+                          (isSameMemberDrafted ? `<span style="background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; white-space: nowrap;" title="${escapeHtml(c.memberName)} 已出戰其他角色">同人出戰</span>` : 
+                          `<span style="font-size: 0.72rem; color: #64748b; font-weight: 700; white-space: nowrap;">Lv.${c.level}</span>`)}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem;">
+                        <span style="font-size: 0.78rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(c.job)}</span>
+                        ${scrollTag}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += '</div>';
+        container.innerHTML = html;
+    }
+
+    window.togglePreDraftCharacter = function(charId, charJob, charLevel) {
+        const existingIdx = preDraftState.slots.findIndex(s => s && s.name === charId && s.job === charJob);
+        if (existingIdx !== -1) {
+            // Already drafted -> unassign (keep roleTag if set)
+            const existingRole = preDraftState.slots[existingIdx].roleTag || '';
+            preDraftState.slots[existingIdx] = { slotIndex: existingIdx, name: '', job: '', level: '', roleTag: existingRole };
+        } else {
+            // Find first empty slot
+            const isDragonKing = isDragonKingBoss(preDraftState.boss);
+            const maxSlots = isDragonKing ? 12 : 6;
+            const emptyIdx = preDraftState.slots.findIndex((s, i) => i < maxSlots && (!s || !s.name));
+            if (emptyIdx === -1) {
+                alert(`⚠️ 目前預排席位已滿 (${maxSlots}人)！若要替換請先退選其他角色。`);
+                return;
+            }
+            const existingRole = (preDraftState.slots[emptyIdx] && preDraftState.slots[emptyIdx].roleTag) || '';
+            preDraftState.slots[emptyIdx] = {
+                slotIndex: emptyIdx,
+                name: charId,
+                job: charJob,
+                level: charLevel,
+                roleTag: existingRole
+            };
+        }
+        renderPreDraftSlots();
+        renderPreDraftAvailableCharacters();
+    };
+
+    function setupSurveyPreDraftModal() {
+        const modal = document.getElementById('survey-predraft-modal');
+        const closeX = document.getElementById('btn-close-predraft-x');
+        const cancelBtn = document.getElementById('btn-cancel-predraft');
+        const clearSlotsBtn = document.getElementById('btn-clear-predraft-slots');
+        const applyBtn = document.getElementById('btn-apply-predraft-to-create');
+
+        const closeModal = () => {
+            if (modal) modal.style.display = 'none';
+            preDraftState.editingRaidId = null;
+            const titleEl = document.getElementById('predraft-modal-title');
+            if (titleEl) titleEl.textContent = '🎯 時段快速預排';
+            const applyBtnText = document.getElementById('predraft-apply-btn-text');
+            if (applyBtnText) applyBtnText.textContent = '🚀 直接發佈出隊至看板';
+            const charsTitle = document.getElementById('predraft-chars-section-title');
+            if (charsTitle) charsTitle.textContent = '🎴 當天可出戰角色卡';
+        };
+
+        if (modal) {
+            modal.onclick = (e) => {
+                if (e.target === modal) closeModal();
+            };
+        }
+
+        if (closeX) closeX.onclick = closeModal;
+        if (cancelBtn) cancelBtn.onclick = closeModal;
+        if (clearSlotsBtn) {
+            clearSlotsBtn.onclick = () => {
+                const isDragonKing = isDragonKingBoss(preDraftState.boss);
+                const maxSlots = isDragonKing ? 12 : 6;
+                preDraftState.slots = Array.from({ length: maxSlots }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '', roleTag: '' }));
+                renderPreDraftSlots();
+                renderPreDraftAvailableCharacters();
+            };
+        }
+
+        if (applyBtn) {
+            applyBtn.onclick = async () => {
+                const validMembers = preDraftState.slots.filter(s => s && s.name);
+                if (validMembers.length === 0) {
+                    alert("請至少安排一位角色入座再建立出團！");
+                    return;
+                }
+
+                try {
+                    const bossName = preDraftState.boss || '闇黑龍王';
+                    const isDk = isDragonKingBoss(bossName);
+                    const gamesCount = parseInt(preDraftState.games, 10) || 7;
+                    const maxPlayers = isDk ? 12 : 6;
+
+                    // Date & Time computation
+                    const dateObj = preDraftState.dateObj || new Date();
+                    const dateStr = preDraftState.dateStr || `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+                    const timeStr = preDraftState.targetTimeStr || '20:00';
+
+                    // Parse parts into scheduled timestamp
+                    let [y, m, d] = dateStr.split('-').map(Number);
+                    if (!y || isNaN(y)) {
+                        y = dateObj.getFullYear();
+                        m = dateObj.getMonth() + 1;
+                        d = dateObj.getDate();
+                    }
+                    const [hrs, mins] = timeStr.split(':').map(Number);
+                    const schedDate = new Date(y, m - 1, d, hrs || 20, mins || 0, 0);
+
+                    const weekDays = ['日','一','二','三','四','五','六'];
+                    const weekDay = weekDays[schedDate.getDay()];
+                    const fullTimeText = `${m}/${d} (${weekDay}) ${timeStr}`;
+
+                    const predraftNoteInput = document.getElementById('predraft-note-input');
+                    const noteText = predraftNoteInput ? predraftNoteInput.value.trim() : '';
+
+                    const creatorName = getCurrentEffectiveUser() || '管理員';
+
+                    // Slot roles map
+                    const slotRolesMap = {};
+                    preDraftState.slots.forEach((s, idx) => {
+                        if (s && s.roleTag) {
+                            slotRolesMap[idx] = s.roleTag;
+                        }
+                    });
+
+                    // Build final members
+                    const finalMembers = validMembers.map(m => {
+                        const isThisCreator = Boolean(m.name && creatorName && m.name.toLowerCase() === creatorName.toLowerCase());
+                        return {
+                            slotIndex: m.slotIndex,
+                            name: m.name,
+                            job: m.job || '',
+                            level: m.level || 120,
+                            roleTag: m.roleTag || (slotRolesMap[m.slotIndex] || ''),
+                            clientId: isThisCreator ? myClientId : 'assigned',
+                            isCreator: isThisCreator
+                        };
+                    });
+
+                    if (preDraftState.editingRaidId) {
+                        // UPDATE EXISTING RAID
+                        const raidId = preDraftState.editingRaidId;
+                        await db.ref('raids/' + raidId).update({
+                            boss: bossName,
+                            gamesCount: gamesCount,
+                            maxPlayers: maxPlayers,
+                            date: dateStr,
+                            timeStr: timeStr,
+                            time: fullTimeText,
+                            scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
+                            note: noteText,
+                            slotRoles: slotRolesMap,
+                            members: finalMembers,
+                            updatedAt: Date.now()
+                        });
+
+                        closeModal();
+                        currentSelectedBoss = bossName;
+                        renderRecruitBoard();
+
+                        alert(`🎉【${bossName}】出團隊伍已成功更新！\n時間：${fullTimeText}\n人數：${finalMembers.length}/${maxPlayers} 人`);
+                    } else {
+                        // Directly push to Firebase raids
+                        const newRaidRef = db.ref('raids').push();
+                        await newRaidRef.set({
+                            id: newRaidRef.key,
+                            boss: bossName,
+                            gamesCount: gamesCount,
+                            maxPlayers: maxPlayers,
+                            date: dateStr,
+                            timeStr: timeStr,
+                            time: fullTimeText,
+                            scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
+                            creator: creatorName,
+                            creatorClientId: myClientId,
+                            note: noteText,
+                            slotRoles: slotRolesMap,
+                            isConfirmed: false,
+                            members: finalMembers,
+                            createdAt: Date.now()
+                        });
+
+                        // Close survey predraft modal & detail modal
+                        closeModal();
+                        const detailModal = document.getElementById('survey-detail-modal');
+                        if (detailModal) detailModal.style.display = 'none';
+
+                        // Switch to Tab 2 (Recruit Board)
+                        const tabBtn = document.querySelector('.tab-btn[data-target="tab-recruit"]');
+                        if (tabBtn) tabBtn.click();
+
+                        currentSelectedBoss = bossName;
+                        renderRecruitBoard();
+
+                        alert(`🎉【${bossName}】出團隊伍已直接建立並發佈至看板！\n時間：${fullTimeText}\n人數：${finalMembers.length}/${maxPlayers} 人`);
+
+                        const recruitCard = document.getElementById('recruit-container');
+                        if (recruitCard) {
+                            recruitCard.scrollIntoView({ behavior: 'smooth' });
+                        }
+                    }
+                } catch (err) {
+                    console.error("預排直接出團錯誤:", err);
+                    alert("儲存出團失敗：" + err.message);
+                }
+            };
+        }
     }
 
     // --- Time Dropdown Logic ---
@@ -1415,16 +2227,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (bossSelect) {
             bossSelect.addEventListener('change', () => {
                 createRaidState.boss = bossSelect.value;
-                const maxSlots = isDragonKingBoss(createRaidState.boss) ? 12 : 6;
+                const isDk = isDragonKingBoss(createRaidState.boss);
+                const maxSlots = isDk ? 12 : 6;
                 if (createRaidState.slots.length !== maxSlots) {
                     const newSlots = [];
                     for (let i = 0; i < maxSlots; i++) {
-                        newSlots.push(createRaidState.slots[i] || { slotIndex: i, name: '', job: '', level: '' });
+                        newSlots.push(createRaidState.slots[i] || { slotIndex: i, name: '', job: '', level: '', roleTag: '' });
                     }
                     createRaidState.slots = newSlots;
                     if (createRaidState.activeSlotIndex >= maxSlots) {
                         createRaidState.activeSlotIndex = 0;
                     }
+                }
+                const noteInput = document.getElementById('create-raid-note');
+                if (noteInput) {
+                    noteInput.placeholder = isDk
+                        ? "例如：魅惑1大鎖/魅惑2Eric、進場站位、各隊配置..."
+                        : "例如：進場提醒、吃券分配、注意事項...";
                 }
                 renderCreateSlotsList();
                 renderCreateRosterKeys();
@@ -1438,6 +2257,22 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        window.handleCreateSlotRoleChange = function(slotIdx, val) {
+            if (!createRaidState.slots[slotIdx]) return;
+            if (val === '__custom__') {
+                const currentRole = createRaidState.slots[slotIdx].roleTag || '';
+                const isDk = isDragonKingBoss(createRaidState.boss);
+                const exampleText = isDk ? "魅惑1、煙1、自訂備註" : "吃券打手、自訂備註";
+                const customVal = prompt(`請輸入此席位的自訂定位或備註 (例如: ${exampleText})：`, currentRole);
+                if (customVal !== null) {
+                    createRaidState.slots[slotIdx].roleTag = customVal.trim();
+                }
+            } else {
+                createRaidState.slots[slotIdx].roleTag = val;
+            }
+            renderCreateSlotsList();
+        };
+
         // --- Render Slots in Left Column ---
         function renderCreateSlotsList() {
             const container = document.getElementById('create-team-slots-container');
@@ -1448,7 +2283,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const maxSlots = isDragonKing ? 12 : 6;
 
             while (createRaidState.slots.length < maxSlots) {
-                createRaidState.slots.push({ slotIndex: createRaidState.slots.length, name: '', job: '', level: '' });
+                createRaidState.slots.push({ slotIndex: createRaidState.slots.length, name: '', job: '', level: '', roleTag: '' });
             }
             if (createRaidState.slots.length > maxSlots) {
                 createRaidState.slots = createRaidState.slots.slice(0, maxSlots);
@@ -1458,6 +2293,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isFilled = !!(s && s.name);
                 const isActive = (createRaidState.activeSlotIndex === idx);
                 const slotNum = isDragonKing ? (idx < 6 ? idx + 1 : idx - 5) : idx + 1;
+                const isDragonKing = isDragonKingBoss(createRaidState.boss);
+                const roleTag = (s && s.roleTag) || '';
+                const isSeduce = roleTag.includes('魅惑');
+                const isSmoke = roleTag.includes('煙');
+                const standardRoles = ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2'];
+                const isCustom = roleTag && !standardRoles.includes(roleTag);
+
+                const roleSelectHtml = `
+                    <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${isSeduce ? 'seduce' : ''} ${isSmoke ? 'smoke' : ''}" 
+                            onclick="event.stopPropagation();" 
+                            onchange="event.stopPropagation(); window.handleCreateSlotRoleChange(${idx}, this.value);"
+                            title="設定席位戰術定位 (自訂 / 魅惑 / 煙)">
+                        ${isDragonKing ? `
+                            <option value="">定位</option>
+                            <option value="魅惑1" ${roleTag === '魅惑1' ? 'selected' : ''}>💖 魅惑 1</option>
+                            <option value="魅惑2" ${roleTag === '魅惑2' ? 'selected' : ''}>💖 魅惑 2</option>
+                            <option value="魅惑3" ${roleTag === '魅惑3' ? 'selected' : ''}>💖 魅惑 3</option>
+                            <option value="魅惑4" ${roleTag === '魅惑4' ? 'selected' : ''}>💖 魅惑 4</option>
+                            <option value="煙1" ${roleTag === '煙1' ? 'selected' : ''}>💨 煙 1</option>
+                            <option value="煙2" ${roleTag === '煙2' ? 'selected' : ''}>💨 煙 2</option>
+                            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
+                            <option value="__custom__">✏️ 自訂...</option>
+                        ` : `
+                            <option value="">定位</option>
+                            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
+                            <option value="__custom__">✏️ 自訂...</option>
+                        `}
+                    </select>
+                `;
 
                 const item = document.createElement('div');
                 item.className = `create-slot-box ${isFilled ? 'filled' : 'empty'} ${isActive ? 'active' : ''}`;
@@ -1467,6 +2331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.innerHTML = `
                         <div class="slot-box-top">
                             <span class="slot-box-num">#${slotNum}</span>
+                            ${roleSelectHtml}
                             <button type="button" class="slot-box-del" onclick="event.stopPropagation(); window.removeCreateSlotMember(${idx});" title="移除此成員">✕</button>
                         </div>
                         <div class="slot-box-id">${escapeHtml(s.name)}</div>
@@ -1477,7 +2342,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 } else {
                     item.innerHTML = `
-                        <div class="slot-box-empty-title">席位 ${slotNum}</div>
+                        <div class="slot-box-top">
+                            <span class="slot-box-num">#${slotNum}</span>
+                            ${roleSelectHtml}
+                        </div>
+                        <div class="slot-box-empty-title ${isDragonKing && isSeduce ? 'empty-seduce' : ''}">
+                            ${roleTag ? `<span style="font-size:0.8rem; font-weight:800; ${isSeduce ? 'color:#db2777;' : (isSmoke ? 'color:#475569;' : 'color:#2563eb;')}">(${escapeHtml(roleTag)} 空位)</span>` : `席位 ${slotNum}`}
+                        </div>
+                        <div style="font-size: 0.68rem; color: #94a3b8; text-align: center;">點擊入座</div>
                     `;
                 }
 
@@ -1651,8 +2523,9 @@ document.addEventListener('DOMContentLoaded', () => {
         window.assignCharacterToCreateSlot = function(charId, charJob, charLevel) {
             const existingIdx = createRaidState.slots.findIndex(s => s && s.name === charId && s.job === charJob);
             if (existingIdx !== -1) {
-                // Clicking assigned character unassigns it!
-                createRaidState.slots[existingIdx] = { slotIndex: existingIdx, name: '', job: '', level: '' };
+                // Clicking assigned character unassigns it! Keep roleTag if present
+                const existingRole = createRaidState.slots[existingIdx].roleTag || '';
+                createRaidState.slots[existingIdx] = { slotIndex: existingIdx, name: '', job: '', level: '', roleTag: existingRole };
                 createRaidState.activeSlotIndex = existingIdx;
                 renderCreateSlotsList();
                 renderCreateRosterKeys();
@@ -1664,11 +2537,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (targetIdx < 0 || targetIdx >= maxSlots) targetIdx = 0;
 
             const currentOrganizer = getCurrentEffectiveUser();
+            const existingRole = (createRaidState.slots[targetIdx] && createRaidState.slots[targetIdx].roleTag) || '';
             createRaidState.slots[targetIdx] = {
                 slotIndex: targetIdx,
                 name: charId,
                 job: charJob,
                 level: charLevel,
+                roleTag: existingRole,
                 isCreator: Boolean(currentOrganizer && charId.toLowerCase() === currentOrganizer.toLowerCase())
             };
 
@@ -1689,7 +2564,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         window.removeCreateSlotMember = function(slotIdx) {
             if (createRaidState.slots[slotIdx]) {
-                createRaidState.slots[slotIdx] = { slotIndex: slotIdx, name: '', job: '', level: '' };
+                const existingRole = createRaidState.slots[slotIdx].roleTag || '';
+                createRaidState.slots[slotIdx] = { slotIndex: slotIdx, name: '', job: '', level: '', roleTag: existingRole };
                 createRaidState.activeSlotIndex = slotIdx;
                 renderCreateSlotsList();
                 renderCreateRosterKeys();
@@ -1773,12 +2649,12 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // --- Open Create Raid Modal (支援帶入複製隊伍 copyFromTeam) ---
-        window.openCreateRaidModal = function(preferredBoss, copyFromTeam = null) {
+        // --- Open Create Raid Modal (支援帶入複製隊伍 copyFromTeam，以及編輯現有隊伍 editingRaidId) ---
+        window.openCreateRaidModal = function(preferredBoss, copyFromTeam = null, editingRaidId = null) {
             if (!canCreateTeam()) {
                 if (typeof window.openGeneralLoginModal === 'function') {
                     window.openGeneralLoginModal(() => {
-                        window.openCreateRaidModal(preferredBoss, copyFromTeam);
+                        window.openCreateRaidModal(preferredBoss, copyFromTeam, editingRaidId);
                     });
                 } else {
                     alert('建立隊伍需先登入帳號！');
@@ -1786,12 +2662,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
+            createRaidState.editingRaidId = editingRaidId || null;
+
+            const modalTitleSpan = document.getElementById('create-raid-modal-title');
+            const submitBtn = document.getElementById('btn-confirm-create-raid');
+            if (modalTitleSpan) {
+                modalTitleSpan.textContent = editingRaidId ? '✏️ 編輯出團與席位調整' : '⚔️ 建立出團與席位挑選';
+            }
+            if (submitBtn) {
+                submitBtn.textContent = editingRaidId ? '💾 儲存修改' : '✅ 確認建立出團';
+            }
+
             const targetBoss = (copyFromTeam && copyFromTeam.boss) ? normalizeBossName(copyFromTeam.boss) : (preferredBoss || "克雷塞爾");
             const targetGames = (copyFromTeam && copyFromTeam.gamesCount) ? copyFromTeam.gamesCount : 7;
             createRaidState.boss = targetBoss;
             createRaidState.games = targetGames;
+            createRaidState.note = (copyFromTeam && copyFromTeam.note) ? copyFromTeam.note : '';
             createRaidState.searchKeyword = "";
             createRaidState.filterCat = "all";
+
+            const isTargetDk = isDragonKingBoss(targetBoss);
+            const createNoteInput = document.getElementById('create-raid-note');
+            if (createNoteInput) {
+                createNoteInput.value = createRaidState.note;
+                createNoteInput.placeholder = isTargetDk
+                    ? "例如：魅惑1大鎖/魅惑2Eric、進場站位、各隊配置..."
+                    : "例如：進場提醒、吃券分配、注意事項...";
+            }
 
             // Sync Dropdowns on the left
             if (bossSelect) bossSelect.value = targetBoss;
@@ -1800,7 +2697,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const createSearchInput = document.getElementById('create-roster-search');
             if (createSearchInput) createSearchInput.value = '';
 
-            const maxSlots = isDragonKingBoss(targetBoss) ? 12 : 6;
+            const maxSlots = isTargetDk ? 12 : 6;
 
             const loggedName = getCurrentEffectiveUser();
 
@@ -1808,21 +2705,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 const sourceMembers = Array.isArray(copyFromTeam.members) ? copyFromTeam.members : Object.values(copyFromTeam.members);
                 createRaidState.slots = Array.from({ length: maxSlots }, (_, i) => {
                     const found = sourceMembers.find((m, idx) => (m && (m.slotIndex !== undefined ? m.slotIndex : idx) === i));
+                    const presetRole = copyFromTeam.slotRoles && copyFromTeam.slotRoles[i] ? copyFromTeam.slotRoles[i] : '';
                     if (found && found.name) {
                         return {
                             slotIndex: i,
                             name: found.name,
                             job: found.job || '',
                             level: found.level || 120,
+                            roleTag: found.roleTag || presetRole || '',
                             isCreator: Boolean(loggedName && found.name.toLowerCase() === loggedName.toLowerCase())
                         };
                     }
-                    return { slotIndex: i, name: '', job: '', level: '' };
+                    return { slotIndex: i, name: '', job: '', level: '', roleTag: presetRole || '' };
                 });
                 const firstEmpty = createRaidState.slots.findIndex(s => !s.name);
                 createRaidState.activeSlotIndex = firstEmpty !== -1 ? firstEmpty : 0;
             } else {
-                createRaidState.slots = Array.from({ length: maxSlots }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '' }));
+                createRaidState.slots = Array.from({ length: maxSlots }, (_, i) => ({ slotIndex: i, name: '', job: '', level: '', roleTag: '' }));
 
                 // Auto-fill slot 0 with organizer's saved character or logged-in user if available
                 const saved = getSavedChar();
@@ -1832,6 +2731,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         name: saved.name,
                         job: saved.job || '黑騎士',
                         level: saved.level || 120,
+                        roleTag: '',
                         isCreator: Boolean(loggedName && saved.name.toLowerCase() === loggedName.toLowerCase())
                     };
                     createRaidState.activeSlotIndex = 1; // start picking for slot 2
@@ -1842,6 +2742,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         name: loggedName,
                         job: foundRoster ? foundRoster.job : '黑騎士',
                         level: foundRoster ? foundRoster.level : 120,
+                        roleTag: '',
                         isCreator: true
                     };
                     createRaidState.activeSlotIndex = 1;
@@ -1857,10 +2758,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
-            // Reset Date & Time (複製時預設為今天，方便重新選定新出團時間)
-            createRaidState.dateObj = new Date();
-            if (raidDatePicker) raidDatePicker.setDate(new Date());
-            updateCreateTimeDropdown(new Date());
+            // Set Date & Time (若有傳入特定日期/時間，如預排時段，優先採用；否則預設為今天)
+            const targetDate = (copyFromTeam && copyFromTeam.targetDateObj) ? copyFromTeam.targetDateObj : new Date();
+            createRaidState.dateObj = targetDate;
+            if (raidDatePicker) raidDatePicker.setDate(targetDate);
+            updateCreateTimeDropdown(targetDate);
+
+            if (copyFromTeam && copyFromTeam.targetTimeStr) {
+                createRaidState.timeStr = copyFromTeam.targetTimeStr;
+                if (timeSelect) {
+                    // Check if option exists in dropdown, if not add it
+                    let exists = false;
+                    for (let i = 0; i < timeSelect.options.length; i++) {
+                        if (timeSelect.options[i].value === copyFromTeam.targetTimeStr) {
+                            exists = true;
+                            break;
+                        }
+                    }
+                    if (!exists) {
+                        const opt = document.createElement('option');
+                        opt.value = copyFromTeam.targetTimeStr;
+                        opt.textContent = copyFromTeam.targetTimeStr;
+                        timeSelect.appendChild(opt);
+                    }
+                    timeSelect.value = copyFromTeam.targetTimeStr;
+                }
+            }
 
             // Switch to Tab 2 (Recruit / Planner Lobby) if not currently active
             const tabBtn = document.querySelector('.tab-btn[data-target="tab-recruit"]');
@@ -1883,6 +2806,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     games: createRaidState.games,
                     dateStr: document.getElementById('raid-date') ? document.getElementById('raid-date').value : '',
                     timeStr: createRaidState.timeStr,
+                    note: document.getElementById('create-raid-note') ? document.getElementById('create-raid-note').value : '',
                     slots: createRaidState.slots,
                     activeSlotIndex: createRaidState.activeSlotIndex,
                     timestamp: Date.now()
@@ -1906,8 +2830,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 createRaidState.boss = draft.boss || "克雷塞爾";
                 createRaidState.games = draft.games || 7;
                 createRaidState.timeStr = draft.timeStr || "21:00";
+                createRaidState.note = draft.note || '';
                 createRaidState.slots = draft.slots || [];
                 createRaidState.activeSlotIndex = draft.activeSlotIndex !== undefined ? draft.activeSlotIndex : 0;
+
+                const createNoteInput = document.getElementById('create-raid-note');
+                if (createNoteInput) createNoteInput.value = createRaidState.note;
 
                 if (bossSelect) bossSelect.value = createRaidState.boss;
                 if (gamesSelect) gamesSelect.value = String(createRaidState.games);
@@ -1978,7 +2906,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // --- Confirm Create Raid Submit ---
         const btnConfirmCreate = document.getElementById('btn-confirm-create-raid');
         if (btnConfirmCreate) {
-            btnConfirmCreate.onclick = () => {
+            btnConfirmCreate.onclick = async () => {
                 if (!canCreateTeam()) {
                     alert("建立隊伍需先登入帳號！");
                     if (typeof window.openGeneralLoginModal === 'function') {
@@ -2016,6 +2944,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const weekDay = weekDays[schedDate.getDay()];
                     const fullTimeText = `${m}/${d} (${weekDay}) ${createRaidState.timeStr}`;
 
+                    const noteInput = document.getElementById('create-raid-note');
+                    const noteText = noteInput ? noteInput.value.trim() : (createRaidState.note || '');
+                    createRaidState.note = noteText;
+
+                    const isDk = isDragonKingBoss(createRaidState.boss);
+                    const slotRolesMap = {};
+                    createRaidState.slots.forEach((s, idx) => {
+                        if (s && s.roleTag) {
+                            slotRolesMap[idx] = s.roleTag;
+                        }
+                    });
+
                     const finalMembers = validMembers.map(m => {
                         const isThisCreator = Boolean(m.name && creatorName && m.name.toLowerCase() === creatorName.toLowerCase());
                         return {
@@ -2023,57 +2963,95 @@ document.addEventListener('DOMContentLoaded', () => {
                             name: m.name,
                             job: m.job,
                             level: m.level,
+                            roleTag: m.roleTag || (slotRolesMap[m.slotIndex] || ''),
                             clientId: isThisCreator ? myClientId : 'assigned',
                             isCreator: isThisCreator
                         };
                     });
 
-                    const newRaidRef = db.ref('raids').push();
-                    newRaidRef.set({
-                        id: newRaidRef.key,
-                        boss: createRaidState.boss,
-                        gamesCount: createRaidState.games,
-                        maxPlayers: isDragonKingBoss(createRaidState.boss) ? 12 : 6,
-                        date: dateStr,
-                        timeStr: createRaidState.timeStr,
-                        time: fullTimeText,
-                        scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
-                        creator: creatorName,
-                        creatorClientId: myClientId,
-                        isConfirmed: false,
-                        members: finalMembers,
-                        createdAt: Date.now()
-                    });
+                    if (createRaidState.editingRaidId) {
+                        const targetId = createRaidState.editingRaidId;
+                        await db.ref(`raids/${targetId}`).update({
+                            boss: createRaidState.boss,
+                            gamesCount: createRaidState.games,
+                            maxPlayers: isDragonKingBoss(createRaidState.boss) ? 12 : 6,
+                            date: dateStr,
+                            timeStr: createRaidState.timeStr,
+                            time: fullTimeText,
+                            scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
+                            note: noteText,
+                            slotRoles: slotRolesMap,
+                            members: finalMembers,
+                            updatedAt: Date.now()
+                        });
 
-                    // Clear draft on successful submit
-                    discardRaidDraft();
+                        discardRaidDraft();
+                        createRaidState.editingRaidId = null;
 
-                    if (createModal) createModal.style.display = 'none';
-                    currentSelectedBoss = createRaidState.boss;
-                    renderRecruitBoard();
+                        if (createModal) createModal.style.display = 'none';
+                        currentSelectedBoss = createRaidState.boss;
+                        renderRecruitBoard();
 
-                    alert(`🎉【${createRaidState.boss}】出團隊伍已成功建立！`);
-                    const recruitCard = document.getElementById('recruit-container');
-                    if (recruitCard) recruitCard.scrollIntoView({ behavior: 'smooth' });
+                        alert(`🎉【${createRaidState.boss}】出團隊伍已成功更新！`);
+                        const recruitCard = document.getElementById('recruit-container');
+                        if (recruitCard) recruitCard.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                        const newRaidRef = db.ref('raids').push();
+                        await newRaidRef.set({
+                            id: newRaidRef.key,
+                            boss: createRaidState.boss,
+                            gamesCount: createRaidState.games,
+                            maxPlayers: isDragonKingBoss(createRaidState.boss) ? 12 : 6,
+                            date: dateStr,
+                            timeStr: createRaidState.timeStr,
+                            time: fullTimeText,
+                            scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
+                            creator: creatorName,
+                            creatorClientId: myClientId,
+                            note: noteText,
+                            slotRoles: slotRolesMap,
+                            isConfirmed: false,
+                            members: finalMembers,
+                            createdAt: Date.now()
+                        });
+
+                        // Clear draft on successful submit
+                        discardRaidDraft();
+
+                        if (createModal) createModal.style.display = 'none';
+                        currentSelectedBoss = createRaidState.boss;
+                        renderRecruitBoard();
+
+                        alert(`🎉【${createRaidState.boss}】出團隊伍已成功建立！`);
+                        const recruitCard = document.getElementById('recruit-container');
+                        if (recruitCard) recruitCard.scrollIntoView({ behavior: 'smooth' });
+                    }
                 } catch (err) {
-                    console.error("建立出團錯誤:", err);
-                    alert("建立出團失敗：" + err.message);
+                    console.error("建立或更新出團錯誤:", err);
+                    alert("操作失敗：" + err.message);
                 }
             };
         }
 
         const btnCloseCreateX = document.getElementById('btn-close-create-x');
         if (btnCloseCreateX && createModal) {
-            btnCloseCreateX.onclick = () => { createModal.style.display = 'none'; };
+            btnCloseCreateX.onclick = () => { 
+                createModal.style.display = 'none'; 
+                createRaidState.editingRaidId = null;
+            };
         }
         const btnCancelCreate = document.getElementById('btn-cancel-create');
         if (btnCancelCreate && createModal) {
-            btnCancelCreate.onclick = () => { createModal.style.display = 'none'; };
+            btnCancelCreate.onclick = () => { 
+                createModal.style.display = 'none'; 
+                createRaidState.editingRaidId = null;
+            };
         }
         if (createModal) {
             createModal.addEventListener('click', (e) => {
                 if (e.target === createModal) {
                     createModal.style.display = 'none';
+                    createRaidState.editingRaidId = null;
                 }
             });
         }
@@ -2148,11 +3126,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
+                    const slotRole = (raid && raid.slotRoles && raid.slotRoles[slotIdx]) ? raid.slotRoles[slotIdx] : '';
                     members.push({
                         slotIndex: slotIdx,
                         name: charName,
                         job: charJob,
                         level: charLevel,
+                        roleTag: slotRole,
                         clientId: myClientId
                     });
 
@@ -2275,11 +3255,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const slotRole = (raid && raid.slotRoles && raid.slotRoles[slotIndex]) ? raid.slotRoles[slotIndex] : '';
         members.push({
             slotIndex: slotIndex,
             name: charName,
             job: charJob,
             level: charLevel,
+            roleTag: slotRole,
             clientId: myClientId
         });
 
@@ -2299,9 +3281,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const isDragonKing = raid && raid.boss && isDragonKingBoss(raid.boss);
         const teamName = isDragonKing ? (currentJoinSlotIdx < 6 ? '第一隊 ' : '第二隊 ') : '';
         const slotNum = isDragonKing ? (currentJoinSlotIdx < 6 ? currentJoinSlotIdx + 1 : currentJoinSlotIdx - 5) : currentJoinSlotIdx + 1;
+        const slotRole = (raid && raid.slotRoles && raid.slotRoles[currentJoinSlotIdx]) ? raid.slotRoles[currentJoinSlotIdx] : '';
+        const isSeduce = slotRole && slotRole.includes('魅惑');
+        const isSmoke = slotRole && slotRole.includes('煙');
+        const roleIcon = isSeduce ? '💖 ' : (isSmoke ? '💨 ' : '');
+        const roleText = slotRole ? ` 【${roleIcon}${slotRole}】` : '';
         const descEl = document.getElementById('join-slot-desc');
         if (descEl) {
-            descEl.textContent = `報名位置：${teamName}第 ${slotNum} 位。點擊角色卡即可直接入座！`;
+            descEl.textContent = `報名席位：${teamName}第 ${slotNum} 位${roleText}。點選角色卡即可直接入座！`;
         }
 
         // Reset search input
@@ -2358,6 +3345,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 scheduledTimestamp: raid.scheduledTimestamp || Date.now(),
                 members: raidMembers,
                 gamesCount: raid.gamesCount || 7,
+                note: raid.note || '',
+                slotRoles: raid.slotRoles || {},
                 rolledChannels: [Math.floor(Math.random() * 2000) + 1],
                 finalChannel: null,
                 creator: effectiveCreator,
@@ -2390,6 +3379,259 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.openCreateRaidModal === 'function') {
             window.openCreateRaidModal(raid.boss, raid);
         }
+    };
+
+    window.editRaid = function(raidId) {
+        const raid = raidsDB[raidId];
+        if (!raid) {
+            alert('找不到該隊伍資料！');
+            return;
+        }
+
+        const loggedUser = getCurrentEffectiveUser();
+        const isOwner = Boolean(loggedUser && raid.creator && loggedUser.toLowerCase() === raid.creator.toLowerCase());
+        const isMaster = (typeof isAdmin === 'function' && isAdmin());
+        if (!isOwner && !isMaster) {
+            alert('⚠️ 編輯出團隊伍僅限管理員或隊伍建立者！請先以管理員身分登入。');
+            const adminAuthBtn = document.getElementById('btn-admin-auth');
+            if (adminAuthBtn) adminAuthBtn.click();
+            return;
+        }
+
+        const modal = document.getElementById('survey-predraft-modal');
+        if (!modal) {
+            alert('找不到預排視窗元件！');
+            return;
+        }
+
+        preDraftState.editingRaidId = raidId;
+
+        // Parse date
+        let targetDateObj = new Date();
+        if (raid.date) {
+            const parts = raid.date.replace(/-/g, '/').split('/').map(Number);
+            if (parts.length === 3 && !isNaN(parts[0])) {
+                targetDateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+            }
+        }
+        preDraftState.dateObj = targetDateObj;
+        preDraftState.dateStr = raid.date || `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+
+        const m = targetDateObj.getMonth() + 1;
+        const d = targetDateObj.getDate();
+        const dayNames = ['日','一','二','三','四','五','六'];
+        const weekDay = dayNames[targetDateObj.getDay()];
+        preDraftState.dateLabel = `${m}/${d}(${weekDay})`;
+
+        // Determine period
+        let period = '晚';
+        if (raid.timeStr) {
+            const hour = parseInt(raid.timeStr.split(':')[0], 10);
+            if (!isNaN(hour) && hour < 18) {
+                period = '午';
+            }
+        }
+        preDraftState.period = period;
+        preDraftState.targetTimeStr = raid.timeStr || (period === '午' ? '14:00' : '20:00');
+
+        preDraftState.boss = normalizeBossName(raid.boss || '克雷塞爾');
+        preDraftState.games = parseInt(raid.gamesCount, 10) || 7;
+        preDraftState.catFilter = 'all';
+        preDraftState.searchKeyword = '';
+
+        // Initialize slots
+        const isDragonKing = isDragonKingBoss(preDraftState.boss);
+        const maxSlots = isDragonKing ? 12 : 6;
+        const newSlots = Array.from({ length: maxSlots }, (_, i) => ({
+            slotIndex: i,
+            name: '',
+            job: '',
+            level: '',
+            roleTag: (raid.slotRoles && raid.slotRoles[i]) || ''
+        }));
+
+        if (Array.isArray(raid.members)) {
+            raid.members.forEach(member => {
+                if (member && typeof member.slotIndex === 'number' && member.slotIndex < maxSlots) {
+                    newSlots[member.slotIndex] = {
+                        slotIndex: member.slotIndex,
+                        name: member.name || '',
+                        job: member.job || '',
+                        level: member.level || 120,
+                        roleTag: member.roleTag || (raid.slotRoles && raid.slotRoles[member.slotIndex]) || ''
+                    };
+                }
+            });
+        }
+        preDraftState.slots = newSlots;
+
+        // Determine week, dayDef, and targetSlotDef for this raid's scheduled date & period
+        const activeWeekId = currentMatrixWeekId || TARGET_DEFAULT_WEEK_ID;
+        const tue = getTuesdayOfWeek(targetDateObj);
+        const calcWeekId = `${tue.getFullYear()}-${String(tue.getMonth() + 1).padStart(2, '0')}-${String(tue.getDate()).padStart(2, '0')}`;
+        const targetWeekId = (typeof weekOptions !== 'undefined' && Array.isArray(weekOptions) && weekOptions.some(o => o.weekId === calcWeekId)) ? calcWeekId : activeWeekId;
+
+        const weekDays = getWeekDaysDetails(targetWeekId);
+        let dayDef = weekDays.find(d => 
+            d.dateObj.getFullYear() === targetDateObj.getFullYear() &&
+            d.dateObj.getMonth() === targetDateObj.getMonth() &&
+            d.dateObj.getDate() === targetDateObj.getDate()
+        );
+        if (!dayDef) {
+            const dayMap = [5, 6, 0, 1, 2, 3, 4];
+            dayDef = weekDays[dayMap[targetDateObj.getDay()]] || weekDays[0];
+        }
+
+        let targetSlotDef = null;
+        if (dayDef.isWeekend || dayDef.isSpecialHoliday) {
+            targetSlotDef = (period === '午') ? dayDef.slots[0] : dayDef.slots[1];
+        } else {
+            targetSlotDef = dayDef.slots[0];
+        }
+
+        // Filter respondents specifically for this raid's scheduled timeslot
+        const responses = Object.values(surveyResponses || {}).filter(r => {
+            const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
+            const weekMatch = (targetWeekId === TARGET_DEFAULT_WEEK_ID) 
+                ? (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29") 
+                : (rWeek === targetWeekId);
+            if (!weekMatch) return false;
+            return isUserSlotChecked(r.slots, targetSlotDef, dayDef);
+        });
+
+        preDraftState.availableRespondents = responses;
+
+        // Set UI text & Badges
+        const titleEl = document.getElementById('predraft-modal-title');
+        if (titleEl) titleEl.textContent = '✏️ 編輯出團隊伍';
+
+        const applyBtnText = document.getElementById('predraft-apply-btn-text');
+        if (applyBtnText) applyBtnText.textContent = '💾 儲存隊伍修改';
+
+        const charsTitle = document.getElementById('predraft-chars-section-title');
+        if (charsTitle) charsTitle.textContent = '🎴 當天可出戰角色卡';
+
+        const badgeEl = document.getElementById('predraft-timeslot-badge');
+        if (badgeEl) {
+            badgeEl.textContent = `📅 ${dayDef.dateLabel}【${period === '午' ? '下午' : '晚上'}】`;
+        }
+
+        const countBadge = document.getElementById('predraft-members-count-badge');
+        if (countBadge) {
+            countBadge.textContent = `可出團成員 ${responses.length} 人`;
+        }
+
+        // Init Boss Select
+        const bossSelect = document.getElementById('predraft-boss-select');
+        if (bossSelect) {
+            bossSelect.innerHTML = BOSS_LIST.map(b => `
+                <option value="${b.name}" ${b.name === preDraftState.boss ? 'selected' : ''}>${b.icon} ${b.name}</option>
+            `).join('');
+            bossSelect.onchange = () => {
+                preDraftState.boss = bossSelect.value;
+                const newMaxSlots = isDragonKingBoss(preDraftState.boss) ? 12 : 6;
+                const updatedSlots = [];
+                for (let i = 0; i < newMaxSlots; i++) {
+                    updatedSlots.push(preDraftState.slots[i] || { slotIndex: i, name: '', job: '', level: '', roleTag: '' });
+                }
+                preDraftState.slots = updatedSlots;
+                renderPreDraftSlots();
+            };
+        }
+
+        // Init Games Select
+        const gamesSelect = document.getElementById('predraft-games-select');
+        if (gamesSelect) {
+            gamesSelect.value = String(preDraftState.games || 7);
+            gamesSelect.onchange = () => {
+                preDraftState.games = parseInt(gamesSelect.value, 10) || 7;
+            };
+        }
+
+        // Init Time Select
+        const timeSelect = document.getElementById('predraft-time-select');
+        if (timeSelect) {
+            timeSelect.innerHTML = '';
+            const allTimes = [
+                '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
+                '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30', '23:00'
+            ];
+            if (preDraftState.targetTimeStr && !allTimes.includes(preDraftState.targetTimeStr)) {
+                allTimes.push(preDraftState.targetTimeStr);
+                allTimes.sort();
+            }
+            allTimes.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t;
+                opt.textContent = t;
+                timeSelect.appendChild(opt);
+            });
+            timeSelect.value = preDraftState.targetTimeStr;
+            timeSelect.onchange = () => {
+                preDraftState.targetTimeStr = timeSelect.value;
+                const newHour = parseInt(timeSelect.value.split(':')[0], 10);
+                const newPeriod = (!isNaN(newHour) && newHour < 18) ? '午' : '晚';
+                if (newPeriod !== preDraftState.period) {
+                    preDraftState.period = newPeriod;
+                    let newTargetSlotDef = null;
+                    if (dayDef.isWeekend || dayDef.isSpecialHoliday) {
+                        newTargetSlotDef = (newPeriod === '午') ? dayDef.slots[0] : dayDef.slots[1];
+                    } else {
+                        newTargetSlotDef = dayDef.slots[0];
+                    }
+                    const newResponses = Object.values(surveyResponses || {}).filter(r => {
+                        const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
+                        const weekMatch = (targetWeekId === TARGET_DEFAULT_WEEK_ID) 
+                            ? (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29") 
+                            : (rWeek === targetWeekId);
+                        if (!weekMatch) return false;
+                        return isUserSlotChecked(r.slots, newTargetSlotDef, dayDef);
+                    });
+                    preDraftState.availableRespondents = newResponses;
+                    if (countBadge) {
+                        countBadge.textContent = `可出團成員 ${newResponses.length} 人`;
+                    }
+                    renderPreDraftAvailableCharacters();
+                }
+                if (badgeEl) {
+                    badgeEl.textContent = `📅 ${dayDef.dateLabel}【${preDraftState.period === '午' ? '下午' : '晚上'}】`;
+                }
+            };
+        }
+
+        // Note Input
+        const noteInput = document.getElementById('predraft-note-input');
+        if (noteInput) {
+            noteInput.value = raid.note || '';
+        }
+
+        // Search Input & Filter
+        const searchInput = document.getElementById('predraft-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.oninput = () => {
+                preDraftState.searchKeyword = searchInput.value || '';
+                renderPreDraftAvailableCharacters();
+            };
+        }
+
+        const catBtnGroup = document.getElementById('predraft-cat-filter-group');
+        if (catBtnGroup) {
+            catBtnGroup.querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === 'all');
+                btn.onclick = () => {
+                    catBtnGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    preDraftState.catFilter = btn.dataset.cat || 'all';
+                    renderPreDraftAvailableCharacters();
+                };
+            });
+        }
+
+        renderPreDraftSlots();
+        renderPreDraftAvailableCharacters();
+
+        modal.style.display = 'flex';
     };
 
     // --- Tab 1: Recruitment Board (Boss Category & Teams View) ---
@@ -2615,16 +3857,32 @@ document.addEventListener('DOMContentLoaded', () => {
             const renderSlot = (slotIdx) => {
                 const m = members.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
                 const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
+                const slotRole = (m && m.roleTag) ? m.roleTag : ((raid.slotRoles && raid.slotRoles[slotIdx]) ? raid.slotRoles[slotIdx] : '');
+                const isSeduce = slotRole && slotRole.includes('魅惑');
+                const isSmoke = slotRole && slotRole.includes('煙');
+
+                let roleBadgeHtml = '';
+                if (slotRole) {
+                    if (isSeduce) {
+                        roleBadgeHtml = `<span class="member-role-badge seduce" title="戰術定位">💖 ${escapeHtml(slotRole)}</span>`;
+                    } else if (isSmoke) {
+                        roleBadgeHtml = `<span class="member-role-badge smoke" title="戰術定位">💨 ${escapeHtml(slotRole)}</span>`;
+                    } else {
+                        roleBadgeHtml = `<span class="member-role-badge general" title="戰術定位">🏷️ ${escapeHtml(slotRole)}</span>`;
+                    }
+                }
+
                 if (m) {
                     const isActuallyCreator = Boolean(m.name && displayCreator && m.name.toLowerCase() === displayCreator.toLowerCase());
                     if (isExpired) {
                         return `
                             <div style="background: rgba(255,255,255,0.03); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.06);">
-                                <div>
+                                <div style="display: flex; align-items: center; flex-wrap: wrap;">
                                     <strong style="color: #94a3b8;">${m.job}</strong> 
                                     <span style="color: #cbd5e1; font-weight: 500; margin-left: 0.3rem;">${m.name}</span> 
-                                    <span style="color: #64748b; font-size: 0.8rem;">(Lv.${m.level})</span>
+                                    <span style="color: #64748b; font-size: 0.8rem; margin-left: 0.2rem;">(Lv.${m.level})</span>
                                     ${isActuallyCreator ? '<span style="color:#94a3b8; font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
+                                    ${roleBadgeHtml}
                                 </div>
                                 <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:0.8rem; padding: 0.2rem 0.4rem;" title="移除此席位">退出</button>
                             </div>
@@ -2632,11 +3890,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     return `
                         <div style="background: rgba(255,255,255,0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.12);">
-                            <div>
+                            <div style="display: flex; align-items: center; flex-wrap: wrap;">
                                 <strong style="color: var(--primary-color);">${m.job}</strong> 
                                 <span style="color: #fff; font-weight: 600; margin-left: 0.3rem;">${m.name}</span> 
-                                <span style="color: var(--text-muted); font-size: 0.8rem;">(Lv.${m.level})</span>
+                                <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.2rem;">(Lv.${m.level})</span>
                                 ${isActuallyCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
+                                ${roleBadgeHtml}
                             </div>
                             <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;" title="退出或移除此席位">退出</button>
                         </div>
@@ -2647,8 +3906,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: #64748b; text-align: center;">未入座 (已流團)</div>
                         `;
                     }
+                    const roleIcon = isSeduce ? '💖 ' : (isSmoke ? '💨 ' : '');
+                    const slotRoleText = slotRole ? ` - ${roleIcon}${slotRole}` : '';
                     return `
-                        <div onclick="openJoinModal('${raid.id}', ${slotIdx})" style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" title="點擊報名此位置 (第 ${slotNum} 位)">➕ 點擊報名 (第 ${slotNum} 位)</div>
+                        <div onclick="openJoinModal('${raid.id}', ${slotIdx})" style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" title="點擊報名此位置 (第 ${slotNum} 位${slotRoleText})">➕ 點擊報名 (第 ${slotNum} 位${slotRoleText})</div>
                     `;
                 }
             };
@@ -2685,20 +3946,28 @@ document.addEventListener('DOMContentLoaded', () => {
             let actionsHtml = '';
             if (isExpired) {
                 actionsHtml = `
-                    <div style="display:flex; gap:0.5rem; margin-top: 0.8rem; align-items: center; flex-wrap: wrap;">
-                        <div style="flex:2; min-width: 120px; text-align: center; font-size: 0.85rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 0.65rem; font-weight: 600;">
+                    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.8rem;">
+                        <div style="text-align: center; font-size: 0.85rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 0.65rem; font-weight: 600;">
                             ⏳ 時段已過．已流團
                         </div>
-                        <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex:1.2; min-width: 95px; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer;" title="以此隊伍名單重新開團">📋 複製重開</button>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:0.8; min-width: 65px; border: 1px solid rgba(239,68,68,0.5); color: #ef4444; background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; cursor: pointer;" title="提前手動刪除此流團紀錄">刪除</button>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1.2; min-width: 95px; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 8px; padding: 0.6rem; font-size: 0.9rem; font-weight: bold; cursor: pointer;" title="以此隊伍名單重新開團">📋 複製重開</button>
+                            <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 90px; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 8px; padding: 0.6rem; font-size: 0.9rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.25rem;" title="修改時段重新編輯">✏️ 編輯隊伍</button>
+                            <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 0.8; min-width: 65px; border: 1px solid rgba(239,68,68,0.5); color: #ef4444; background: transparent; border-radius: 8px; padding: 0.6rem; font-size: 0.9rem; cursor: pointer;" title="提前手動刪除此流團紀錄">刪除</button>
+                        </div>
                     </div>
                 `;
             } else {
                 actionsHtml = `
-                    <div style="display:flex; gap:0.5rem; margin-top: 0.8rem; flex-wrap: wrap;">
-                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex:2; min-width: 110px; padding: 0.65rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; color: #fff;">✅ 確認出團</button>
-                        <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex:1.2; min-width: 95px; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer;" title="複製原班人馬建立新出團">📋 複製隊伍</button>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex:0.8; min-width: 65px; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.95rem; cursor: pointer;">刪除</button>
+                    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.8rem;">
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex: 1.4; min-width: 110px; padding: 0.65rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; color: #fff;">✅ 確認出團</button>
+                            <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 95px; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer;" title="複製原班人馬建立新出團">📋 複製隊伍</button>
+                        </div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 95px; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 8px; padding: 0.6rem; font-size: 0.9rem; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.3rem;" title="編輯此出團隊伍設定與成員">✏️ 編輯隊伍</button>
+                            <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 80px; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 8px; padding: 0.6rem; font-size: 0.9rem; cursor: pointer;">刪除</button>
+                        </div>
                     </div>
                 `;
             }
@@ -2721,10 +3990,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 : `<h3 style="margin:0; color:var(--primary-color); font-size: 1.2rem;">[${bossTitleName}]${raid.gamesCount || 7}場</h3>
                    <span style="font-weight:bold; font-size: 1.05rem; color: #fff;">${raid.time}</span>`;
 
+            const noteBannerHtml = raid.note ? `
+                <div class="raid-note-banner" style="color: ${isExpired ? '#94a3b8' : '#fed7aa'};">
+                    <strong style="color: var(--primary-color); white-space: nowrap;">📝 出團備註：</strong>
+                    <span>${escapeHtml(raid.note)}</span>
+                </div>
+            ` : '';
+
             card.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items: baseline; margin-bottom: 0.8rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.08)' : 'var(--card-border)'}; padding-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
                     ${titleHtml}
                 </div>
+                ${noteBannerHtml}
                 <div style="margin-bottom: 0.8rem; color: ${isExpired ? '#64748b' : 'var(--text-muted)'}; font-size: 0.9rem; display: flex; justify-content: space-between;">
                     <span>發起人：<strong style="color: ${isExpired ? '#94a3b8' : '#fff'};">${displayCreator}</strong></span>
                     <span>成員：<strong style="color: ${isExpired ? '#94a3b8' : (isFull ? 'var(--danger-color)' : 'var(--success-color)')}; font-size: 1rem;">${members.length}</strong> / ${maxSlots}</span>
@@ -2859,6 +4136,25 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
                 card.appendChild(header);
 
+                // Note Banner in Confirmed Team Card
+                if (team.note) {
+                    const noteBanner = document.createElement('div');
+                    noteBanner.style.background = '#fef3c7';
+                    noteBanner.style.borderLeft = '4px solid #f59e0b';
+                    noteBanner.style.padding = '0.55rem 0.85rem';
+                    noteBanner.style.borderRadius = '6px';
+                    noteBanner.style.marginBottom = '1rem';
+                    noteBanner.style.fontSize = '0.88rem';
+                    noteBanner.style.display = 'flex';
+                    noteBanner.style.alignItems = 'flex-start';
+                    noteBanner.style.gap = '0.4rem';
+                    noteBanner.innerHTML = `
+                        <strong style="color: #b45309; white-space: nowrap;">📝 出團備註：</strong>
+                        <span style="color: #92400e; font-weight: 700;">${escapeHtml(team.note)}</span>
+                    `;
+                    card.appendChild(noteBanner);
+                }
+
                 // Members Grid
                 const gridsWrapper = document.createElement('div');
                 if (isDragonKing) {
@@ -2885,20 +4181,39 @@ document.addEventListener('DOMContentLoaded', () => {
                         memberSlot.style.border = '1px solid var(--card-border)';
 
                         const member = teamMembers.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === memberIndex);
+                        const slotRole = (member && member.roleTag) ? member.roleTag : ((team.slotRoles && team.slotRoles[memberIndex]) ? team.slotRoles[memberIndex] : '');
+                        const isSeduce = slotRole && slotRole.includes('魅惑');
+                        const isSmoke = slotRole && slotRole.includes('煙');
+
                         if (member) {
                             const isActuallyCreator = Boolean(member.name && displayCreator && member.name.toLowerCase() === displayCreator.toLowerCase());
+                            let roleBadge = '';
+                            if (slotRole) {
+                                if (isSeduce) {
+                                    roleBadge = `<span style="background:#fdf2f8; color:#db2777; border:1px solid #f472b6; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:800; margin-left:0.35rem;">💖 ${escapeHtml(slotRole)}</span>`;
+                                } else if (isSmoke) {
+                                    roleBadge = `<span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:800; margin-left:0.35rem;">💨 ${escapeHtml(slotRole)}</span>`;
+                                } else {
+                                    roleBadge = `<span style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:700; margin-left:0.35rem;">🏷️ ${escapeHtml(slotRole)}</span>`;
+                                }
+                            }
+
                             memberSlot.style.background = '#ffffff';
                             memberSlot.innerHTML = `
-                                <div style="font-weight: 600; color: #4a4559;">${member.name} ${isActuallyCreator ? '👑' : ''}</div>
-                                <div style="font-size: 0.85rem; color: #4a4559;">Lv.${member.level || '?'} / ${member.job || '冒險家'}</div>
+                                <div style="font-weight: 600; color: #4a4559; display: flex; align-items: center; flex-wrap: wrap;">
+                                    <span>${escapeHtml(member.name)} ${isActuallyCreator ? '👑' : ''}</span>
+                                    ${roleBadge}
+                                </div>
+                                <div style="font-size: 0.85rem; color: #4a4559;">Lv.${member.level || '?'} / ${escapeHtml(member.job || '冒險家')}</div>
                             `;
                         } else {
+                            const emptyRoleText = slotRole ? ` (${slotRole})` : '';
                             memberSlot.style.background = 'transparent';
                             memberSlot.style.borderStyle = 'dashed';
                             memberSlot.style.display = 'flex';
                             memberSlot.style.alignItems = 'center';
                             memberSlot.style.justifyContent = 'center';
-                            memberSlot.innerHTML = '<span style="color: var(--text-muted); font-size: 0.85rem;">(空位)</span>';
+                            memberSlot.innerHTML = `<span style="color: var(--text-muted); font-size: 0.85rem;">(空位${emptyRoleText})</span>`;
                         }
                         grid.appendChild(memberSlot);
                     }
@@ -3169,6 +4484,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 userBtn.style.display = 'none';
             }
+        }
+
+        // 6. Refresh survey summary matrix so predraft buttons reflect admin status
+        if (typeof renderSurveySummary === 'function') {
+            renderSurveySummary();
         }
     }
 
