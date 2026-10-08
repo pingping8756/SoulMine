@@ -607,12 +607,28 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function canCreateTeam() {
-        return isAdmin() || !!getLoggedInUser();
+        return isAdmin() || 
+               !!getLoggedInUser() || 
+               localStorage.getItem('soulmine_is_admin') === 'true' || 
+               !!localStorage.getItem('soulmine_admin_user') || 
+               !!sessionStorage.getItem('artale_admin_user') ||
+               !!sessionStorage.getItem('artale_session') ||
+               Boolean(typeof getAdminUser === 'function' && getAdminUser());
     }
+    window.canCreateTeam = canCreateTeam;
 
     function getCurrentEffectiveUser() {
-        return getLoggedInUser() || (isAdmin() ? getAdminUser() : '') || localStorage.getItem('soulmine_admin_user') || localStorage.getItem('soulmine_logged_user') || sessionStorage.getItem('artale_session') || '';
+        return getLoggedInUser() || 
+               (isAdmin() ? (getAdminUser() || '管理員') : '') || 
+               localStorage.getItem('soulmine_admin_user') || 
+               sessionStorage.getItem('artale_admin_user') || 
+               localStorage.getItem('soulmine_logged_user') || 
+               sessionStorage.getItem('artale_session') || 
+               '';
     }
+    window.getCurrentEffectiveUser = getCurrentEffectiveUser;
+    window.getLoggedInUser = getLoggedInUser;
+    window.isAdmin = isAdmin;
 
     // --- Realtime Sync ---
     db.ref('/').on('value', (snapshot) => {
@@ -1573,12 +1589,63 @@ document.addEventListener('DOMContentLoaded', () => {
         modal.style.display = 'flex';
     };
 
+    function getTacticalRoleInfo(roleTag) {
+        if (!roleTag) return { icon: '', cssClass: '', label: '' };
+        const r = String(roleTag).trim();
+        if (r.includes('魅惑')) return { icon: '💖', cssClass: 'seduce', label: r };
+        if (r === '煙1' || r === '煙2') return { icon: '💨', cssClass: 'smoke', label: r };
+        if (r === '煙' || r.includes('煙')) return { icon: '💨', cssClass: 'smoke', label: r };
+        if (r === '火' || r.includes('火')) return { icon: '🔥', cssClass: 'fire', label: r };
+        if (r === '轉屬' || r.includes('轉屬')) return { icon: '🌀', cssClass: 'trans', label: r };
+        if (r.includes('楓20') || r.includes('楓')) return { icon: '🍁', cssClass: 'maple', label: r };
+        if (r === '速' || r.includes('速')) return { icon: '⚡', cssClass: 'speed', label: r };
+        return { icon: '🏷️', cssClass: 'general', label: r };
+    }
+
+    function getTacticalRoleSelectOptionsHtml(isDragonKing, roleTag) {
+        const isDk = Boolean(isDragonKing);
+        const standardRoles = isDk 
+            ? ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2', '火', '煙', '轉屬', '楓20', '速']
+            : ['火', '煙', '轉屬', '楓20', '速'];
+        const isCustom = roleTag && !standardRoles.includes(roleTag);
+
+        if (isDk) {
+            return `
+                <option value="">定位</option>
+                <option value="魅惑1" ${roleTag === '魅惑1' ? 'selected' : ''}>💖 魅惑 1</option>
+                <option value="魅惑2" ${roleTag === '魅惑2' ? 'selected' : ''}>💖 魅惑 2</option>
+                <option value="魅惑3" ${roleTag === '魅惑3' ? 'selected' : ''}>💖 魅惑 3</option>
+                <option value="魅惑4" ${roleTag === '魅惑4' ? 'selected' : ''}>💖 魅惑 4</option>
+                <option value="煙1" ${roleTag === '煙1' ? 'selected' : ''}>💨 煙 1</option>
+                <option value="煙2" ${roleTag === '煙2' ? 'selected' : ''}>💨 煙 2</option>
+                <option value="火" ${roleTag === '火' ? 'selected' : ''}>🔥 火</option>
+                <option value="煙" ${roleTag === '煙' ? 'selected' : ''}>💨 煙</option>
+                <option value="轉屬" ${roleTag === '轉屬' ? 'selected' : ''}>🌀 轉屬</option>
+                <option value="楓20" ${roleTag === '楓20' ? 'selected' : ''}>🍁 楓20</option>
+                <option value="速" ${roleTag === '速' ? 'selected' : ''}>⚡ 速</option>
+                ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
+                <option value="__custom__">✏️ 自訂...</option>
+            `;
+        } else {
+            return `
+                <option value="">定位</option>
+                <option value="火" ${roleTag === '火' ? 'selected' : ''}>🔥 火</option>
+                <option value="煙" ${roleTag === '煙' ? 'selected' : ''}>💨 煙</option>
+                <option value="轉屬" ${roleTag === '轉屬' ? 'selected' : ''}>🌀 轉屬</option>
+                <option value="楓20" ${roleTag === '楓20' ? 'selected' : ''}>🍁 楓20</option>
+                <option value="速" ${roleTag === '速' ? 'selected' : ''}>⚡ 速</option>
+                ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
+                <option value="__custom__">✏️ 自訂...</option>
+            `;
+        }
+    }
+
     window.handlePreDraftSlotRoleChange = function(slotIdx, val) {
         if (!preDraftState.slots[slotIdx]) return;
         if (val === '__custom__') {
             const currentRole = preDraftState.slots[slotIdx].roleTag || '';
             const isDk = isDragonKingBoss(preDraftState.boss);
-            const exampleText = isDk ? "魅惑1、煙1、自訂備註" : "吃券打手、自訂備註";
+            const exampleText = isDk ? "魅惑1、煙1、火、轉屬、楓20、速、自訂備註" : "火、煙、轉屬、楓20、速、自訂備註";
             const customVal = prompt(`請輸入此席位的自訂定位或備註 (例如: ${exampleText})：`, currentRole);
             if (customVal !== null) {
                 preDraftState.slots[slotIdx].roleTag = customVal.trim();
@@ -1595,29 +1662,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const numLabel = teamPrefix ? `${teamPrefix}-${slotNum}` : `#${slotNum}`;
         const isDragonKing = isDragonKingBoss(preDraftState.boss);
         const roleTag = s.roleTag || '';
-        const isSeduce = roleTag.includes('魅惑');
-        const isSmoke = roleTag.includes('煙');
-        const standardRoles = ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2'];
-        const isCustom = roleTag && !standardRoles.includes(roleTag);
+        const roleInfo = getTacticalRoleInfo(roleTag);
 
-        const optionsHtml = isDragonKing ? `
-            <option value="">定位</option>
-            <option value="魅惑1" ${roleTag === '魅惑1' ? 'selected' : ''}>💖 魅惑 1</option>
-            <option value="魅惑2" ${roleTag === '魅惑2' ? 'selected' : ''}>💖 魅惑 2</option>
-            <option value="魅惑3" ${roleTag === '魅惑3' ? 'selected' : ''}>💖 魅惑 3</option>
-            <option value="魅惑4" ${roleTag === '魅惑4' ? 'selected' : ''}>💖 魅惑 4</option>
-            <option value="煙1" ${roleTag === '煙1' ? 'selected' : ''}>💨 煙 1</option>
-            <option value="煙2" ${roleTag === '煙2' ? 'selected' : ''}>💨 煙 2</option>
-            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
-            <option value="__custom__">✏️ 自訂...</option>
-        ` : `
-            <option value="">定位</option>
-            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
-            <option value="__custom__">✏️ 自訂...</option>
-        `;
+        const optionsHtml = getTacticalRoleSelectOptionsHtml(isDragonKing, roleTag);
 
         const roleSelectHtml = `
-            <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${isSeduce ? 'seduce' : ''} ${isSmoke ? 'smoke' : ''}" 
+            <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${roleInfo.cssClass}" 
                     onclick="event.stopPropagation();" 
                     onchange="event.stopPropagation(); window.handlePreDraftSlotRoleChange(${idx}, this.value);"
                     title="席位定位/自訂備註">
@@ -1644,13 +1694,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
             `;
         } else {
+            let roleColor = '#2563eb';
+            if (roleInfo.cssClass === 'seduce') roleColor = '#db2777';
+            else if (roleInfo.cssClass === 'smoke') roleColor = '#475569';
+            else if (roleInfo.cssClass === 'fire') roleColor = '#ea580c';
+            else if (roleInfo.cssClass === 'trans') roleColor = '#7c3aed';
+            else if (roleInfo.cssClass === 'maple') roleColor = '#d97706';
+            else if (roleInfo.cssClass === 'speed') roleColor = '#ca8a04';
+
             return `
                 <div class="predraft-slot-box empty">
                     <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.2rem;">
                         <span style="font-size: 0.72rem; font-weight: 800; color: #94a3b8; background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; white-space: nowrap;">${numLabel}</span>
                         ${roleSelectHtml}
                     </div>
-                    <span style="font-size: 0.76rem; color: ${isSeduce ? '#db2777' : (isSmoke ? '#475569' : (roleTag ? '#2563eb' : '#94a3b8'))}; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">${roleTag ? `(${escapeHtml(roleTag)})` : '待排空位'}</span>
+                    <span style="font-size: 0.76rem; color: ${roleTag ? roleColor : '#94a3b8'}; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">${roleTag ? `(${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)})` : '待排空位'}</span>
                 </div>
             `;
         }
@@ -2262,7 +2320,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (val === '__custom__') {
                 const currentRole = createRaidState.slots[slotIdx].roleTag || '';
                 const isDk = isDragonKingBoss(createRaidState.boss);
-                const exampleText = isDk ? "魅惑1、煙1、自訂備註" : "吃券打手、自訂備註";
+                const exampleText = isDk ? "魅惑1、煙1、火、轉屬、楓20、速、自訂備註" : "火、煙、轉屬、楓20、速、自訂備註";
                 const customVal = prompt(`請輸入此席位的自訂定位或備註 (例如: ${exampleText})：`, currentRole);
                 if (customVal !== null) {
                     createRaidState.slots[slotIdx].roleTag = customVal.trim();
@@ -2293,33 +2351,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isFilled = !!(s && s.name);
                 const isActive = (createRaidState.activeSlotIndex === idx);
                 const slotNum = isDragonKing ? (idx < 6 ? idx + 1 : idx - 5) : idx + 1;
-                const isDragonKing = isDragonKingBoss(createRaidState.boss);
                 const roleTag = (s && s.roleTag) || '';
-                const isSeduce = roleTag.includes('魅惑');
-                const isSmoke = roleTag.includes('煙');
-                const standardRoles = ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2'];
-                const isCustom = roleTag && !standardRoles.includes(roleTag);
+                const roleInfo = getTacticalRoleInfo(roleTag);
 
                 const roleSelectHtml = `
-                    <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${isSeduce ? 'seduce' : ''} ${isSmoke ? 'smoke' : ''}" 
+                    <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${roleInfo.cssClass}" 
                             onclick="event.stopPropagation();" 
                             onchange="event.stopPropagation(); window.handleCreateSlotRoleChange(${idx}, this.value);"
-                            title="設定席位戰術定位 (自訂 / 魅惑 / 煙)">
-                        ${isDragonKing ? `
-                            <option value="">定位</option>
-                            <option value="魅惑1" ${roleTag === '魅惑1' ? 'selected' : ''}>💖 魅惑 1</option>
-                            <option value="魅惑2" ${roleTag === '魅惑2' ? 'selected' : ''}>💖 魅惑 2</option>
-                            <option value="魅惑3" ${roleTag === '魅惑3' ? 'selected' : ''}>💖 魅惑 3</option>
-                            <option value="魅惑4" ${roleTag === '魅惑4' ? 'selected' : ''}>💖 魅惑 4</option>
-                            <option value="煙1" ${roleTag === '煙1' ? 'selected' : ''}>💨 煙 1</option>
-                            <option value="煙2" ${roleTag === '煙2' ? 'selected' : ''}>💨 煙 2</option>
-                            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
-                            <option value="__custom__">✏️ 自訂...</option>
-                        ` : `
-                            <option value="">定位</option>
-                            ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
-                            <option value="__custom__">✏️ 自訂...</option>
-                        `}
+                            title="設定席位戰術定位">
+                        ${getTacticalRoleSelectOptionsHtml(isDragonKing, roleTag)}
                     </select>
                 `;
 
@@ -2341,13 +2381,21 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     `;
                 } else {
+                    let roleColor = '#2563eb';
+                    if (roleInfo.cssClass === 'seduce') roleColor = '#db2777';
+                    else if (roleInfo.cssClass === 'smoke') roleColor = '#475569';
+                    else if (roleInfo.cssClass === 'fire') roleColor = '#ea580c';
+                    else if (roleInfo.cssClass === 'trans') roleColor = '#7c3aed';
+                    else if (roleInfo.cssClass === 'maple') roleColor = '#d97706';
+                    else if (roleInfo.cssClass === 'speed') roleColor = '#ca8a04';
+
                     item.innerHTML = `
                         <div class="slot-box-top">
                             <span class="slot-box-num">#${slotNum}</span>
                             ${roleSelectHtml}
                         </div>
-                        <div class="slot-box-empty-title ${isDragonKing && isSeduce ? 'empty-seduce' : ''}">
-                            ${roleTag ? `<span style="font-size:0.8rem; font-weight:800; ${isSeduce ? 'color:#db2777;' : (isSmoke ? 'color:#475569;' : 'color:#2563eb;')}">(${escapeHtml(roleTag)} 空位)</span>` : `席位 ${slotNum}`}
+                        <div class="slot-box-empty-title">
+                            ${roleTag ? `<span style="font-size:0.8rem; font-weight:800; color:${roleColor};">(${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)} 空位)</span>` : `席位 ${slotNum}`}
                         </div>
                         <div style="font-size: 0.68rem; color: #94a3b8; text-align: center;">點擊入座</div>
                     `;
@@ -2651,18 +2699,19 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // --- Open Create Raid Modal (支援帶入複製隊伍 copyFromTeam，以及編輯現有隊伍 editingRaidId) ---
         window.openCreateRaidModal = function(preferredBoss, copyFromTeam = null, editingRaidId = null) {
-            if (!canCreateTeam()) {
-                if (typeof window.openGeneralLoginModal === 'function') {
-                    window.openGeneralLoginModal(() => {
-                        window.openCreateRaidModal(preferredBoss, copyFromTeam, editingRaidId);
-                    });
-                } else {
-                    alert('建立隊伍需先登入帳號！');
+            try {
+                if (!canCreateTeam()) {
+                    if (typeof window.openGeneralLoginModal === 'function') {
+                        window.openGeneralLoginModal(() => {
+                            window.openCreateRaidModal(preferredBoss, copyFromTeam, editingRaidId);
+                        });
+                    } else {
+                        alert('建立隊伍需先登入帳號或管理員！');
+                    }
+                    return;
                 }
-                return;
-            }
 
-            createRaidState.editingRaidId = editingRaidId || null;
+                createRaidState.editingRaidId = editingRaidId || null;
 
             const modalTitleSpan = document.getElementById('create-raid-modal-title');
             const submitBtn = document.getElementById('btn-confirm-create-raid');
@@ -2671,6 +2720,28 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             if (submitBtn) {
                 submitBtn.textContent = editingRaidId ? '💾 儲存修改' : '✅ 確認建立出團';
+            }
+
+            const identityBadge = document.getElementById('create-modal-current-identity');
+            if (identityBadge) {
+                const loggedName = getLoggedInUser();
+                if (loggedName) {
+                    identityBadge.textContent = `👤 發起人：${loggedName}`;
+                    identityBadge.style.color = '#15803d';
+                    identityBadge.style.background = '#f0fdf4';
+                    identityBadge.style.borderColor = '#bbf7d0';
+                } else if (isAdmin()) {
+                    const adm = getAdminUser() || '管理員';
+                    identityBadge.textContent = `👑 管理員已授權 (${adm})`;
+                    identityBadge.style.color = '#15803d';
+                    identityBadge.style.background = '#f0fdf4';
+                    identityBadge.style.borderColor = '#bbf7d0';
+                } else {
+                    identityBadge.textContent = `⚠️ 未登入`;
+                    identityBadge.style.color = '#dc2626';
+                    identityBadge.style.background = '#fef2f2';
+                    identityBadge.style.borderColor = '#fecaca';
+                }
             }
 
             const targetBoss = (copyFromTeam && copyFromTeam.boss) ? normalizeBossName(copyFromTeam.boss) : (preferredBoss || "克雷塞爾");
@@ -2713,7 +2784,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             job: found.job || '',
                             level: found.level || 120,
                             roleTag: found.roleTag || presetRole || '',
-                            isCreator: Boolean(loggedName && found.name.toLowerCase() === loggedName.toLowerCase())
+                            isCreator: Boolean(loggedName && found.name && found.name.toLowerCase() === loggedName.toLowerCase())
                         };
                     }
                     return { slotIndex: i, name: '', job: '', level: '', roleTag: presetRole || '' };
@@ -2725,18 +2796,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // Auto-fill slot 0 with organizer's saved character or logged-in user if available
                 const saved = getSavedChar();
-                if (saved.name) {
+                if (saved && saved.name) {
                     createRaidState.slots[0] = {
                         slotIndex: 0,
                         name: saved.name,
                         job: saved.job || '黑騎士',
                         level: saved.level || 120,
                         roleTag: '',
-                        isCreator: Boolean(loggedName && saved.name.toLowerCase() === loggedName.toLowerCase())
+                        isCreator: Boolean(loggedName && saved.name && saved.name.toLowerCase() === loggedName.toLowerCase())
                     };
                     createRaidState.activeSlotIndex = 1; // start picking for slot 2
                 } else if (loggedName) {
-                    const foundRoster = CHARACTER_ROSTER.find(c => c.name.toLowerCase() === loggedName.toLowerCase());
+                    const foundRoster = CHARACTER_ROSTER.find(c => {
+                        const cName = c && (c.id || c.name);
+                        return cName && loggedName && cName.toLowerCase() === loggedName.toLowerCase();
+                    });
                     createRaidState.slots[0] = {
                         slotIndex: 0,
                         name: loggedName,
@@ -2796,7 +2870,11 @@ document.addEventListener('DOMContentLoaded', () => {
             checkAndDisplayDraftBanner();
 
             if (createModal) createModal.style.display = 'flex';
-        };
+        } catch (err) {
+            console.error("開啟建立出團視窗錯誤:", err);
+            alert("開啟建立出團視窗時發生錯誤：" + err.message);
+        }
+    };
 
         // --- Draft Save / Load / Discard Functionality (點選完可先按暫存) ---
         function saveRaidDraft() {
@@ -2908,7 +2986,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnConfirmCreate) {
             btnConfirmCreate.onclick = async () => {
                 if (!canCreateTeam()) {
-                    alert("建立隊伍需先登入帳號！");
+                    alert("建立隊伍需先登入帳號或管理員！");
                     if (typeof window.openGeneralLoginModal === 'function') {
                         window.openGeneralLoginModal();
                     }
@@ -2916,14 +2994,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 try {
                     const validMembers = createRaidState.slots.filter(s => s && s.name);
-                    if (validMembers.length === 0) {
-                        alert("請至少安排一位出戰角色入座！");
-                        return;
-                    }
 
-                    // Determine creator name strictly from logged-in account ID (隊伍建立者為當前登入的帳號 ID，絕非第 1 位入座成員)
+                    // Determine creator name strictly from logged-in account ID, admin name or fallback
                     const loggedId = getCurrentEffectiveUser();
-                    const creatorName = loggedId || '公會成員';
+                    const creatorName = loggedId || getSavedCreator() || (isAdmin() ? (getAdminUser() || '管理員') : '公會成員');
                     setSavedCreator(creatorName);
 
                     // Save Slot 0 character as saved char if present
@@ -2932,17 +3006,23 @@ document.addEventListener('DOMContentLoaded', () => {
                         setSavedChar(slot0.name, slot0.job, slot0.level);
                     }
 
-                    const dObj = createRaidState.dateObj || new Date();
+                    const dObj = createRaidState.dateObj || (raidDatePicker && raidDatePicker.selectedDates && raidDatePicker.selectedDates[0]) || new Date();
                     const y = dObj.getFullYear();
                     const m = (dObj.getMonth() + 1).toString().padStart(2, '0');
                     const d = dObj.getDate().toString().padStart(2, '0');
                     const dateStr = `${y}/${m}/${d}`;
 
-                    const timeParts = createRaidState.timeStr.split(':');
-                    const schedDate = new Date(y, dObj.getMonth(), dObj.getDate(), parseInt(timeParts[0], 10), parseInt(timeParts[1], 10));
+                    const timeSelectEl = document.getElementById('raid-time-select');
+                    const actualTimeStr = createRaidState.timeStr || (timeSelectEl ? timeSelectEl.value : '') || '20:00';
+                    createRaidState.timeStr = actualTimeStr;
+
+                    const timeParts = actualTimeStr.split(':');
+                    const schedHour = parseInt(timeParts[0] || '20', 10);
+                    const schedMin = parseInt(timeParts[1] || '0', 10);
+                    const schedDate = new Date(y, dObj.getMonth(), dObj.getDate(), schedHour, schedMin);
                     const weekDays = ['日','一','二','三','四','五','六'];
                     const weekDay = weekDays[schedDate.getDay()];
-                    const fullTimeText = `${m}/${d} (${weekDay}) ${createRaidState.timeStr}`;
+                    const fullTimeText = `${m}/${d} (${weekDay}) ${actualTimeStr}`;
 
                     const noteInput = document.getElementById('create-raid-note');
                     const noteText = noteInput ? noteInput.value.trim() : (createRaidState.note || '');
@@ -3280,12 +3360,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const raid = raidsDB[raidId];
         const isDragonKing = raid && raid.boss && isDragonKingBoss(raid.boss);
         const teamName = isDragonKing ? (currentJoinSlotIdx < 6 ? '第一隊 ' : '第二隊 ') : '';
-        const slotNum = isDragonKing ? (currentJoinSlotIdx < 6 ? currentJoinSlotIdx + 1 : currentJoinSlotIdx - 5) : currentJoinSlotIdx + 1;
         const slotRole = (raid && raid.slotRoles && raid.slotRoles[currentJoinSlotIdx]) ? raid.slotRoles[currentJoinSlotIdx] : '';
-        const isSeduce = slotRole && slotRole.includes('魅惑');
-        const isSmoke = slotRole && slotRole.includes('煙');
-        const roleIcon = isSeduce ? '💖 ' : (isSmoke ? '💨 ' : '');
-        const roleText = slotRole ? ` 【${roleIcon}${slotRole}】` : '';
+        const roleInfo = getTacticalRoleInfo(slotRole);
+        const roleText = slotRole ? ` 【${roleInfo.icon ? roleInfo.icon + ' ' : ''}${slotRole}】` : '';
         const descEl = document.getElementById('join-slot-desc');
         if (descEl) {
             descEl.textContent = `報名席位：${teamName}第 ${slotNum} 位${roleText}。點選角色卡即可直接入座！`;
@@ -3648,6 +3725,18 @@ document.addEventListener('DOMContentLoaded', () => {
         window.openCreateRaidModal(bossName);
     };
 
+    function getCreateLoginButtonHtml() {
+        const loggedUser = getLoggedInUser();
+        if (loggedUser) {
+            return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.92rem; padding: 0.65rem 1.1rem; border-radius: 8px; border: 1.5px solid #22c55e; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer;" title="目前已登入：${escapeHtml(loggedUser)}，點擊切換">👤 ${escapeHtml(loggedUser)}</button>`;
+        }
+        if (isAdmin()) {
+            const adminName = getAdminUser() || '管理員';
+            return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.92rem; padding: 0.65rem 1.1rem; border-radius: 8px; border: 1.5px solid #22c55e; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer;" title="管理員權限已開通，點擊亦可登入專屬隊長帳號">👑 管理員 ${escapeHtml(adminName)} (已授權)</button>`;
+        }
+        return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.92rem; padding: 0.65rem 1.1rem; border-radius: 8px; border: 1.5px solid #3b82f6; background: #eff6ff; color: #2563eb; font-weight: 700; cursor: pointer;" title="登入或建立帳號以發起出團隊伍">👤 建立隊伍登入</button>`;
+    }
+
     function renderRecruitBoard() {
         const headerArea = document.getElementById('recruit-header-area');
         const container = document.getElementById('recruit-container');
@@ -3690,7 +3779,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             </h2>
                             <p class="subtitle" style="margin: 0.35rem 0 0 0; color: #64748b; font-size: 0.95rem;">請選擇想討伐的 Boss 查看待組隊伍，或點擊右側直接建立新出團！</p>
                         </div>
-                        <button id="btn-open-create-modal" class="btn-primary" onclick="openCreateRaidModal()" style="font-size: 1.05rem; padding: 0.75rem 1.4rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">➕ 建立新出團</button>
+                        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                            ${getCreateLoginButtonHtml()}
+                            <button id="btn-open-create-modal" class="btn-primary" onclick="openCreateRaidModal()" style="font-size: 1.05rem; padding: 0.75rem 1.4rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">➕ 建立新出團</button>
+                        </div>
                     </div>
                 `;
             }
@@ -3786,9 +3878,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </span>
                             </div>
                         </div>
-                        <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1.05rem; padding: 0.75rem 1.4rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
-                            ➕ 建立【${currentBossInfo.name}】出團
-                        </button>
+                        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                            ${getCreateLoginButtonHtml()}
+                            <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1.05rem; padding: 0.75rem 1.4rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
+                                ➕ 建立【${currentBossInfo.name}】出團
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -3806,9 +3901,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="font-size: 3.5rem; margin-bottom: 0.8rem;">${currentBossInfo.icon}</div>
                     <h3 style="color: #ff9800; margin-bottom: 0.4rem; font-size: 1.25rem; font-weight: 700;">目前尚無【${currentBossInfo.name}】的待組隊伍</h3>
                     <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">想發起挑戰嗎？歡迎點擊下方按鈕立即建立新出團！</p>
-                    <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1rem; padding: 0.65rem 1.6rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
-                        ➕ 發起【${currentBossInfo.name}】出團
-                    </button>
+                    <div style="display: flex; gap: 0.6rem; align-items: center; justify-content: center; flex-wrap: wrap;">
+                        ${getCreateLoginButtonHtml()}
+                        <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1rem; padding: 0.65rem 1.6rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
+                            ➕ 發起【${currentBossInfo.name}】出團
+                        </button>
+                    </div>
                 </div>
             `;
             return;
@@ -3827,9 +3925,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">${currentBossInfo.icon}</div>
                 <h3 style="color: #ff9800; margin-bottom: 0.4rem; font-size: 1.25rem; font-weight: 700;">目前尚無【${currentBossInfo.name}】的有效待組隊伍</h3>
                 <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.2rem;">下方僅有過期流團紀錄，歡迎立即建立新出團！</p>
-                <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1rem; padding: 0.65rem 1.6rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
-                    ➕ 發起【${currentBossInfo.name}】新出團
-                </button>
+                <div style="display: flex; gap: 0.6rem; align-items: center; justify-content: center; flex-wrap: wrap;">
+                    ${getCreateLoginButtonHtml()}
+                    <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1rem; padding: 0.65rem 1.6rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
+                        ➕ 發起【${currentBossInfo.name}】新出團
+                    </button>
+                </div>
             `;
             container.appendChild(emptyBanner);
         }
@@ -3858,18 +3959,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const m = members.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
                 const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
                 const slotRole = (m && m.roleTag) ? m.roleTag : ((raid.slotRoles && raid.slotRoles[slotIdx]) ? raid.slotRoles[slotIdx] : '');
-                const isSeduce = slotRole && slotRole.includes('魅惑');
-                const isSmoke = slotRole && slotRole.includes('煙');
+                const roleInfo = getTacticalRoleInfo(slotRole);
 
                 let roleBadgeHtml = '';
                 if (slotRole) {
-                    if (isSeduce) {
-                        roleBadgeHtml = `<span class="member-role-badge seduce" title="戰術定位">💖 ${escapeHtml(slotRole)}</span>`;
-                    } else if (isSmoke) {
-                        roleBadgeHtml = `<span class="member-role-badge smoke" title="戰術定位">💨 ${escapeHtml(slotRole)}</span>`;
-                    } else {
-                        roleBadgeHtml = `<span class="member-role-badge general" title="戰術定位">🏷️ ${escapeHtml(slotRole)}</span>`;
-                    }
+                    roleBadgeHtml = `<span class="member-role-badge ${roleInfo.cssClass}" title="戰術定位">${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(slotRole)}</span>`;
                 }
 
                 if (m) {
@@ -3894,7 +3988,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <strong style="color: var(--primary-color);">${m.job}</strong> 
                                 <span style="color: #fff; font-weight: 600; margin-left: 0.3rem;">${m.name}</span> 
                                 <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.2rem;">(Lv.${m.level})</span>
-                                ${isActuallyCreator ? '<span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
+                                <span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">${isActuallyCreator ? '👑' : ''}</span>
                                 ${roleBadgeHtml}
                             </div>
                             <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;" title="退出或移除此席位">退出</button>
@@ -3906,8 +4000,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: #64748b; text-align: center;">未入座 (已流團)</div>
                         `;
                     }
-                    const roleIcon = isSeduce ? '💖 ' : (isSmoke ? '💨 ' : '');
-                    const slotRoleText = slotRole ? ` - ${roleIcon}${slotRole}` : '';
+                    const slotRoleText = slotRole ? ` - ${roleInfo.icon ? roleInfo.icon + ' ' : ''}${slotRole}` : '';
                     return `
                         <div onclick="openJoinModal('${raid.id}', ${slotIdx})" style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" title="點擊報名此位置 (第 ${slotNum} 位${slotRoleText})">➕ 點擊報名 (第 ${slotNum} 位${slotRoleText})</div>
                     `;
@@ -4397,17 +4490,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Admin Authentication & Controls ---
     function getAdminUser() {
-        const u = localStorage.getItem('soulmine_admin_user');
-        if (!u) return null;
+        const u = localStorage.getItem('soulmine_admin_user') || sessionStorage.getItem('artale_admin_user');
+        if (!u) {
+            if (localStorage.getItem('soulmine_is_admin') === 'true') return '管理員';
+            return null;
+        }
         const lower = u.toLowerCase();
         if (lower === 'lumi') return 'Lumi';
         if (lower === 'eric') return 'Eric';
         if (lower === 'ohni' || lower === '阿甘') return '阿甘';
-        return null;
+        return u;
     }
 
     function isAdmin() {
-        return !!getAdminUser();
+        return !!getAdminUser() || 
+               localStorage.getItem('soulmine_is_admin') === 'true' || 
+               !!localStorage.getItem('soulmine_admin_user') || 
+               !!sessionStorage.getItem('artale_admin_user');
     }
 
     function isLumi() {
@@ -4471,9 +4570,13 @@ document.addEventListener('DOMContentLoaded', () => {
         const userBtn = document.getElementById('btn-user-session-status');
         const loggedUser = getLoggedInUser();
         if (userBtn) {
-            if (!isAdmin() && loggedUser) {
-                userBtn.style.display = 'inline-flex';
-                userBtn.textContent = `👤 ${loggedUser} (登出)`;
+            userBtn.style.display = 'inline-flex';
+            if (loggedUser) {
+                userBtn.innerHTML = `👤 ${escapeHtml(loggedUser)} (登出)`;
+                userBtn.title = '點擊登出目前使用者';
+                userBtn.style.borderColor = '#22c55e';
+                userBtn.style.background = '#f0fdf4';
+                userBtn.style.color = '#15803d';
                 userBtn.onclick = () => {
                     if (confirm(`確定要登出使用者 (${loggedUser}) 嗎？`)) {
                         setLoggedInUser(null);
@@ -4481,12 +4584,38 @@ document.addEventListener('DOMContentLoaded', () => {
                         updateAdminUI();
                     }
                 };
+            } else if (!isAdmin()) {
+                userBtn.innerHTML = `👤 建立隊伍登入`;
+                userBtn.title = '點擊登入或建立帳號以發起出團隊伍';
+                userBtn.style.borderColor = '#3b82f6';
+                userBtn.style.background = '#eff6ff';
+                userBtn.style.color = '#2563eb';
+                userBtn.onclick = () => {
+                    if (typeof openGeneralLoginModal === 'function') {
+                        openGeneralLoginModal();
+                    }
+                };
             } else {
-                userBtn.style.display = 'none';
+                userBtn.innerHTML = `👤 建立隊伍登入 (已具管理權限)`;
+                userBtn.title = '目前已具備管理員建隊權限，亦可點此登入或切換專屬隊長帳號';
+                userBtn.style.borderColor = '#22c55e';
+                userBtn.style.background = '#f0fdf4';
+                userBtn.style.color = '#15803d';
+                userBtn.onclick = () => {
+                    if (typeof openGeneralLoginModal === 'function') {
+                        openGeneralLoginModal();
+                    }
+                };
             }
         }
 
-        // 6. Refresh survey summary matrix so predraft buttons reflect admin status
+        // 6. Refresh recruit board and survey summary matrix
+        if (typeof renderRecruitBoard === 'function') {
+            const recruitTab = document.getElementById('tab-recruit');
+            if (recruitTab && recruitTab.classList.contains('active')) {
+                renderRecruitBoard();
+            }
+        }
         if (typeof renderSurveySummary === 'function') {
             renderSurveySummary();
         }

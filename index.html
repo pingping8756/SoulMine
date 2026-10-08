@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=140">
+    <link rel="stylesheet" href="style.css?v=144">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -132,6 +132,7 @@
                     <h2 style="margin: 0; font-size: 1.35rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 0.5rem;">
                         <span id="create-raid-modal-title" style="color: #ea580c;">⚔️ 建立出團與席位挑選</span>
                         <span style="font-size: 0.82rem; color: #c2410c; font-weight: 700; background: #ffedd5; border: 1px solid #fed7aa; padding: 0.15rem 0.6rem; border-radius: 12px;">組長挑人面板</span>
+                        <span id="create-modal-current-identity" style="font-size: 0.82rem; color: #15803d; font-weight: 700; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 0.15rem 0.6rem; border-radius: 12px;">發起身分</span>
                     </h2>
                 </div>
                 <button type="button" id="btn-close-create-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.2rem 0.5rem;">&times;</button>
@@ -528,8 +529,8 @@
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem;">
                 <h1 style="margin: 0; font-size: clamp(1.4rem, 4vw, 2.2rem);">🎃 SoulMine 揪團佈告欄 👻</h1>
                 <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-                    <button id="btn-user-session-status" class="btn-secondary" style="display: none; font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 20px; border: 1.5px solid #22c55e; background: #f0fdf4; color: #15803d; cursor: pointer; font-weight: 800; transition: all 0.2s;" title="點擊登出目前使用者">
-                        <!-- e.g. 👤 小明 (登出) -->
+                    <button id="btn-user-session-status" class="btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 20px; border: 1.5px solid #3b82f6; background: #eff6ff; color: #2563eb; cursor: pointer; font-weight: 800; transition: all 0.2s;" title="登入或建立帳號以發起出團隊伍">
+                        👤 建立隊伍登入
                     </button>
                     <button id="btn-open-roster-modal" class="btn-secondary btn-roster-manage-trigger" style="display: none; font-size: 0.85rem; padding: 0.4rem 0.9rem; border-radius: 20px; border: 1.5px solid #f97316; background: #fff7ed; color: #c2410c; cursor: pointer; font-weight: 800; transition: all 0.2s;">
                         🎴 管理角色卡資料
@@ -724,6 +725,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=143" defer></script>
+    <script src="app.js?v=148" defer></script>
 </body>
 </html>

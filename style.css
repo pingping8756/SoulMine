@@ -1400,6 +1400,30 @@ body::after {
     border: 1.5px solid #94a3b8 !important;
     font-weight: 900 !important;
 }
+.slot-role-select.fire {
+    background: #fff7ed !important;
+    color: #ea580c !important;
+    border: 1.5px solid #fdba74 !important;
+    font-weight: 900 !important;
+}
+.slot-role-select.trans {
+    background: #f5f3ff !important;
+    color: #7c3aed !important;
+    border: 1.5px solid #c4b5fd !important;
+    font-weight: 900 !important;
+}
+.slot-role-select.maple {
+    background: #fef3c7 !important;
+    color: #d97706 !important;
+    border: 1.5px solid #fcd34d !important;
+    font-weight: 900 !important;
+}
+.slot-role-select.speed {
+    background: #fef9c3 !important;
+    color: #ca8a04 !important;
+    border: 1.5px solid #fde047 !important;
+    font-weight: 900 !important;
+}
 
 /* Recruitment Card Member Role Badges */
 .member-role-badge {
@@ -1421,6 +1445,26 @@ body::after {
     background: #f1f5f9;
     color: #334155;
     border: 1px solid #cbd5e1;
+}
+.member-role-badge.fire {
+    background: rgba(234, 88, 12, 0.15);
+    color: #fb923c;
+    border: 1px solid rgba(234, 88, 12, 0.4);
+}
+.member-role-badge.trans {
+    background: rgba(124, 58, 237, 0.15);
+    color: #c084fc;
+    border: 1px solid rgba(124, 58, 237, 0.4);
+}
+.member-role-badge.maple {
+    background: rgba(217, 119, 6, 0.15);
+    color: #fcd34d;
+    border: 1px solid rgba(217, 119, 6, 0.4);
+}
+.member-role-badge.speed {
+    background: rgba(202, 138, 4, 0.15);
+    color: #fde047;
+    border: 1px solid rgba(202, 138, 4, 0.4);
 }
 .member-role-badge.general {
     background: rgba(59, 130, 246, 0.15);
