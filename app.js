@@ -774,22 +774,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Build slot chips
+            // Build slot chips - 7 columns (Tuesday to Monday), stacked vertically for weekend/holiday
             let html = '';
             days.forEach(d => {
-                d.slots.forEach(s => {
+                const daySlotsHtml = d.slots.map(s => {
                     const isWk = s.isWeekend;
                     const isHol = s.isSpecialHoliday;
                     const holCornerText = (s.holidayName && (s.holidayName.includes('補') || s.holidayName.includes('連假'))) ? '補' : (s.holidayName ? s.holidayName.slice(0, 2) : '補');
                     const tagHtml = isHol ? `<span class="slot-holiday-corner-badge" style="background: #ef4444 !important; color: #ffffff !important;" title="${escapeHtml(s.holidayName || '補假')}">${escapeHtml(holCornerText)}</span>` : '';
-                    html += `
+                    return `
                         <label class="survey-slot-chip ${isWk ? 'weekend' : ''} ${isHol ? 'holiday' : ''}" data-slot-key="${s.key}">
                             ${tagHtml}
                             <input type="checkbox" name="survey-slot" value="${s.key}">
                             <span>${s.label}</span>
                         </label>
                     `;
-                });
+                }).join('');
+
+                html += `
+                    <div class="survey-day-col ${d.isWeekend ? 'weekend' : ''} ${d.isSpecialHoliday ? 'holiday' : ''}">
+                        ${daySlotsHtml}
+                    </div>
+                `;
             });
 
             slotsContainer.innerHTML = html;
