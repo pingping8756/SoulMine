@@ -4622,28 +4622,28 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isActuallyCreator = Boolean(m.name && displayCreator && m.name.toLowerCase() === displayCreator.toLowerCase());
                     if (isExpired) {
                         return `
-                            <div style="background: rgba(255,255,255,0.03); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.06); min-height: 44px; box-sizing: border-box;">
-                                <div style="display: flex; align-items: center; flex-wrap: wrap;">
-                                    <strong style="color: #94a3b8;">${m.job}</strong> 
-                                    <span style="color: #cbd5e1; font-weight: 500; margin-left: 0.3rem;">${m.name}</span> 
-                                    <span style="color: #64748b; font-size: 0.8rem; margin-left: 0.2rem;">(Lv.${m.level})</span>
-                                    ${isActuallyCreator ? '<span style="color:#94a3b8; font-size:0.85rem; margin-left:0.3rem;" title="團長">👑</span>' : ''}
+                            <div style="background: rgba(255,255,255,0.03); padding: 0.45rem 0.55rem; border-radius: 8px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; border: 1px solid rgba(255,255,255,0.06); min-height: 40px; box-sizing: border-box;">
+                                <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; gap: 0.2rem; flex: 1; min-width: 0;">
+                                    <strong style="color: #94a3b8; font-size: 0.86rem; flex-shrink: 0;">${m.job}</strong> 
+                                    <span style="color: #cbd5e1; font-weight: 500; font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span> 
+                                    <span style="color: #64748b; font-size: 0.76rem; flex-shrink: 0;">(Lv.${m.level})</span>
+                                    ${isActuallyCreator ? '<span style="color:#94a3b8; font-size:0.8rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
                                     ${roleBadgeHtml}
                                 </div>
-                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:#94a3b8; cursor:pointer; font-size:0.8rem; padding: 0.2rem 0.4rem;" title="移除此席位">退出</button>
+                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 50%; width: 20px; height: 20px; min-width: 20px; min-height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1;" title="移除此席位">✕</button>
                             </div>
                         `;
                     }
                     return `
-                        <div style="background: rgba(255,255,255,0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.12); min-height: 44px; box-sizing: border-box;">
-                            <div style="display: flex; align-items: center; flex-wrap: wrap;">
-                                <strong style="color: var(--primary-color);">${m.job}</strong> 
-                                <span style="color: #fff; font-weight: 600; margin-left: 0.3rem;">${m.name}</span> 
-                                <span style="color: var(--text-muted); font-size: 0.8rem; margin-left: 0.2rem;">(Lv.${m.level})</span>
-                                <span style="color:var(--primary-color); font-size:0.85rem; margin-left:0.3rem;" title="團長">${isActuallyCreator ? '👑' : ''}</span>
+                        <div style="background: rgba(255,255,255,0.08); padding: 0.45rem 0.55rem; border-radius: 8px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; border: 1px solid rgba(255,255,255,0.12); min-height: 40px; box-sizing: border-box;">
+                            <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; gap: 0.2rem; flex: 1; min-width: 0;">
+                                <strong style="color: var(--primary-color); font-size: 0.86rem; flex-shrink: 0;">${m.job}</strong> 
+                                <span style="color: #fff; font-weight: 600; font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span> 
+                                <span style="color: var(--text-muted); font-size: 0.76rem; flex-shrink: 0;">(Lv.${m.level})</span>
+                                <span style="color:var(--primary-color); font-size:0.8rem; flex-shrink: 0;" title="團長">${isActuallyCreator ? '👑' : ''}</span>
                                 ${roleBadgeHtml}
                             </div>
-                            <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background:transparent; border:none; color:var(--danger-color); cursor:pointer; font-size:0.8rem; font-weight: bold; padding: 0.2rem 0.4rem;" title="退出或移除此席位">退出</button>
+                            <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 50%; width: 20px; height: 20px; min-width: 20px; min-height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.75rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1; transition: all 0.15s ease;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#f87171';" title="退出或移除此席位">✕</button>
                         </div>
                     `;
                 } else {
