@@ -3675,6 +3675,79 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnCloseJoinX) {
             btnCloseJoinX.onclick = () => { joinModal.style.display = 'none'; };
         }
+        if (joinModal) {
+            joinModal.addEventListener('click', (e) => {
+                if (e.target === joinModal) {
+                    joinModal.style.display = 'none';
+                }
+            });
+        }
+
+        window.switchJoinModalTab = function(tabName) {
+            const tabRoster = document.getElementById('tab-join-roster');
+            const tabManual = document.getElementById('tab-join-manual');
+            const viewRoster = document.getElementById('join-view-roster');
+            const viewManual = document.getElementById('join-view-manual');
+
+            if (tabName === 'manual') {
+                if (tabRoster) {
+                    tabRoster.style.background = 'transparent';
+                    tabRoster.style.color = '#64748b';
+                    tabRoster.style.boxShadow = 'none';
+                }
+                if (tabManual) {
+                    tabManual.style.background = '#ffffff';
+                    tabManual.style.color = 'var(--primary-color)';
+                    tabManual.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                }
+                if (viewRoster) viewRoster.style.display = 'none';
+                if (viewManual) viewManual.style.display = 'block';
+                const nameInput = document.getElementById('join-char-name');
+                if (nameInput) setTimeout(() => nameInput.focus(), 60);
+            } else {
+                if (tabRoster) {
+                    tabRoster.style.background = '#ffffff';
+                    tabRoster.style.color = 'var(--primary-color)';
+                    tabRoster.style.boxShadow = '0 1px 3px rgba(0,0,0,0.1)';
+                }
+                if (tabManual) {
+                    tabManual.style.background = 'transparent';
+                    tabManual.style.color = '#64748b';
+                    tabManual.style.boxShadow = 'none';
+                }
+                if (viewRoster) viewRoster.style.display = 'flex';
+                if (viewManual) viewManual.style.display = 'none';
+            }
+        };
+
+        const tabRoster = document.getElementById('tab-join-roster');
+        if (tabRoster) {
+            tabRoster.onclick = () => window.switchJoinModalTab('roster');
+        }
+        const tabManual = document.getElementById('tab-join-manual');
+        if (tabManual) {
+            tabManual.onclick = () => window.switchJoinModalTab('manual');
+        }
+
+        const btnJoinOpenRoster = document.getElementById('btn-join-open-roster-modal');
+        if (btnJoinOpenRoster) {
+            btnJoinOpenRoster.onclick = () => {
+                if (typeof openRosterManageModal === 'function') {
+                    openRosterManageModal();
+                }
+            };
+        }
+
+        const rosterSearchInput = document.getElementById('roster-search-input');
+        if (rosterSearchInput) {
+            rosterSearchInput.addEventListener('input', (e) => {
+                const raidId = document.getElementById('join-raid-id').value;
+                const slotIdx = parseInt(document.getElementById('join-slot-index').value) || 0;
+                if (typeof window.renderRosterCards === 'function') {
+                    window.renderRosterCards(raidId, slotIdx, e.target.value);
+                }
+            });
+        }
 
         const joinRaidForm = document.getElementById('join-raid-form');
         if (joinRaidForm) {
@@ -3868,6 +3941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const raid = raidsDB[raidId];
         const isDragonKing = raid && raid.boss && isDragonKingBoss(raid.boss);
         const teamName = isDragonKing ? (currentJoinSlotIdx < 6 ? '第一隊 ' : '第二隊 ') : '';
+        const slotNum = isDragonKing ? (currentJoinSlotIdx < 6 ? currentJoinSlotIdx + 1 : currentJoinSlotIdx - 5) : currentJoinSlotIdx + 1;
         const slotRole = (raid && raid.slotRoles && raid.slotRoles[currentJoinSlotIdx]) ? raid.slotRoles[currentJoinSlotIdx] : '';
         const roleInfo = getTacticalRoleInfo(slotRole);
         const roleText = slotRole ? ` 【${roleInfo.icon ? roleInfo.icon + ' ' : ''}${slotRole}】` : '';
@@ -3880,9 +3954,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const searchInput = document.getElementById('roster-search-input');
         if (searchInput) searchInput.value = '';
 
-        // Hide custom input form
-        const customForm = document.getElementById('join-raid-form');
-        if (customForm) customForm.style.display = 'none';
+        // Reset tab to Roster view by default
+        if (typeof window.switchJoinModalTab === 'function') {
+            window.switchJoinModalTab('roster');
+        }
 
         // Prefill custom form with saved char
         const saved = getSavedChar();
@@ -3900,8 +3975,20 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.leaveRaid = function(raidId, memberName) {
+        const raid = raidsDB[raidId];
+        const rawCreator = raid ? (raid.creator || '') : '';
+        const creatorName = (rawCreator && rawCreator !== '未知' && rawCreator !== '隊長') ? rawCreator : '發起人';
+        
+        const isMaster = (typeof isAdmin === 'function' && isAdmin());
+        const currentLoggedIn = (typeof getCurrentEffectiveUser === 'function') ? getCurrentEffectiveUser() : '';
+        const isOwner = Boolean(currentLoggedIn && rawCreator && currentLoggedIn.toLowerCase() === rawCreator.toLowerCase());
+
+        if (!isMaster && !isOwner) {
+            alert(`請聯絡【${creatorName}】`);
+            return;
+        }
+
         if (confirm(`確定要退出/移除角色「${memberName}」嗎？`)) {
-            const raid = raidsDB[raidId];
             if (raid && raid.members) {
                 const newMembers = raid.members.filter(m => m.name !== memberName);
                 db.ref(`raids/${raidId}/members`).set(newMembers);
