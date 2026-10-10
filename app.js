@@ -178,7 +178,7 @@ function getHighContrastJobColor(job) {
 }
 
 // --- Character Roster (Ordered by 力職 ➔ 敏職 ➔ 法職) ---
-const CURRENT_ROSTER_VERSION = 3;
+const CURRENT_ROSTER_VERSION = 4;
 let CHARACTER_ROSTER = [
     // --- 力職 (10位: 火/黑騎 ➔ 聖騎 ➔ 英雄) ---
     { id: "Eric", job: "黑騎士", level: 180, category: "力職" },
@@ -192,7 +192,7 @@ let CHARACTER_ROSTER = [
     { id: "Eric", job: "英雄", level: 168, category: "力職" },
     { id: "毛毛蟲", job: "英雄", level: 152, category: "力職" },
 
-    // --- 敏職 (16位: 眼 ➔ 盜賊 ➔ 海盜) ---
+    // --- 敏職 (17位: 眼 ➔ 盜賊 ➔ 海盜) ---
     { id: "IE", job: "神射手", level: 175, category: "敏職" },
     { id: "小茵", job: "箭神", level: 174, category: "敏職" },
     { id: "毛毛蟲", job: "神射手", level: 168, category: "敏職" },
@@ -201,11 +201,12 @@ let CHARACTER_ROSTER = [
     { id: "Lumi", job: "箭神", level: 138, category: "敏職" },
     { id: "阿仁", job: "神偷", level: 180, category: "敏職" },
     { id: "Bagel", job: "神偷", level: 163, category: "敏職" },
-    { id: "DerDer", job: "神偷", level: 151, category: "敏職" },
+    { id: "derder", job: "神偷", level: 151, category: "敏職" },
     { id: "阿偉", job: "神偷", level: 149, category: "敏職" },
     { id: "阿甘", job: "夜使者", level: 174, category: "敏職" },
     { id: "Eric", job: "夜使者", level: 163, category: "敏職" },
     { id: "Bagel", job: "夜使者", level: 121, category: "敏職" },
+    { id: "derder", job: "夜使者", level: 118, category: "敏職" },
     { id: "WonderW", job: "槍神", level: 170, category: "敏職" },
     { id: "阿仁", job: "拳霸", level: 167, category: "敏職" },
     { id: "小皮", job: "拳霸", level: 140, category: "敏職" },
@@ -234,20 +235,46 @@ const MEMBER_NAME_ALIASES = {
     'Bagle': ['Bagel', 'Bagle', 'BagelPray'],
     'BagelPray': ['Bagel', 'Bagle', 'BagelPray'],
     '毛毛娃': ['長吉毛毛娃', '毛毛娃'],
-    '長吉毛毛娃': ['長吉毛毛娃', '毛毛娃']
+    '長吉毛毛娃': ['長吉毛毛娃', '毛毛娃'],
+    'derder': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
+    'DerDer': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
+    'DER': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
+    'To偷哭ku': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
+    'To偷哭kU': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
+    '偷哭': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭']
 };
 
 function getMemberBoundRoster(surveyMemberName) {
     if (!surveyMemberName) return [];
     const rawName = surveyMemberName.trim();
-    const aliasList = MEMBER_NAME_ALIASES[rawName] || [rawName];
-    const lowerAliases = aliasList.map(a => a.toLowerCase());
+    const rawLower = rawName.toLowerCase();
+
+    // 建立所有相關別名的小寫集合（不分大小寫比對）
+    const aliasSet = new Set([rawLower]);
+    for (const [key, list] of Object.entries(MEMBER_NAME_ALIASES)) {
+        const keyLower = key.toLowerCase();
+        const listLower = list.map(a => a.toLowerCase());
+        if (keyLower === rawLower || listLower.includes(rawLower)) {
+            aliasSet.add(keyLower);
+            listLower.forEach(a => aliasSet.add(a));
+        }
+    }
+
+    // 若包含「偷哭」或「der」，確保自動綁定 derder
+    if (rawLower.includes('偷哭') || rawLower === 'der' || rawLower === 'derder') {
+        aliasSet.add('derder');
+    }
 
     const matched = CHARACTER_ROSTER.filter(c => {
         const cIdLower = (c.id || '').trim().toLowerCase();
-        if (lowerAliases.includes(cIdLower)) return true;
+        if (aliasSet.has(cIdLower)) return true;
         // 包含字串自動匹配（例如問卷填寫「毛毛娃」，自動對應「長吉毛毛娃」）
-        return lowerAliases.some(alias => (alias.length >= 2 && (cIdLower.includes(alias) || alias.includes(cIdLower))));
+        for (const alias of aliasSet) {
+            if (alias.length >= 2 && (cIdLower.includes(alias) || alias.includes(cIdLower))) {
+                return true;
+            }
+        }
+        return false;
     });
 
     return matched;
@@ -729,6 +756,120 @@ document.addEventListener('DOMContentLoaded', () => {
                 })).filter(c => c.id && c.job);
                 localStorage.setItem('soulmine_custom_roster_cache', JSON.stringify(CHARACTER_ROSTER));
             }
+        }
+
+        // Auto-repair creator for Bagel's raids if accidentally overwritten to Lumi
+        Object.values(raidsDB).forEach(r => {
+            if (r && r.creator === 'Lumi') {
+                const rMembers = Array.isArray(r.members) ? r.members : [];
+                const hasBagel = rMembers.some(m => m && m.name && m.name.toLowerCase() === 'bagel');
+                const isBagelNote = r.note && (r.note.includes('主教掛繩清球') || r.note.includes('121鏢') || r.note.includes('阿甘'));
+                if (hasBagel || isBagelNote) {
+                    r.creator = 'Bagel';
+                    if (rMembers[0] && rMembers[0].name === 'Bagel') {
+                        rMembers[0].isCreator = true;
+                    }
+                    rMembers.forEach(m => {
+                        if (m && m.name && m.name.toLowerCase() === 'lumi') {
+                            m.isCreator = false;
+                        }
+                    });
+                    if (typeof db !== 'undefined' && db && db.ref && r.id) {
+                        db.ref(`raids/${r.id}/creator`).set('Bagel');
+                        db.ref(`raids/${r.id}/members`).set(rMembers);
+                    }
+                }
+            }
+        });
+
+        // Auto-repair creator for Bagel's confirmed teams if accidentally overwritten to Lumi
+        if (Array.isArray(confirmedTeams)) {
+            let teamsRepaired = false;
+            confirmedTeams.forEach(t => {
+                if (t && t.creator === 'Lumi') {
+                    const tMembers = Array.isArray(t.members) ? t.members : (t.members ? Object.values(t.members) : []);
+                    const hasBagel = tMembers.some(m => m && m.name && m.name.toLowerCase() === 'bagel');
+                    const isBagelNote = t.note && (t.note.includes('主教掛繩清球') || t.note.includes('121鏢') || t.note.includes('阿甘'));
+                    if (hasBagel || isBagelNote) {
+                        t.creator = 'Bagel';
+                        if (tMembers[0] && tMembers[0].name === 'Bagel') {
+                            tMembers[0].isCreator = true;
+                        }
+                        tMembers.forEach(m => {
+                            if (m && m.name && m.name.toLowerCase() === 'lumi') {
+                                m.isCreator = false;
+                            }
+                        });
+                        teamsRepaired = true;
+                    }
+                }
+            });
+            if (teamsRepaired && typeof db !== 'undefined' && db && db.ref) {
+                db.ref('teams').set(confirmedTeams);
+            }
+        }
+
+        // Auto-unify DER / DerDer / To偷哭ku / To偷哭kU / 偷哭 -> derder
+        const unifyToDerder = (name) => {
+            if (!name) return name;
+            const n = name.trim().toLowerCase();
+            if (n === 'der' || n === 'derder' || n === 'to偷哭ku' || n === '偷哭' || n.includes('偷哭')) {
+                return 'derder';
+            }
+            return name;
+        };
+
+        Object.values(raidsDB).forEach(r => {
+            if (r && Array.isArray(r.members)) {
+                let changed = false;
+                r.members.forEach(m => {
+                    if (m && m.name) {
+                        const unified = unifyToDerder(m.name);
+                        if (unified !== m.name) {
+                            m.name = unified;
+                            changed = true;
+                        }
+                    }
+                });
+                if (changed && typeof db !== 'undefined' && db && db.ref && r.id) {
+                    db.ref(`raids/${r.id}/members`).set(r.members);
+                }
+            }
+        });
+
+        if (Array.isArray(confirmedTeams)) {
+            let teamsChanged = false;
+            confirmedTeams.forEach(t => {
+                if (t && Array.isArray(t.members)) {
+                    t.members.forEach(m => {
+                        if (m && m.name) {
+                            const unified = unifyToDerder(m.name);
+                            if (unified !== m.name) {
+                                m.name = unified;
+                                teamsChanged = true;
+                            }
+                        }
+                    });
+                }
+            });
+            if (teamsChanged && typeof db !== 'undefined' && db && db.ref) {
+                db.ref('teams').set(confirmedTeams);
+            }
+        }
+
+        // Auto-unify survey responses DER / DerDer / To偷哭ku / To偷哭kU / 偷哭 -> derder
+        if (surveyResponses && typeof surveyResponses === 'object') {
+            Object.entries(surveyResponses).forEach(([sKey, sVal]) => {
+                if (sVal && sVal.name) {
+                    const unified = unifyToDerder(sVal.name);
+                    if (unified !== sVal.name) {
+                        sVal.name = unified;
+                        if (typeof db !== 'undefined' && db && db.ref) {
+                            db.ref(`surveys/${sKey}/name`).set(unified);
+                        }
+                    }
+                }
+            });
         }
 
         updateUI();
@@ -1400,6 +1541,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ` : '<span style="color:#cbd5e1;">-</span>';
 
             // Member Cell with Floating Tooltip
+            const boundChars = getMemberBoundRoster(r.name);
+            let boundCharsHtml = '';
+            if (boundChars.length > 0) {
+                boundCharsHtml = boundChars.map(c => `<span style="font-weight:700; color:#38bdf8;">${escapeHtml(c.id)} (${escapeHtml(c.job)} Lv.${c.level})</span>`).join('<br>');
+            } else {
+                boundCharsHtml = '<span style="color:#94a3b8;">未綁定（自訂）</span>';
+            }
+
             const memberCellHtml = `
                 <td class="col-member" style="color: ${rowColor};">
                     <div class="matrix-member-cell">
@@ -1413,6 +1562,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="tooltip-title">
                                 <span>👤 ${escapeHtml(r.name)}</span>
                                 <span style="font-size:0.72rem; color:#94a3b8;">${formatDateSimple(r.updatedAt)}</span>
+                            </div>
+                            <div class="tooltip-field">
+                                <strong>⚔️ 角色名冊：</strong>
+                                <div style="font-size:0.78rem; line-height:1.4; margin-top:2px;">${boundCharsHtml}</div>
                             </div>
                             <div class="tooltip-field">
                                 <strong>🎟️ 突襲券：</strong>
@@ -2559,7 +2712,18 @@ document.addEventListener('DOMContentLoaded', () => {
                     const predraftNoteInput = document.getElementById('predraft-note-input');
                     const noteText = predraftNoteInput ? predraftNoteInput.value.trim() : '';
 
-                    const creatorName = getCurrentEffectiveUser() || '管理員';
+                    let creatorName = getCurrentEffectiveUser() || '管理員';
+                    if (preDraftState.editingRaidId && raidsDB[preDraftState.editingRaidId]) {
+                        const origRaid = raidsDB[preDraftState.editingRaidId];
+                        if (origRaid.creator && origRaid.creator !== '隊長' && origRaid.creator !== '未知') {
+                            creatorName = origRaid.creator;
+                        }
+                    } else if (preDraftState.editingConfirmedTeamId !== null && preDraftState.editingConfirmedTeamId !== undefined) {
+                        const origTeam = confirmedTeams.find(t => t && t.id === preDraftState.editingConfirmedTeamId);
+                        if (origTeam && origTeam.creator && origTeam.creator !== '隊長' && origTeam.creator !== '未知') {
+                            creatorName = origTeam.creator;
+                        }
+                    }
 
                     // Slot roles map
                     const slotRolesMap = {};
@@ -3505,8 +3669,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Determine creator name strictly from logged-in account ID, admin name or fallback
                     const loggedId = getCurrentEffectiveUser();
-                    const creatorName = loggedId || getSavedCreator() || (isAdmin() ? (getAdminUser() || '管理員') : '公會成員');
-                    setSavedCreator(creatorName);
+                    let creatorName = loggedId || getSavedCreator() || (isAdmin() ? (getAdminUser() || '管理員') : '公會成員');
+                    if (createRaidState.editingRaidId && raidsDB[createRaidState.editingRaidId]) {
+                        const origRaid = raidsDB[createRaidState.editingRaidId];
+                        if (origRaid.creator && origRaid.creator !== '隊長' && origRaid.creator !== '未知') {
+                            creatorName = origRaid.creator;
+                        }
+                    } else {
+                        setSavedCreator(creatorName);
+                    }
 
                     // Save Slot 0 character as saved char if present
                     const slot0 = createRaidState.slots[0];
@@ -4004,11 +4175,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const raidMembers = raid.members || [];
             const firstMemberName = (raidMembers[0] && raidMembers[0].name) ? raidMembers[0].name : '';
             const currentLoggedIn = getCurrentEffectiveUser();
-            let effectiveCreator = raid.creator;
-            if (currentLoggedIn && (!effectiveCreator || effectiveCreator === '隊長' || effectiveCreator === '未知' || (firstMemberName && effectiveCreator === firstMemberName))) {
-                effectiveCreator = currentLoggedIn;
-            }
-            if (!effectiveCreator) effectiveCreator = currentLoggedIn || '公會成員';
+            let effectiveCreator = (raid.creator && raid.creator !== '隊長' && raid.creator !== '未知') ? raid.creator : (firstMemberName || currentLoggedIn || '公會成員');
 
             const newTeam = {
                 id: raid.id || ('team_' + Date.now()),
@@ -4452,11 +4619,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Tab 1: Recruitment Board (Boss Category & Teams View) ---
     window.selectBossCategory = function(bossName) {
-        currentSelectedBoss = bossName;
-        renderRecruitBoard();
-        const mainCard = document.getElementById('tab-recruit');
-        if (mainCard) {
-            mainCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        try {
+            currentSelectedBoss = bossName;
+            renderRecruitBoard();
+            const mainCard = document.getElementById('tab-recruit');
+            if (mainCard) {
+                mainCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+        } catch (err) {
+            console.error('Error in selectBossCategory:', err);
+            alert('進入隊伍清單失敗：' + err.message);
         }
     };
 
@@ -4467,13 +4639,13 @@ document.addEventListener('DOMContentLoaded', () => {
     function getCreateLoginButtonHtml() {
         const loggedUser = getLoggedInUser();
         if (loggedUser) {
-            return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.92rem; padding: 0.65rem 1.1rem; border-radius: 8px; border: 1.5px solid #22c55e; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer;" title="目前已登入：${escapeHtml(loggedUser)}，點擊切換">👤 ${escapeHtml(loggedUser)}</button>`;
+            return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.88rem; padding: 0.5rem 0.9rem; border-radius: 8px; border: 1.5px solid #22c55e; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer; white-space: nowrap;" title="目前已登入：${escapeHtml(loggedUser)}，點擊切換">👤 ${escapeHtml(loggedUser)}</button>`;
         }
         if (isAdmin()) {
             const adminName = getAdminUser() || '管理員';
-            return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.92rem; padding: 0.65rem 1.1rem; border-radius: 8px; border: 1.5px solid #22c55e; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer;" title="管理員權限已開通，點擊亦可登入專屬隊長帳號">👑 管理員 ${escapeHtml(adminName)} (已授權)</button>`;
+            return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.88rem; padding: 0.5rem 0.9rem; border-radius: 8px; border: 1.5px solid #22c55e; background: #f0fdf4; color: #15803d; font-weight: 700; cursor: pointer; white-space: nowrap;" title="管理員權限已開通，點擊亦可登入專屬隊長帳號">👑 管理員 ${escapeHtml(adminName)} (已授權)</button>`;
         }
-        return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.92rem; padding: 0.65rem 1.1rem; border-radius: 8px; border: 1.5px solid #3b82f6; background: #eff6ff; color: #2563eb; font-weight: 700; cursor: pointer;" title="登入或建立帳號以發起出團隊伍">👤 建立隊伍登入</button>`;
+        return `<button onclick="openGeneralLoginModal()" class="btn-secondary" style="font-size: 0.88rem; padding: 0.5rem 0.9rem; border-radius: 8px; border: 1.5px solid #3b82f6; background: #eff6ff; color: #2563eb; font-weight: 700; cursor: pointer; white-space: nowrap;" title="登入或建立帳號以發起出團隊伍">👤 建立隊伍登入</button>`;
     }
 
     function renderRecruitBoard() {
@@ -4512,11 +4684,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 headerArea.innerHTML = `
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                         <div>
-                            <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.6rem;">
+                            <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
                                 <span style="color: #ff9800; font-weight: 700;">📋 突襲王專區</span>
                                 <span style="font-size: 0.88rem; color: #ff9800; font-weight: 600; background: rgba(255, 152, 0, 0.12); border: 1px solid rgba(255, 152, 0, 0.3); padding: 0.2rem 0.65rem; border-radius: 16px;">(共 ${allActiveRaids.length} 組待組隊伍)</span>
+                                <button type="button" onclick="window.selectBossCategory('ALL')" class="btn-secondary" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; border-radius: 8px; border: 1.5px solid var(--primary-color); background: rgba(255, 117, 24, 0.12); color: var(--primary-color); font-weight: 700; cursor: pointer;" title="直接查看所有 Boss 的待組隊伍">
+                                    👀 查看全部待組隊伍 (${allActiveRaids.length})
+                                </button>
                             </h2>
-                            <p class="subtitle" style="margin: 0.35rem 0 0 0; color: #64748b; font-size: 0.95rem;">請選擇想討伐的 Boss 查看待組隊伍，或點擊右側直接建立新出團！</p>
+                            <p class="subtitle" style="margin: 0.35rem 0 0 0; color: #64748b; font-size: 0.95rem;">請點選想討伐的 Boss 卡片查看隊伍，或點擊「查看全部待組隊伍」！</p>
                         </div>
                         <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
                             ${getCreateLoginButtonHtml()}
@@ -4538,6 +4713,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const card = document.createElement('div');
                 card.className = 'boss-category-card';
+                card.setAttribute('data-boss', b.name);
+                card.setAttribute('onclick', `window.selectBossCategory('${escapeHtml(b.name)}')`);
+                card.style.cursor = 'pointer';
                 card.onclick = () => window.selectBossCategory(b.name);
 
                 let badgeHtml = '';
@@ -4574,8 +4752,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         ${upcomingHtml}
                     </div>
-                    <div style="margin-top: 1.2rem; display: flex; justify-content: flex-end; align-items: center; color: var(--primary-color); font-weight: 600; font-size: 0.9rem; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.7rem;">
-                        進入查看隊伍 ➔
+                    <div style="margin-top: 1.2rem; display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.7rem;">
+                        <button type="button" onclick="event.stopPropagation(); window.selectBossCategory('${escapeHtml(b.name)}')" style="background: none; border: none; color: var(--primary-color); font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0;">
+                            進入查看隊伍 ➔
+                        </button>
                     </div>
                 `;
                 container.appendChild(card);
@@ -4584,8 +4764,14 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // --- View 2: Drill-Down View for Selected Boss ---
-        const currentBossInfo = BOSS_LIST.find(b => matchesBoss(b.name, currentSelectedBoss)) || { name: currentSelectedBoss, icon: "⚔️" };
-        const bossRaids = allRaids.filter(r => matchesBoss(r.boss, currentSelectedBoss));
+        const isShowAll = (currentSelectedBoss === 'ALL');
+        const currentBossInfo = isShowAll
+            ? { name: "全部待組隊伍", icon: "⚔️" }
+            : (BOSS_LIST.find(b => matchesBoss(b.name, currentSelectedBoss)) || { name: currentSelectedBoss, icon: "⚔️" });
+
+        const bossRaids = isShowAll 
+            ? allRaids 
+            : allRaids.filter(r => matchesBoss(r.boss, currentSelectedBoss));
 
         const activeRaids = bossRaids
             .filter(r => !r.isExpired)
@@ -4602,25 +4788,25 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             headerArea.innerHTML = `
                 <div style="margin-bottom: 1.5rem;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
-                        <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-                            <button onclick="selectBossCategory(null)" class="btn-back-boss" title="返回突襲王專區">
-                                ⬅ 返回突襲王專區
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: nowrap; gap: 0.8rem; overflow-x: auto; padding-bottom: 0.3rem;">
+                        <div style="display: flex; align-items: center; gap: 0.6rem; flex-shrink: 0;">
+                            <button onclick="window.selectBossCategory(null)" class="btn-back-boss" title="返回 Boss 分類專區" style="cursor: pointer; padding: 0.45rem 0.75rem; font-size: 0.88rem; white-space: nowrap; flex-shrink: 0;">
+                                ⬅ 返回
                             </button>
-                            <div style="display: flex; align-items: center; gap: 0.6rem;">
-                                <span style="font-size: 1.8rem; line-height: 1;">${currentBossInfo.icon}</span>
-                                <h2 style="margin: 0; font-size: 1.45rem; color: #ff9800; font-weight: 700;">
+                            <div style="display: flex; align-items: center; gap: 0.45rem; flex-shrink: 0;">
+                                <span style="font-size: 1.5rem; line-height: 1;">${currentBossInfo.icon}</span>
+                                <h2 style="margin: 0; font-size: 1.3rem; color: #ff9800; font-weight: 700; white-space: nowrap;">
                                     【${currentBossInfo.name}】待組隊伍
                                 </h2>
-                                <span style="background: rgba(255, 152, 0, 0.12); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); padding: 0.2rem 0.65rem; border-radius: 16px; font-size: 0.85rem; font-weight: 600;">
+                                <span style="background: rgba(255, 152, 0, 0.12); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); padding: 0.15rem 0.55rem; border-radius: 14px; font-size: 0.82rem; font-weight: 600; white-space: nowrap;">
                                     ${countBadge}
                                 </span>
                             </div>
                         </div>
-                        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                        <div style="display: flex; gap: 0.5rem; align-items: center; flex-shrink: 0;">
                             ${getCreateLoginButtonHtml()}
-                            <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1.05rem; padding: 0.75rem 1.4rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
-                                ➕ 建立【${currentBossInfo.name}】出團
+                            <button onclick="openCreateModalForBoss('${isShowAll ? '普通拉圖斯' : currentBossInfo.name}')" class="btn-primary" style="font-size: 0.92rem; padding: 0.5rem 1.1rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer; white-space: nowrap;">
+                                ➕ 建立出團
                             </button>
                         </div>
                     </div>
@@ -4677,25 +4863,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const myCreatorName = getSavedCreator();
 
         const buildRaidCard = (raid, isExpired) => {
-            const members = raid.members || [];
+            const rawMembers = raid.members ? (Array.isArray(raid.members) ? raid.members : Object.values(raid.members)) : [];
+            const members = rawMembers.filter(m => m !== null && m !== undefined);
             const isDragonKing = isDragonKingBoss(raid.boss);
             const maxSlots = isDragonKing ? 12 : (raid.maxPlayers || 6);
             const isFull = members.length >= maxSlots;
 
-            const currentLoggedIn = getCurrentEffectiveUser();
+            const currentLoggedIn = (typeof getCurrentEffectiveUser === 'function') ? getCurrentEffectiveUser() : '';
             const firstMemberName = (members[0] && members[0].name) ? members[0].name : '';
-            let displayCreator = raid.creator;
-            if (currentLoggedIn && (!displayCreator || displayCreator === '隊長' || displayCreator === '未知' || (firstMemberName && displayCreator === firstMemberName))) {
-                displayCreator = currentLoggedIn;
-                if (raid.creator !== currentLoggedIn && typeof db !== 'undefined' && db && db.ref) {
-                    raid.creator = currentLoggedIn;
-                    db.ref(`raids/${raid.id}/creator`).set(currentLoggedIn);
-                }
-            }
-            if (!displayCreator) displayCreator = '公會成員';
+            let displayCreator = (raid.creator && raid.creator !== '未知' && raid.creator !== '隊長') ? raid.creator : (firstMemberName || '公會成員');
 
             const renderSlot = (slotIdx) => {
-                const m = members.find((item, index) => (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
+                const m = members.find((item, index) => item && (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
                 const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
                 const slotRole = (m && m.roleTag) ? m.roleTag : ((raid.slotRoles && raid.slotRoles[slotIdx]) ? raid.slotRoles[slotIdx] : '');
                 const roleInfo = getTacticalRoleInfo(slotRole);
@@ -4706,7 +4885,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 if (m) {
-                    const isActuallyCreator = Boolean(m.name && displayCreator && m.name.toLowerCase() === displayCreator.toLowerCase());
+                    const isActuallyCreator = Boolean(m.name && displayCreator && String(m.name).toLowerCase() === String(displayCreator).toLowerCase());
                     if (isExpired) {
                         return `
                             <div style="background: rgba(255,255,255,0.03); padding: 0.45rem 0.55rem; border-radius: 8px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; border: 1px solid rgba(255,255,255,0.06); min-height: 40px; box-sizing: border-box;">
@@ -5413,11 +5592,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            // Auto-heal legacy teams where creator was incorrectly assigned as slot 0 member or default '隊長'/'未知'
+            // Fallback for legacy teams missing creator: only if undefined or '隊長'/'未知'
             const teamMembers = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
             const firstMemberName = (teamMembers[0] && teamMembers[0].name) ? teamMembers[0].name : '';
-            if (currentLoggedIn && (!team.creator || team.creator === '隊長' || team.creator === '未知' || (firstMemberName && team.creator === firstMemberName))) {
-                team.creator = currentLoggedIn;
+            if (!team.creator || team.creator === '隊長' || team.creator === '未知') {
+                team.creator = firstMemberName || '公會成員';
                 changed = true;
             }
 
