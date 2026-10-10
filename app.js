@@ -453,11 +453,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${m}/${dt} ${h}:${min}`;
     }
 
-    const TARGET_DEFAULT_WEEK_ID = "2026-10-06";
+    // 動態計算問卷調查起始週二：每週五早上 08:00 自動切換至下週調查，當週調查自問卷移除
+    function getActiveSurveyTuesday(d = new Date()) {
+        const date = new Date(d);
+        const day = date.getDay(); // 0: Sun, 1: Mon, ..., 5: Fri, 6: Sat
+        let daysSinceFri;
+        if (day === 5) {
+            daysSinceFri = (date.getHours() >= 8) ? 0 : 7;
+        } else {
+            daysSinceFri = (day + 7 - 5) % 7;
+        }
+        const fri = new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysSinceFri, 8, 0, 0, 0);
+        return new Date(fri.getFullYear(), fri.getMonth(), fri.getDate() + 4, 0, 0, 0, 0);
+    }
 
-    // Generate 4 to 5 Tuesday cycles starting with 10/06 as default
+    function getActiveSurveyWeekId(d = new Date()) {
+        return formatDateISO(getActiveSurveyTuesday(d));
+    }
+
+    const TARGET_DEFAULT_WEEK_ID = getActiveSurveyWeekId();
+
+    // 問卷調查週次（每週五 08:00 自動輪替下週，往後推 4 週）
     function getSurveyWeekOptions() {
-        const baseTue = new Date(2026, 9, 6); // 2026-10-06
+        const baseTue = getActiveSurveyTuesday();
         baseTue.setHours(0, 0, 0, 0);
         const options = [];
 
@@ -470,10 +488,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const monM = mon.getMonth() + 1;
             const monD = mon.getDate();
 
-            const weekId = formatDateISO(tue); // e.g. "2026-10-06"
+            const weekId = formatDateISO(tue); // e.g. "2026-10-13"
             let tag = '';
-            if (w === 0) tag = '【本週】';
-            else if (w === 1) tag = '【下週】';
+            if (w === 0) tag = '【本期調查】';
+            else if (w === 1) tag = '【下週調查】';
             else tag = `【第 ${w + 1} 週】`;
 
             options.push({
@@ -482,6 +500,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 label: `📅 ${tueM}/${tueD}(二) ～ ${monM}/${monD}(一) ${tag}`,
                 shortLabel: `${tueM}/${tueD}(二) ~ ${monM}/${monD}(一)`,
                 isDefault: (w === 0)
+            });
+        }
+
+        return options;
+    }
+
+    // 報表週次選項：調查週次在前，本週出團（尚未超過時間者）移到下拉選項最下面，超過時間自動隱藏
+    function getReportWeekOptions() {
+        const activeTue = getActiveSurveyTuesday();
+        activeTue.setHours(0, 0, 0, 0);
+        const prevTue = new Date(activeTue.getTime() - 7 * 86400000);
+        const prevMonEnd = new Date(prevTue.getFullYear(), prevTue.getMonth(), prevTue.getDate() + 6, 23, 59, 59, 999);
+        const now = new Date();
+
+        // 1. 先放調查中的週次（以本期調查為首）
+        const options = [...getSurveyWeekOptions()];
+
+        // 2. 本週出團：移至下拉選項最下面；超過時間（週一 23:59 後）則自動隱藏
+        if (now <= prevMonEnd) {
+            const prevMon = new Date(prevTue.getTime() + 6 * 86400000);
+            const prevWeekId = formatDateISO(prevTue);
+            options.push({
+                weekId: prevWeekId,
+                tueDate: prevTue,
+                label: `📅 ${prevTue.getMonth() + 1}/${prevTue.getDate()}(二) ～ ${prevMon.getMonth() + 1}/${prevMon.getDate()}(一) 【本週進行中】`,
+                shortLabel: `${prevTue.getMonth() + 1}/${prevTue.getDate()}(二) ~ ${prevMon.getMonth() + 1}/${prevMon.getDate()}(一)`,
+                isOngoing: true,
+                isDefault: false
             });
         }
 
@@ -569,7 +615,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (userSlots.includes(slotDef.key) || userSlots.includes(slotDef.label) || userSlots.includes(slotDef.key.replace('_', ' '))) {
             return true;
         }
-        // 2. Legacy fallback
+        // 2. Exact date prefix match (e.g., "10/6(二) 晚" or "10/6(二)_晚")
+        if (dayDef && dayDef.dateLabel) {
+            const prefix = dayDef.dateLabel;
+            if (slotDef.period === '午') {
+                if (userSlots.some(s => s.startsWith(prefix) && (s.includes('午') || s.includes('下午')))) return true;
+            } else if (slotDef.period === '晚') {
+                if (userSlots.some(s => s.startsWith(prefix) && s.includes('晚'))) return true;
+            }
+        }
+        // 3. Legacy fallback (e.g. "週二(晚)", "週六(下午)")
         if (slotDef.period === '午') {
             if (userSlots.includes(`週${slotDef.dayName}(下午)`) || 
                 userSlots.includes(`週${slotDef.dayName}(午)`) ||
@@ -586,8 +641,15 @@ document.addEventListener('DOMContentLoaded', () => {
         return false;
     }
 
+    function isResponseMatchWeek(r, targetWeekId) {
+        if (!r) return false;
+        const rWeek = r.weekId || "2026-10-06";
+        return rWeek === targetWeekId;
+    }
+
     let currentSurveyFormWeekId = TARGET_DEFAULT_WEEK_ID;
-    let currentMatrixWeekId = TARGET_DEFAULT_WEEK_ID;
+    let currentMatrixWeekId = null;
+    let showExpiredSurveySlots = false;
 
     // --- Accounts & User Session ---
     let accountsDB = {};
@@ -817,10 +879,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const curName = (nameInput ? nameInput.value : '').trim();
             if (!curName) return;
             const targetWeekId = currentSurveyFormWeekId;
-            const defaultWeekId = weekOptions[0]?.weekId;
-
             const existing = Object.values(surveyResponses || {}).find(r => 
-                r && r.name === curName && (r.weekId === targetWeekId || (!r.weekId && targetWeekId === defaultWeekId))
+                r && r.name === curName && isResponseMatchWeek(r, targetWeekId)
             );
 
             if (existing) {
@@ -920,8 +980,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const existingKey = Object.keys(surveyResponses).find(k => {
                     const r = surveyResponses[k];
                     if (!r || r.name !== name) return false;
-                    const rWeek = r.weekId || weekOptions[0].weekId;
-                    return rWeek === targetWeekId;
+                    return isResponseMatchWeek(r, targetWeekId);
                 });
 
                 const ref = existingKey ? db.ref(`surveys/${existingKey}`) : db.ref('surveys').push();
@@ -953,8 +1012,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     // Remove records for this week
                     const updates = {};
                     Object.entries(surveyResponses || {}).forEach(([k, r]) => {
-                        const rWeek = r.weekId || weekOptions[0].weekId;
-                        if (rWeek === targetWeekId) {
+                        if (isResponseMatchWeek(r, targetWeekId)) {
                             updates[`surveys/${k}`] = null;
                         }
                     });
@@ -974,14 +1032,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (btnCopySurvey) {
             btnCopySurvey.onclick = () => {
                 const targetWeekId = currentMatrixWeekId || currentSurveyFormWeekId || TARGET_DEFAULT_WEEK_ID;
-                const weekOpt = weekOptions.find(o => o.weekId === targetWeekId) || weekOptions[0];
-                const responses = Object.values(surveyResponses || {}).filter(r => {
-                    const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
-                    if (targetWeekId === TARGET_DEFAULT_WEEK_ID) {
-                        return (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29");
-                    }
-                    return rWeek === targetWeekId;
-                });
+                const allOpts = getReportWeekOptions();
+                const weekOpt = allOpts.find(o => o.weekId === targetWeekId) || allOpts[0];
+                const responses = Object.values(surveyResponses || {}).filter(r => isResponseMatchWeek(r, targetWeekId));
 
                 if (responses.length === 0) {
                     alert(`目前【${weekOpt.shortLabel}】尚無成員填寫問卷！`);
@@ -1020,18 +1073,22 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Setup Detail Modal
+        // Setup Detail Modal (彈出視窗)
         const btnOpenDetail = document.getElementById('btn-open-survey-detail');
         if (btnOpenDetail) {
             btnOpenDetail.onclick = () => {
                 const modal = document.getElementById('survey-detail-modal');
                 if (modal) {
                     modal.style.display = 'flex';
-                    // Sync modal week select
+                    const reportWeekOptions = getReportWeekOptions();
+                    const ongoingOpt = reportWeekOptions.find(o => o.isOngoing);
+                    const defaultOpt = reportWeekOptions[0];
+                    if (!currentMatrixWeekId || !reportWeekOptions.some(o => o.weekId === currentMatrixWeekId)) {
+                        currentMatrixWeekId = ongoingOpt ? ongoingOpt.weekId : defaultOpt.weekId;
+                    }
                     const modalWeekSelect = document.getElementById('survey-matrix-week-select');
-                    if (modalWeekSelect && currentSurveyFormWeekId) {
-                        modalWeekSelect.value = currentSurveyFormWeekId;
-                        currentMatrixWeekId = currentSurveyFormWeekId;
+                    if (modalWeekSelect) {
+                        modalWeekSelect.value = currentMatrixWeekId;
                     }
                     renderSurveySummary();
                 }
@@ -1061,6 +1118,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     surveyDetailModal.style.display = 'none';
                 }
             });
+        }
+
+        const btnToggleExpired = document.getElementById('btn-toggle-expired-slots');
+        if (btnToggleExpired) {
+            btnToggleExpired.onclick = () => {
+                showExpiredSurveySlots = !showExpiredSurveySlots;
+                renderSurveySummary();
+            };
         }
     }
 
@@ -1128,56 +1193,85 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    window.switchMatrixWeek = function(wId) {
+        currentMatrixWeekId = wId;
+        const modalWeekSelect = document.getElementById('survey-matrix-week-select');
+        if (modalWeekSelect) modalWeekSelect.value = wId;
+        renderSurveySummary();
+    };
+
     function renderSurveySummary() {
         const totalBadge = document.getElementById('survey-total-respondents');
         const list = document.getElementById('survey-respondents-list');
         const modalWeekSelect = document.getElementById('survey-matrix-week-select');
         if (!list) return;
 
-        const weekOptions = getSurveyWeekOptions();
-        const defaultWeekId = weekOptions[0].weekId;
+        const reportWeekOptions = getReportWeekOptions();
+        const ongoingOpt = reportWeekOptions.find(o => o.isOngoing);
+        const defaultWeekId = reportWeekOptions[0].weekId;
 
-        // Initialize modal week dropdown if empty or mismatch
-        if (modalWeekSelect) {
-            if (modalWeekSelect.options.length !== weekOptions.length) {
-                modalWeekSelect.innerHTML = weekOptions.map(opt => `
-                    <option value="${opt.weekId}">${opt.label}</option>
-                `).join('');
-                if (currentMatrixWeekId) modalWeekSelect.value = currentMatrixWeekId;
-            }
-            if (!modalWeekSelect.onchange) {
-                modalWeekSelect.onchange = () => {
-                    currentMatrixWeekId = modalWeekSelect.value;
-                    renderSurveySummary();
-                };
-            }
+        if (!currentMatrixWeekId || !reportWeekOptions.some(o => o.weekId === currentMatrixWeekId)) {
+            currentMatrixWeekId = ongoingOpt ? ongoingOpt.weekId : defaultWeekId;
         }
 
-        const activeWeekId = currentMatrixWeekId || modalWeekSelect?.value || currentSurveyFormWeekId || defaultWeekId;
+        // Initialize report week dropdown
+        if (modalWeekSelect) {
+            const currentOptsKey = reportWeekOptions.map(o => o.weekId).join(',');
+            if (modalWeekSelect.dataset.renderedOptsKey !== currentOptsKey) {
+                modalWeekSelect.innerHTML = reportWeekOptions.map(opt => `
+                    <option value="${opt.weekId}">${opt.label}</option>
+                `).join('');
+                modalWeekSelect.dataset.renderedOptsKey = currentOptsKey;
+            }
+            modalWeekSelect.value = currentMatrixWeekId;
+            modalWeekSelect.onchange = () => {
+                currentMatrixWeekId = modalWeekSelect.value;
+                renderSurveySummary();
+            };
+        }
+
+        const activeWeekId = currentMatrixWeekId || defaultWeekId;
         const weekDays = getWeekDaysDetails(activeWeekId);
 
-        // Filter responses for this chosen week (or default if legacy without weekId)
+        // Filter responses strictly for this chosen week
         const responses = Object.entries(surveyResponses || {})
             .map(([k, v]) => ({ key: k, ...v }))
-            .filter(r => {
-                const rWeek = r.weekId || defaultWeekId;
-                if (activeWeekId === defaultWeekId) {
-                    return (rWeek === defaultWeekId || rWeek === "2026-09-29");
-                }
-                return rWeek === activeWeekId;
-            });
+            .filter(r => isResponseMatchWeek(r, activeWeekId));
 
         if (totalBadge) totalBadge.textContent = `已回覆 ${responses.length} 人`;
         const countPill = document.getElementById('survey-count-pill');
         if (countPill) countPill.textContent = `${responses.length}人填寫`;
 
+        // 計算各時段是否已過期 (標註已過期時段，但保持完整7天欄位顯示，不隱藏欄位)
+        const nowTs = Date.now();
+        let expiredDaysCount = 0;
+        const dayStatus = weekDays.map(d => {
+            const aftExpiry = new Date(d.dateObj.getFullYear(), d.dateObj.getMonth(), d.dateObj.getDate(), 17, 30, 0).getTime();
+            const eveExpiry = new Date(d.dateObj.getFullYear(), d.dateObj.getMonth(), d.dateObj.getDate(), 23, 0, 0).getTime();
+            const isAftExpired = nowTs > aftExpiry;
+            const isEveExpired = nowTs > eveExpiry;
+            const isDayExpired = isEveExpired;
+            if (isDayExpired) expiredDaysCount++;
+            return { isAftExpired, isEveExpired, isDayExpired };
+        });
+
+        const allDaysExpired = (expiredDaysCount === 7);
+        const shouldHideExpired = false; // 永遠完整顯示週二至週一 7 天欄位，不隱藏欄位避免日期被遮蔽
+
+        // 控制「顯示已過期時段」按鈕與提示（欄位固定完整顯示，此按鈕隱藏）
+        const btnToggleExpired = document.getElementById('btn-toggle-expired-slots');
+        const expiredHint = document.getElementById('survey-expired-hint');
+        if (btnToggleExpired) btnToggleExpired.style.display = 'none';
+        if (expiredHint) expiredHint.style.display = 'none';
+
         // Render Matrix Table (週二 ~ 週一 排班明細總表)
-        list.innerHTML = '';
-        if (responses.length === 0) {
+        try {
+            list.innerHTML = '';
+            if (responses.length === 0) {
             list.innerHTML = `
                 <div style="text-align: center; padding: 2.5rem 1rem; color: #64748b;">
                     <p style="font-size: 1.05rem; font-weight: 700; margin: 0 0 0.4rem 0;">📝 本週次尚無人填寫問卷</p>
-                    <p style="font-size: 0.85rem; margin: 0;">請在首頁輸入名字並勾選可出團時段送出，或切換上方週次檢視！</p>
+                    <p style="font-size: 0.85rem; margin: 0;">請在上方輸入名字並勾選可出團時段送出，或切換上方週次檢視！</p>
                 </div>
             `;
             return;
@@ -1204,10 +1298,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const rowClass = isScrollYes ? 'scroll-yes' : 'scroll-no';
             const rowColor = isScrollYes ? '#0f172a' : '#dc2626';
 
-            const nameBadge = (extra = '') => `<span class="matrix-name-text" style="color: ${rowColor}; font-weight: 800;">${escapeHtml(r.name)}${extra}</span>`;
-
             // Day cells
-            const dayCellsHtml = weekDays.map(d => {
+            const dayCellsHtml = weekDays.map((d, dIdx) => {
+                const status = dayStatus[dIdx];
                 const isMultiSlot = d.isWeekend || d.isSpecialHoliday;
                 let cellContent = '<span class="matrix-empty-cell">-</span>';
 
@@ -1219,11 +1312,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     let cornerBadge = '';
                     if (aftChecked && eveChecked) {
-                        cornerBadge = '<span class="matrix-cell-corner-badge all" title="全天">全</span>';
+                        const extraCls = (status.isAftExpired && !status.isEveExpired) ? '' : (status.isDayExpired ? 'passed' : '');
+                        cornerBadge = `<span class="matrix-cell-corner-badge all ${extraCls}" title="全天">全</span>`;
                     } else if (aftChecked) {
-                        cornerBadge = '<span class="matrix-cell-corner-badge afternoon" title="下午">午</span>';
+                        const extraCls = status.isAftExpired ? 'passed' : '';
+                        cornerBadge = `<span class="matrix-cell-corner-badge afternoon ${extraCls}" title="下午">午</span>`;
                     } else if (eveChecked) {
-                        cornerBadge = '<span class="matrix-cell-corner-badge evening" title="晚上">晚</span>';
+                        const extraCls = status.isEveExpired ? 'passed' : '';
+                        cornerBadge = `<span class="matrix-cell-corner-badge evening ${extraCls}" title="晚上">晚</span>`;
                     }
 
                     if (aftChecked || eveChecked) {
@@ -1238,7 +1334,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
-                return `<td class="col-day ${isHolidayCol ? 'col-weekend' : ''}" style="color: ${rowColor};">${cellContent}</td>`;
+                const colExpiredCls = status.isDayExpired 
+                    ? (shouldHideExpired ? 'col-expired-hidden' : 'col-expired-dimmed') 
+                    : '';
+                return `<td class="col-day ${isHolidayCol ? 'col-weekend' : ''} ${colExpiredCls}" style="color: ${rowColor};">${cellContent}</td>`;
             }).join('');
 
             // Actions (操作)
@@ -1247,7 +1346,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <button type="button" class="matrix-action-btn" title="刪除此紀錄" style="color:#ef4444;" onclick="window.deleteSurveyResponse('${r.key}', '${escapeHtml(r.name)}')">✕</button>
             ` : '<span style="color:#cbd5e1;">-</span>';
 
-            // Member Cell with Floating Tooltip (滑鼠指到成員名單時出現浮動小框框)
+            // Member Cell with Floating Tooltip
             const memberCellHtml = `
                 <td class="col-member" style="color: ${rowColor};">
                     <div class="matrix-member-cell">
@@ -1284,8 +1383,9 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        // Header Date Columns (含時段預排按鈕)
+        // Header Date Columns (含時段預排按鈕，已過期時段不提供預排按鈕)
         const headerThs = weekDays.map((d, dIdx) => {
+            const status = dayStatus[dIdx];
             const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
             let holCornerBadge = '';
             if (d.isSpecialHoliday) {
@@ -1304,11 +1404,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
 
                     let btns = [];
-                    // 人有超過 6 個再出現預排 (> 6)
-                    if (aftCount > 6) {
+                    // 人數達 6 人或以上即顯示預排 (>= 6)，且如果該時段已過期則不顯示預排
+                    if (aftCount >= 6 && !status.isAftExpired) {
                         btns.push(`<button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '午', ${dIdx})" title="快速預排此時段 (午: ${aftCount}人)">預排(午)</button>`);
                     }
-                    if (eveCount > 6) {
+                    if (eveCount >= 6 && !status.isEveExpired) {
                         btns.push(`<button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (晚: ${eveCount}人)">預排(晚)</button>`);
                     }
                     if (btns.length > 0) {
@@ -1317,8 +1417,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     const eveSlot = d.slots[0];
                     const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
-                    // 人有超過 6 個再出現預排 (> 6)
-                    if (eveCount > 6) {
+                    if (eveCount >= 6 && !status.isEveExpired) {
                         predraftBtnHtml = `
                             <div style="margin-top: 3px;">
                                 <button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (${eveCount}人)">🎯 預排</button>
@@ -1328,7 +1427,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
 
-            return `<th class="col-day ${isHolidayCol ? 'col-weekend' : ''}" style="position: relative;">
+            const colExpiredCls = status.isDayExpired 
+                ? (shouldHideExpired ? 'col-expired-hidden' : 'col-expired-dimmed') 
+                : '';
+
+            return `<th class="col-day ${isHolidayCol ? 'col-weekend' : ''} ${colExpiredCls}" style="position: relative;">
                 <span>${d.dateLabel}</span>${holCornerBadge}
                 ${predraftBtnHtml}
             </th>`;
@@ -1336,9 +1439,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Footer Daily Counts
         const footerTds = weekDays.map((d, dIdx) => {
+            const status = dayStatus[dIdx];
             const isMultiSlot = d.isWeekend || d.isSpecialHoliday;
             const isHolidayCol = d.isWeekend || d.isSpecialHoliday;
             const hasAdmin = typeof isAdmin === 'function' && isAdmin();
+            const colExpiredCls = status.isDayExpired 
+                ? (shouldHideExpired ? 'col-expired-hidden' : 'col-expired-dimmed') 
+                : '';
+
             if (isMultiSlot) {
                 const aftSlot = d.slots[0];
                 const eveSlot = d.slots[1];
@@ -1347,19 +1455,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const totalCount = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d) || isUserSlotChecked(r.slots, eveSlot, d)).length;
 
                 let fBtns = [];
-                // 人有超過 6 個再出現預排 (> 6) 且限管理員
                 if (hasAdmin) {
-                    if (aftCount > 6) {
+                    if (aftCount >= 6 && !status.isAftExpired) {
                         fBtns.push(`<button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '午', ${dIdx})" title="預排(午: ${aftCount}人)">預(午)</button>`);
                     }
-                    if (eveCount > 6) {
+                    if (eveCount >= 6 && !status.isEveExpired) {
                         fBtns.push(`<button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="預排(晚: ${eveCount}人)">預(晚)</button>`);
                     }
                 }
                 const fBtnHtml = fBtns.length > 0 ? `<div style="margin-top: 4px; display: flex; gap: 2px; justify-content: center;">${fBtns.join('')}</div>` : '';
 
                 return `
-                    <td class="col-day ${isHolidayCol ? 'col-weekend' : ''}">
+                    <td class="col-day ${isHolidayCol ? 'col-weekend' : ''} ${colExpiredCls}">
                         <div class="matrix-total-count">${totalCount}</div>
                         <span class="matrix-total-sub">午:${aftCount} 晚:${eveCount}</span>
                         ${fBtnHtml}
@@ -1368,14 +1475,14 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const eveSlot = d.slots[0];
                 const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
-                const fBtnHtml = (hasAdmin && eveCount > 6) ? `
+                const fBtnHtml = (hasAdmin && eveCount >= 6 && !status.isEveExpired) ? `
                     <div style="margin-top: 4px;">
                         <button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="預排(晚: ${eveCount}人)">🎯 預排</button>
                     </div>
                 ` : '';
 
                 return `
-                    <td class="col-day ${isHolidayCol ? 'col-weekend' : ''}">
+                    <td class="col-day ${isHolidayCol ? 'col-weekend' : ''} ${colExpiredCls}">
                         <div class="matrix-total-count">${eveCount}</div>
                         ${fBtnHtml}
                     </td>
@@ -1383,17 +1490,26 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
+        // 動態計算可見日期欄位寬度
+        const visibleDaysCount = weekDays.filter((_, i) => !(dayStatus[i].isDayExpired && shouldHideExpired)).length;
+        const colDayWidth = `calc((100% - 183px) / ${visibleDaysCount > 0 ? visibleDaysCount : 1})`;
+        const colgroupDaysHtml = weekDays.map((_, i) => {
+            if (dayStatus[i].isDayExpired && shouldHideExpired) return '';
+            return `<col class="colgroup-day" style="width: ${colDayWidth};">`;
+        }).join('');
+
+        const allExpiredBanner = allDaysExpired ? `
+            <div style="text-align: center; padding: 0.45rem 1rem; background: #fef2f2; border: 1.5px solid #fecaca; border-radius: 8px; color: #b91c1c; font-size: 0.85rem; font-weight: 700; margin-bottom: 0.6rem;">
+                ⏱️ 此週次出團時段已全部過期（僅供查閱歷史紀錄）
+            </div>
+        ` : '';
+
         list.innerHTML = `
+            ${allExpiredBanner}
             <table class="survey-matrix-table">
                 <colgroup>
                     <col class="colgroup-member" style="width: 105px;">
-                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
-                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
-                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
-                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
-                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
-                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
-                    <col class="colgroup-day" style="width: calc((100% - 183px) / 7);">
+                    ${colgroupDaysHtml}
                     <col class="colgroup-action" style="width: 78px;">
                 </colgroup>
                 <thead>
@@ -1420,6 +1536,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tfoot>
             </table>
         `;
+        } catch (err) {
+            console.error("Error in renderSurveySummary:", err);
+            list.innerHTML = `<div style="color:#ef4444; padding:1.5rem; text-align:center; font-weight:700;">⚠️ 載入報表明細時發生錯誤：${escapeHtml(err.message)}</div>`;
+        }
     }
 
     // --- Survey Pre-Draft State & Logic (時段快速預排) ---
@@ -1481,11 +1601,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const responses = Object.values(surveyResponses || {}).filter(r => {
-            const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
-            const weekMatch = (activeWeekId === TARGET_DEFAULT_WEEK_ID) 
-                ? (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29") 
-                : (rWeek === activeWeekId);
-            if (!weekMatch) return false;
+            if (!isResponseMatchWeek(r, activeWeekId)) return false;
             return isUserSlotChecked(r.slots, targetSlotDef, dayDef);
         });
 
@@ -3574,11 +3690,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Filter respondents specifically for this raid's scheduled timeslot
         const responses = Object.values(surveyResponses || {}).filter(r => {
-            const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
-            const weekMatch = (targetWeekId === TARGET_DEFAULT_WEEK_ID) 
-                ? (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29") 
-                : (rWeek === targetWeekId);
-            if (!weekMatch) return false;
+            if (!isResponseMatchWeek(r, targetWeekId)) return false;
             return isUserSlotChecked(r.slots, targetSlotDef, dayDef);
         });
 
@@ -3663,11 +3775,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         newTargetSlotDef = dayDef.slots[0];
                     }
                     const newResponses = Object.values(surveyResponses || {}).filter(r => {
-                        const rWeek = r.weekId || TARGET_DEFAULT_WEEK_ID;
-                        const weekMatch = (targetWeekId === TARGET_DEFAULT_WEEK_ID) 
-                            ? (rWeek === TARGET_DEFAULT_WEEK_ID || rWeek === "2026-09-29") 
-                            : (rWeek === targetWeekId);
-                        if (!weekMatch) return false;
+                        if (!isResponseMatchWeek(r, targetWeekId)) return false;
                         return isUserSlotChecked(r.slots, newTargetSlotDef, dayDef);
                     });
                     preDraftState.availableRespondents = newResponses;

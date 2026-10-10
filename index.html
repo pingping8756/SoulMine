@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=149">
+    <link rel="stylesheet" href="style.css?v=155">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -363,35 +363,35 @@
     <div id="survey-detail-modal" class="modal-overlay" style="display:none; z-index: 1000;">
         <div class="glass-card modal-content" style="max-width: 1060px; width: 95vw; max-height: 92vh; padding: 1.2rem; display: flex; flex-direction: column; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); color: #0f172a;">
             <!-- Header -->
-            <div style="margin-bottom: 0.6rem; padding-bottom: 0.6rem; border-bottom: 1.5px solid #e2e8f0; display: flex; flex-direction: column; gap: 0.45rem;">
-                <!-- Top Row: Title + Inline Week Select + Count (Left) & Copy + Close (Right) -->
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.6rem;">
-                    <div style="display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-                        <h3 style="margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 900; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
+            <div style="margin-bottom: 0.4rem; padding-bottom: 0.4rem; border-bottom: 1.5px solid #e2e8f0; display: flex; flex-direction: column; gap: 0.35rem;">
+                <!-- Top Row: Title + Inline Week Select + Count (Left) & Actions (Right) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
+                    <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+                        <h3 style="margin: 0; font-size: 1.2rem; color: #0f172a; font-weight: 900; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap;">
                             <span>👥 成員填寫名單明細</span>
                         </h3>
                         <!-- 藍色週次選擇：同一行、不換行 -->
-                        <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.25rem 0.6rem; border-radius: 6px; white-space: nowrap; flex-shrink: 0;">
-                            <span style="font-size: 0.85rem; font-weight: 800; color: #1e40af; white-space: nowrap;">📅 查看週次：</span>
-                            <select id="survey-matrix-week-select" style="padding: 0.25rem 0.55rem; font-size: 0.84rem; font-weight: 700; border-radius: 6px; border: 1px solid #93c5fd; background: #ffffff; color: #1e3a8a; cursor: pointer; white-space: nowrap;">
+                        <div style="display: inline-flex; align-items: center; gap: 0.35rem; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.22rem 0.55rem; border-radius: 6px; white-space: nowrap; flex-shrink: 0;">
+                            <span style="font-size: 0.84rem; font-weight: 800; color: #1e40af; white-space: nowrap;">📅 查看週次：</span>
+                            <select id="survey-matrix-week-select" style="padding: 0.22rem 0.5rem; font-size: 0.84rem; font-weight: 700; border-radius: 6px; border: 1px solid #93c5fd; background: #ffffff; color: #1e3a8a; cursor: pointer; white-space: nowrap;">
                                 <!-- Populated dynamically -->
                             </select>
                         </div>
                         <span id="survey-total-respondents" style="font-size: 0.82rem; background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; padding: 0.2rem 0.65rem; border-radius: 12px; font-weight: 800; white-space: nowrap;">已回覆 0 人</span>
                     </div>
 
-                    <!-- Right Side: 複製統整文字 置右 + 關閉按鈕 -->
-                    <div style="display: flex; gap: 0.6rem; align-items: center; margin-left: auto;">
-                        <button type="button" id="btn-copy-survey-text" class="btn-secondary" style="font-size: 0.84rem; padding: 0.35rem 0.85rem; background: #f8fafc; color: #1e293b; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
+                    <!-- Right Side: 複製統整文字 + 關閉按鈕 -->
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button type="button" id="btn-copy-survey-text" class="btn-secondary" style="font-size: 0.84rem; padding: 0.3rem 0.8rem; background: #f8fafc; color: #1e293b; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
                             📋 複製時段統整文字
                         </button>
-                        <button type="button" id="btn-close-survey-detail-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.2rem 0.5rem;">&times;</button>
+                        <button type="button" id="btn-close-survey-detail-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.1rem 0.4rem;">&times;</button>
                     </div>
                 </div>
 
                 <!-- Sub Row: Notes Legend -->
                 <div>
-                    <span style="font-size: 0.82rem; font-weight: 700; color: #475569; background: #f8fafc; padding: 0.25rem 0.7rem; border-radius: 6px; border: 1px solid #e2e8f0; display: inline-block;">
+                    <span style="font-size: 0.8rem; font-weight: 700; color: #475569; background: #f8fafc; padding: 0.18rem 0.6rem; border-radius: 6px; border: 1px solid #e2e8f0; display: inline-block;">
                         💡 標註：<strong style="color: #0f172a;">黑字 = 願意吃券</strong> ｜ <strong style="color: #dc2626;">紅字 = 不吃券</strong> ｜ 💬 滑鼠指到成員名字浮出備註
                     </span>
                 </div>
@@ -725,6 +725,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=149" defer></script>
+    <script src="app.js?v=155" defer></script>
 </body>
 </html>
