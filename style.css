@@ -1388,6 +1388,24 @@ body::after {
     color: #2563eb !important;
     border: 1.5px solid #93c5fd !important;
 }
+.slot-role-select.time-control {
+    background: #fef2f2 !important;
+    color: #dc2626 !important;
+    border: 1.5px solid #fca5a5 !important;
+    font-weight: 900 !important;
+}
+.slot-role-select.sub-control {
+    background: #fffbeb !important;
+    color: #b45309 !important;
+    border: 1.5px solid #fcd34d !important;
+    font-weight: 900 !important;
+}
+.slot-role-select.clear-orb {
+    background: #f0fdfa !important;
+    color: #0d9488 !important;
+    border: 1.5px solid #5eead4 !important;
+    font-weight: 900 !important;
+}
 .slot-role-select.seduce {
     background: #fdf2f8 !important;
     color: #db2777 !important;
@@ -1427,49 +1445,77 @@ body::after {
 
 /* Recruitment Card Member Role Badges */
 .member-role-badge {
-    display: inline-block;
-    padding: 1px 6px;
-    border-radius: 10px;
-    font-size: 0.74rem;
-    font-weight: 800;
-    line-height: 1.3;
-    margin-left: 0.4rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 0.76rem;
+    font-weight: 900;
+    line-height: 1.25;
     vertical-align: middle;
+    letter-spacing: 0.2px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.member-role-badge.time-control {
+    background: #fee2e2 !important;
+    color: #991b1b !important;
+    border: 1.5px solid #ef4444 !important;
+}
+.member-role-badge.sub-control {
+    background: #ffedd5 !important;
+    color: #9a3412 !important;
+    border: 1.5px solid #f97316 !important;
+}
+.member-role-badge.clear-orb {
+    background: #ccfbf1 !important;
+    color: #115e59 !important;
+    border: 1.5px solid #14b8a6 !important;
 }
 .member-role-badge.seduce {
-    background: #fdf2f8;
-    color: #db2777;
-    border: 1px solid #f472b6;
+    background: #fce7f3 !important;
+    color: #9d174d !important;
+    border: 1.5px solid #ec4899 !important;
 }
 .member-role-badge.smoke {
-    background: #f1f5f9;
-    color: #334155;
-    border: 1px solid #cbd5e1;
+    background: #f1f5f9 !important;
+    color: #0f172a !important;
+    border: 1.5px solid #64748b !important;
 }
 .member-role-badge.fire {
-    background: rgba(234, 88, 12, 0.15);
-    color: #fb923c;
-    border: 1px solid rgba(234, 88, 12, 0.4);
+    background: #fee2e2 !important;
+    color: #b91c1c !important;
+    border: 1.5px solid #f87171 !important;
 }
 .member-role-badge.trans {
-    background: rgba(124, 58, 237, 0.15);
-    color: #c084fc;
-    border: 1px solid rgba(124, 58, 237, 0.4);
+    background: #f3e8ff !important;
+    color: #6b21a8 !important;
+    border: 1.5px solid #a855f7 !important;
 }
 .member-role-badge.maple {
-    background: rgba(217, 119, 6, 0.15);
-    color: #fcd34d;
-    border: 1px solid rgba(217, 119, 6, 0.4);
+    background: #fef3c7 !important;
+    color: #78350f !important;
+    border: 1.5px solid #d97706 !important;
 }
 .member-role-badge.speed {
-    background: rgba(202, 138, 4, 0.15);
-    color: #fde047;
-    border: 1px solid rgba(202, 138, 4, 0.4);
+    background: #fef9c3 !important;
+    color: #713f12 !important;
+    border: 1.5px solid #ca8a04 !important;
+}
+.member-role-badge.leg {
+    background: #e0f2fe !important;
+    color: #0369a1 !important;
+    border: 1.5px solid #0284c7 !important;
+}
+.member-role-badge.soy {
+    background: #fef3c7 !important;
+    color: #78350f !important;
+    border: 1.5px solid #d97706 !important;
 }
 .member-role-badge.general {
-    background: rgba(59, 130, 246, 0.15);
-    color: #60a5fa;
-    border: 1px solid rgba(59, 130, 246, 0.3);
+    background: #e0e7ff !important;
+    color: #312e81 !important;
+    border: 1.5px solid #6366f1 !important;
 }
 
 /* Raid Card Note Banner */
@@ -2922,4 +2968,173 @@ body::after {
     border-color: #2563eb !important;
     color: #1d4ed8 !important;
     font-weight: 900 !important;
+}
+
+/* Confirmed Raid Weekly Report Table (當週已確認出團名單明細 - 極簡緊湊一頁式) */
+.confirmed-report-table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.82rem;
+    color: #0f172a;
+    background: #ffffff;
+}
+
+.confirmed-report-table th,
+.confirmed-report-table td {
+    border: 1px solid #cbd5e1;
+    box-sizing: border-box;
+}
+
+.confirmed-report-table thead tr.report-header-dates th {
+    background: #f1f5f9;
+    color: #0f172a;
+    font-weight: 900;
+    font-size: 0.88rem;
+    padding: 0.35rem 0.25rem;
+    text-align: center;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.confirmed-report-table thead tr.report-header-dates th.col-weekend {
+    background: #ffedd5 !important;
+    color: #c2410c !important;
+}
+
+.confirmed-report-table thead tr.report-header-teams th {
+    background: #f8fafc;
+    color: #0f172a;
+    font-weight: 800;
+    padding: 0.35rem 0.25rem;
+    text-align: center;
+    vertical-align: middle;
+    border-top: none;
+}
+
+.confirmed-report-table thead tr.report-header-teams th.col-empty-team-header {
+    background: #f8fafc;
+    color: #94a3b8;
+    font-size: 0.78rem;
+    padding: 0.35rem 0.25rem;
+}
+
+.report-team-title {
+    font-size: 0.82rem;
+    font-weight: 900;
+    color: #1e3a8a;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.report-team-time {
+    font-size: 0.76rem;
+    font-weight: 800;
+    color: #d97706;
+    margin-top: 1px;
+    white-space: nowrap;
+}
+
+.report-team-ch {
+    color: #2563eb;
+    font-weight: 800;
+}
+
+.report-team-note {
+    margin-top: 2px;
+    font-size: 0.7rem;
+    color: #b45309;
+    background: #fef3c7;
+    border: 1px solid #fde68a;
+    padding: 1px 3px;
+    border-radius: 3px;
+    text-align: left;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.confirmed-report-table td.col-slot-cell {
+    padding: 0.22rem 0.35rem;
+    height: 28px;
+    background: #ffffff;
+    vertical-align: middle;
+    transition: background-color 0.15s ease;
+}
+
+.confirmed-report-table td.col-slot-cell:hover {
+    background: #f8fafc;
+}
+
+.confirmed-report-table td.col-slot-cell.is-my-slot {
+    background: #f0fdf4 !important;
+}
+
+.confirmed-report-table td.col-slot-cell.is-my-slot:hover {
+    background: #dcfce7 !important;
+}
+
+.confirmed-report-table td.col-empty-cell {
+    background: #f8fafc;
+    text-align: center;
+    vertical-align: middle;
+    color: #cbd5e1;
+    font-weight: 700;
+}
+
+.slot-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2px;
+    width: 100%;
+}
+
+.slot-member-name {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: #0f172a;
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.slot-member-name.is-me-name {
+    color: #16a34a !important;
+}
+
+.slot-empty-text {
+    font-size: 0.75rem;
+    color: #cbd5e1;
+}
+
+.slot-job-text {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #475569;
+    background: #f1f5f9;
+    padding: 0 3px;
+    border-radius: 3px;
+    border: 1px solid #e2e8f0;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1.3;
+}
+
+.squad-divider {
+    font-size: 0.7rem;
+    font-weight: 900;
+    color: #c2410c;
+    background: #fff7ed;
+    border-bottom: 1px solid #ffedd5;
+    padding: 1px 3px;
+    margin: -0.22rem -0.35rem 0.15rem -0.35rem;
+    text-align: center;
 }

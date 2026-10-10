@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=157">
+    <link rel="stylesheet" href="style.css?v=164">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -411,6 +411,58 @@
         </div>
     </div>
 
+    <!-- Confirmed Teams Weekly Report Modal (當週已確認出團名單明細彈出視窗) -->
+    <div id="confirmed-report-modal" class="modal-overlay" style="display:none; z-index: 1000;">
+        <div class="glass-card modal-content" style="max-width: 1100px; width: 95vw; max-height: 92vh; padding: 0.75rem 1rem; display: flex; flex-direction: column; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); color: #0f172a;">
+            <!-- Header -->
+            <div style="margin-bottom: 0.35rem; padding-bottom: 0.35rem; border-bottom: 1.5px solid #e2e8f0; display: flex; flex-direction: column; gap: 0.3rem;">
+                <!-- Top Row: Title + Inline Week Select + Count (Left) & Actions (Right) -->
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem;">
+                    <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
+                        <h3 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: 900; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
+                            <span>📊 當週已確認出團名單明細</span>
+                        </h3>
+                        <!-- 藍色週次選擇：同一行、不換行 -->
+                        <div style="display: inline-flex; align-items: center; gap: 0.3rem; background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.18rem 0.5rem; border-radius: 6px; white-space: nowrap; flex-shrink: 0;">
+                            <span style="font-size: 0.82rem; font-weight: 800; color: #1e40af; white-space: nowrap;">📅 查看週次：</span>
+                            <select id="confirmed-report-week-select" style="padding: 0.18rem 0.45rem; font-size: 0.82rem; font-weight: 700; border-radius: 6px; border: 1px solid #93c5fd; background: #ffffff; color: #1e3a8a; cursor: pointer; white-space: nowrap;">
+                                <!-- Populated dynamically -->
+                            </select>
+                        </div>
+                        <span id="confirmed-report-total-badge" style="font-size: 0.8rem; background: #f0fdf4; color: #15803d; border: 1px solid #86efac; padding: 0.15rem 0.55rem; border-radius: 12px; font-weight: 800; white-space: nowrap;">已確認 0 隊</span>
+                    </div>
+
+                    <!-- Right Side: 複製統整文字 + 關閉按鈕 -->
+                    <div style="display: flex; gap: 0.4rem; align-items: center;">
+                        <button type="button" id="btn-copy-confirmed-report-text" class="btn-secondary" style="font-size: 0.82rem; padding: 0.25rem 0.7rem; background: #f8fafc; color: #1e293b; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; white-space: nowrap;">
+                            📋 複製出團名單文字
+                        </button>
+                        <button type="button" id="btn-close-confirmed-report-x" style="background: none; border: none; color: #64748b; font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0.1rem 0.3rem;">&times;</button>
+                    </div>
+                </div>
+
+                <!-- Sub Row: Notes Legend -->
+                <div>
+                    <span style="font-size: 0.78rem; font-weight: 700; color: #475569; background: #f8fafc; padding: 0.15rem 0.5rem; border-radius: 6px; border: 1px solid #e2e8f0; display: inline-block;">
+                        💡 標註：統計當週每日已確認出團隊伍與席位名單 ｜ <strong style="color: #16a34a;">綠底/綠字 = 本人</strong> ｜ 同日多團採日期合併欄位呈現
+                    </span>
+                </div>
+            </div>
+
+            <!-- Table Body -->
+            <div id="confirmed-report-table-container" class="survey-matrix-wrapper" style="flex: 1; overflow-x: auto; overflow-y: auto; max-height: 72vh;">
+                <!-- Dynamically populated Matrix Table via JS -->
+            </div>
+
+            <!-- Footer -->
+            <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 0.4rem; padding-top: 0.35rem; border-top: 1.5px solid #e2e8f0;">
+                <button type="button" id="btn-close-confirmed-report" class="btn-secondary" style="padding: 0.3rem 1.2rem; font-size: 0.85rem; background: #f1f5f9; color: #475569; border: 1.5px solid #cbd5e1; font-weight: 700; border-radius: 8px; cursor: pointer;">
+                    關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Survey Pre-Draft Modal (時段快速預排視窗 - 最上層彈窗) -->
     <div id="survey-predraft-modal" class="modal-overlay" style="display: none; position: fixed !important; top: 0 !important; left: 0 !important; width: 100vw !important; height: 100vh !important; background: rgba(0, 0, 0, 0.75) !important; backdrop-filter: blur(6px) !important; -webkit-backdrop-filter: blur(6px) !important; z-index: 99999999 !important; align-items: center; justify-content: center;">
         <div class="modal-content" style="max-width: 1180px; width: 95%; max-height: 94vh; background: #ffffff !important; border-radius: 14px; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45); display: flex; flex-direction: column; padding: 1.25rem 1.5rem; color: #0f172a !important; overflow: hidden; border: 1.5px solid #cbd5e1;">
@@ -448,6 +500,12 @@
                         <option value="3">3 場</option>
                         <option value="2">2 場</option>
                         <option value="1">1 場</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.4rem;">
+                    <label style="font-size: 0.88rem; font-weight: 800; color: #334155; white-space: nowrap;">📅 出團日期：</label>
+                    <select id="predraft-date-select" style="padding: 0.4rem 0.7rem; font-size: 0.9rem; font-weight: 700; border-radius: 6px; border: 1.5px solid #94a3b8; background: #ffffff; color: #0f172a; cursor: pointer;">
+                        <!-- Populated dynamically based on week options -->
                     </select>
                 </div>
                 <div style="display: flex; align-items: center; gap: 0.4rem;">
@@ -671,8 +729,17 @@
             <!-- Tab 2: Confirmed Raids -->
             <section id="tab-status" class="tab-content">
                 <div class="glass-card">
-                    <h2>✅ 已確認出團名單</h2>
-                    <p class="subtitle" style="margin-bottom: 1.5rem;">已經額滿或由團長確認的出團陣容。</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.8rem;">
+                        <div>
+                            <h2 style="margin: 0;">✅ 已確認出團名單</h2>
+                            <p class="subtitle" style="margin: 0.2rem 0 0 0;">已經額滿或由團長確認的出團陣容。</p>
+                        </div>
+                        <div style="display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap;">
+                            <button type="button" id="btn-open-confirmed-report" class="btn-primary" style="padding: 0.45rem 1.1rem; font-size: 0.92rem; font-weight: 800; border-radius: 8px; display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); color: #ffffff; border: none; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);">
+                                📊 查看當週出團報表
+                            </button>
+                        </div>
+                    </div>
                     <div id="confirmed-teams-container" style="display: grid; gap: 1.5rem;" class="two-col-grid">
                         <!-- JS 會動態渲染成團資訊 -->
                     </div>
@@ -725,6 +792,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=157" defer></script>
+    <script src="app.js?v=164" defer></script>
 </body>
 </html>

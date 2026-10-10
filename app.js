@@ -142,6 +142,11 @@ function isDragonKingBoss(bossName) {
     return bossName.includes('龍王');
 }
 
+function isHardPapulatusBoss(bossName) {
+    if (!bossName) return false;
+    return bossName.includes('困難拉圖斯') || bossName === '困拉';
+}
+
 function getNextTuesdayReset(timestamp) {
     if (!timestamp) return 0;
     const d = new Date(timestamp);
@@ -1127,6 +1132,54 @@ document.addEventListener('DOMContentLoaded', () => {
                 renderSurveySummary();
             };
         }
+
+        // Setup Confirmed Teams Weekly Report Modal (當週已確認出團名單明細)
+        const btnOpenConfirmedReport = document.getElementById('btn-open-confirmed-report');
+        if (btnOpenConfirmedReport) {
+            btnOpenConfirmedReport.onclick = () => {
+                if (typeof window.openConfirmedReportModal === 'function') {
+                    window.openConfirmedReportModal();
+                }
+            };
+        }
+
+        const btnCloseConfirmedReportX = document.getElementById('btn-close-confirmed-report-x');
+        if (btnCloseConfirmedReportX) {
+            btnCloseConfirmedReportX.onclick = () => {
+                if (typeof window.closeConfirmedReportModal === 'function') {
+                    window.closeConfirmedReportModal();
+                }
+            };
+        }
+
+        const btnCloseConfirmedReport = document.getElementById('btn-close-confirmed-report');
+        if (btnCloseConfirmedReport) {
+            btnCloseConfirmedReport.onclick = () => {
+                if (typeof window.closeConfirmedReportModal === 'function') {
+                    window.closeConfirmedReportModal();
+                }
+            };
+        }
+
+        const btnCopyConfirmedReport = document.getElementById('btn-copy-confirmed-report-text');
+        if (btnCopyConfirmedReport) {
+            btnCopyConfirmedReport.onclick = () => {
+                if (typeof window.copyConfirmedReportText === 'function') {
+                    window.copyConfirmedReportText();
+                }
+            };
+        }
+
+        const confirmedReportModal = document.getElementById('confirmed-report-modal');
+        if (confirmedReportModal) {
+            confirmedReportModal.addEventListener('click', (e) => {
+                if (e.target === confirmedReportModal) {
+                    if (typeof window.closeConfirmedReportModal === 'function') {
+                        window.closeConfirmedReportModal();
+                    }
+                }
+            });
+        }
     }
 
     window.loadMySurveyForEdit = function(key) {
@@ -1545,6 +1598,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Survey Pre-Draft State & Logic (時段快速預排) ---
     const preDraftState = {
         editingRaidId: null,
+        editingConfirmedTeamId: null,
+        editingConfirmedTeamIndex: null,
         dateStr: '',
         dateLabel: '',
         period: '晚',
@@ -1558,6 +1613,270 @@ document.addEventListener('DOMContentLoaded', () => {
         availableRespondents: []
     };
 
+    function parseTeamOrRaidDate(entity) {
+        if (!entity) return { dateObj: new Date(), timeStr: '20:00' };
+
+        let targetDateObj = null;
+        let targetTimeStr = '';
+
+        // 1. Check explicit timeStr
+        if (entity.timeStr && typeof entity.timeStr === 'string') {
+            const tm = entity.timeStr.match(/(\d{1,2}:\d{2})/);
+            if (tm) targetTimeStr = tm[1];
+        }
+
+        // 2. Check time / timeText / timeslot for time
+        if (!targetTimeStr && (entity.time || entity.timeText || entity.timeslot)) {
+            const str = entity.time || entity.timeText || entity.timeslot || '';
+            const tm = str.match(/(\d{1,2}:\d{2})/);
+            if (tm) targetTimeStr = tm[1];
+        }
+
+        // A. Priority 1: Check entity.date (e.g. "2026-10-19", "2026/10/19", "10月19日", "10/19")
+        if (entity.date && typeof entity.date === 'string') {
+            const m = entity.date.match(/(?:(\d{4})[年/-])?(\d{1,2})[月/-](\d{1,2})/);
+            if (m) {
+                const yr = m[1] ? parseInt(m[1], 10) : new Date().getFullYear();
+                const mo = parseInt(m[2], 10) - 1;
+                const dy = parseInt(m[3], 10);
+                const d = new Date(yr, mo, dy);
+                if (!isNaN(d.getTime())) {
+                    targetDateObj = d;
+                }
+            }
+        }
+
+        // B. Priority 2: Check entity.time / entity.timeText / entity.timeslot for date (e.g. "10/19 (一) 20:00")
+        if (!targetDateObj && (entity.time || entity.timeText || entity.timeslot)) {
+            const str = entity.time || entity.timeText || entity.timeslot || '';
+            const m = str.match(/(?:(\d{4})[/.-])?(\d{1,2})[/.-](\d{1,2})/);
+            if (m) {
+                const yr = m[1] ? parseInt(m[1], 10) : new Date().getFullYear();
+                const mo = parseInt(m[2], 10) - 1;
+                const dy = parseInt(m[3], 10);
+                const d = new Date(yr, mo, dy);
+                if (!isNaN(d.getTime())) {
+                    targetDateObj = d;
+                }
+            }
+        }
+
+        // C. Priority 3: scheduledTimestamp (if neither date nor time text contained date)
+        if (!targetDateObj && entity.scheduledTimestamp && !isNaN(Number(entity.scheduledTimestamp))) {
+            const d = new Date(Number(entity.scheduledTimestamp));
+            if (!isNaN(d.getTime())) {
+                targetDateObj = d;
+                if (!targetTimeStr) {
+                    targetTimeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                }
+            }
+        }
+
+        // D. Priority 4: getTeamTimestamp(entity)
+        if (!targetDateObj && typeof getTeamTimestamp === 'function') {
+            const ts = getTeamTimestamp(entity);
+            if (ts > 0) {
+                const d = new Date(ts);
+                if (!isNaN(d.getTime())) {
+                    targetDateObj = d;
+                    if (!targetTimeStr) {
+                        targetTimeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+                    }
+                }
+            }
+        }
+
+        // E. Fallback
+        if (!targetDateObj) {
+            targetDateObj = new Date();
+        }
+        if (!targetTimeStr) {
+            targetTimeStr = '20:00';
+        }
+
+        // Apply hour and minute to targetDateObj
+        const [tHour, tMin] = targetTimeStr.split(':').map(Number);
+        if (!isNaN(tHour)) {
+            targetDateObj.setHours(tHour, tMin || 0, 0, 0);
+        }
+
+        return { dateObj: targetDateObj, timeStr: targetTimeStr };
+    }
+
+    function populatePreDraftDateSelect(selectedDateObj) {
+        const dateSelect = document.getElementById('predraft-date-select');
+        if (!dateSelect) return;
+        dateSelect.innerHTML = '';
+
+        const dObj = selectedDateObj || new Date();
+        const yr = dObj.getFullYear();
+        const mo = String(dObj.getMonth() + 1).padStart(2, '0');
+        const dy = String(dObj.getDate()).padStart(2, '0');
+        const targetIso = `${yr}-${mo}-${dy}`;
+
+        const weekOptions = (typeof getReportWeekOptions === 'function') ? getReportWeekOptions() : getSurveyWeekOptions();
+        const targetTue = getTuesdayOfWeek(dObj);
+        const targetWeekId = `${targetTue.getFullYear()}-${String(targetTue.getMonth() + 1).padStart(2, '0')}-${String(targetTue.getDate()).padStart(2, '0')}`;
+
+        let allWeeks = [...weekOptions];
+        if (!allWeeks.some(w => w.weekId === targetWeekId)) {
+            const mon = new Date(targetTue.getTime() + 6 * 86400000);
+            allWeeks.unshift({
+                weekId: targetWeekId,
+                tueDate: targetTue,
+                label: `📅 ${targetTue.getMonth() + 1}/${targetTue.getDate()}(二) ～ ${mon.getMonth() + 1}/${mon.getDate()}(一)`,
+                shortLabel: `${targetTue.getMonth() + 1}/${targetTue.getDate()}(二) ~ ${mon.getMonth() + 1}/${mon.getDate()}(一)`
+            });
+        }
+
+        allWeeks.forEach(w => {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = w.label ? w.label.replace(/📅\s*/, '') : w.weekId;
+            const days = getWeekDaysDetails(w.weekId);
+            days.forEach(day => {
+                const dIso = `${day.dateObj.getFullYear()}-${String(day.dateObj.getMonth() + 1).padStart(2, '0')}-${String(day.dateObj.getDate()).padStart(2, '0')}`;
+                const opt = document.createElement('option');
+                opt.value = dIso;
+                opt.textContent = `${day.dateLabel}${day.holidayName ? ' (' + day.holidayName + ')' : ''}`;
+                if (dIso === targetIso) opt.selected = true;
+                optgroup.appendChild(opt);
+            });
+            dateSelect.appendChild(optgroup);
+        });
+
+        dateSelect.value = targetIso;
+
+        dateSelect.onchange = () => {
+            const [y, m, d] = dateSelect.value.split('-').map(Number);
+            const newDate = new Date(y, m - 1, d);
+            if (preDraftState.targetTimeStr) {
+                const [th, tm] = preDraftState.targetTimeStr.split(':').map(Number);
+                newDate.setHours(th || 20, tm || 0, 0, 0);
+            }
+            preDraftState.dateObj = newDate;
+            preDraftState.dateStr = dateSelect.value;
+            const dayNames = ['日','一','二','三','四','五','六'];
+            const weekDay = dayNames[newDate.getDay()];
+            preDraftState.dateLabel = `${m}/${d}(${weekDay})`;
+
+            const tue = getTuesdayOfWeek(newDate);
+            const curWeekId = `${tue.getFullYear()}-${String(tue.getMonth() + 1).padStart(2, '0')}-${String(tue.getDate()).padStart(2, '0')}`;
+            const weekDays = getWeekDaysDetails(curWeekId);
+            let dayDef = weekDays.find(wd => 
+                wd.dateObj.getFullYear() === newDate.getFullYear() &&
+                wd.dateObj.getMonth() === newDate.getMonth() &&
+                wd.dateObj.getDate() === newDate.getDate()
+            );
+            if (!dayDef) {
+                const dayMap = [5, 6, 0, 1, 2, 3, 4];
+                dayDef = weekDays[dayMap[newDate.getDay()]] || weekDays[0];
+            }
+
+            let targetSlotDef = null;
+            if (dayDef.isWeekend || dayDef.isSpecialHoliday) {
+                targetSlotDef = (preDraftState.period === '午') ? dayDef.slots[0] : dayDef.slots[1];
+            } else {
+                targetSlotDef = dayDef.slots[0];
+            }
+
+            const responses = Object.values(surveyResponses || {}).filter(r => {
+                if (!isResponseMatchWeek(r, curWeekId)) return false;
+                return isUserSlotChecked(r.slots, targetSlotDef, dayDef);
+            });
+            preDraftState.availableRespondents = responses;
+
+            const badgeEl = document.getElementById('predraft-timeslot-badge');
+            if (badgeEl) {
+                badgeEl.textContent = `📅 ${preDraftState.dateLabel}【${preDraftState.period === '午' ? '下午' : '晚上'}】`;
+            }
+            const countBadge = document.getElementById('predraft-members-count-badge');
+            if (countBadge) {
+                countBadge.textContent = `可出團成員 ${responses.length} 人`;
+            }
+
+            renderPreDraftAvailableCharacters();
+        };
+    }
+
+    function populatePreDraftTimeSelect(selectedTimeStr) {
+        const timeSelect = document.getElementById('predraft-time-select');
+        if (!timeSelect) return;
+        timeSelect.innerHTML = '';
+
+        const allTimes = [];
+        for (let h = 9; h <= 23; h++) {
+            const hh = String(h).padStart(2, '0');
+            allTimes.push(`${hh}:00`);
+            allTimes.push(`${hh}:30`);
+        }
+
+        const targetTime = selectedTimeStr || preDraftState.targetTimeStr || '20:00';
+        if (!allTimes.includes(targetTime)) {
+            allTimes.push(targetTime);
+            allTimes.sort();
+        }
+
+        allTimes.forEach(t => {
+            const opt = document.createElement('option');
+            opt.value = t;
+            opt.textContent = t;
+            if (t === targetTime) opt.selected = true;
+            timeSelect.appendChild(opt);
+        });
+
+        timeSelect.value = targetTime;
+        preDraftState.targetTimeStr = targetTime;
+
+        timeSelect.onchange = () => {
+            preDraftState.targetTimeStr = timeSelect.value;
+            const [newHour, newMin] = timeSelect.value.split(':').map(Number);
+            if (preDraftState.dateObj) {
+                preDraftState.dateObj.setHours(newHour || 20, newMin || 0, 0, 0);
+            }
+            const newPeriod = (!isNaN(newHour) && newHour < 18) ? '午' : '晚';
+            if (newPeriod !== preDraftState.period) {
+                preDraftState.period = newPeriod;
+
+                const curDate = preDraftState.dateObj || new Date();
+                const tue = getTuesdayOfWeek(curDate);
+                const curWeekId = `${tue.getFullYear()}-${String(tue.getMonth() + 1).padStart(2, '0')}-${String(tue.getDate()).padStart(2, '0')}`;
+                const weekDays = getWeekDaysDetails(curWeekId);
+                let dayDef = weekDays.find(d => 
+                    d.dateObj.getFullYear() === curDate.getFullYear() &&
+                    d.dateObj.getMonth() === curDate.getMonth() &&
+                    d.dateObj.getDate() === curDate.getDate()
+                );
+                if (!dayDef) {
+                    const dayMap = [5, 6, 0, 1, 2, 3, 4];
+                    dayDef = weekDays[dayMap[curDate.getDay()]] || weekDays[0];
+                }
+
+                let newTargetSlotDef = null;
+                if (dayDef.isWeekend || dayDef.isSpecialHoliday) {
+                    newTargetSlotDef = (newPeriod === '午') ? dayDef.slots[0] : dayDef.slots[1];
+                } else {
+                    newTargetSlotDef = dayDef.slots[0];
+                }
+
+                const newResponses = Object.values(surveyResponses || {}).filter(r => {
+                    if (!isResponseMatchWeek(r, curWeekId)) return false;
+                    return isUserSlotChecked(r.slots, newTargetSlotDef, dayDef);
+                });
+                preDraftState.availableRespondents = newResponses;
+                const countBadge = document.getElementById('predraft-members-count-badge');
+                if (countBadge) {
+                    countBadge.textContent = `可出團成員 ${newResponses.length} 人`;
+                }
+                renderPreDraftAvailableCharacters();
+            }
+
+            const badgeEl = document.getElementById('predraft-timeslot-badge');
+            if (badgeEl) {
+                badgeEl.textContent = `📅 ${preDraftState.dateLabel || ''}【${preDraftState.period === '午' ? '下午' : '晚上'}】`;
+            }
+        };
+    }
+
     window.openSurveyPreDraftModal = function(dateStr, dateLabel, period, dayIndex) {
         if (typeof isAdmin === 'function' && !isAdmin()) {
             alert("⚠️ 預排功能僅限管理員使用！請先以管理員身分登入。");
@@ -1570,6 +1889,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!modal) return;
 
         preDraftState.editingRaidId = null;
+        preDraftState.editingConfirmedTeamId = null;
+        preDraftState.editingConfirmedTeamIndex = null;
 
         const titleEl = document.getElementById('predraft-modal-title');
         if (titleEl) titleEl.textContent = '🎯 時段快速預排';
@@ -1650,29 +1971,9 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Init Time Select based on period
-        const timeSelect = document.getElementById('predraft-time-select');
-        if (timeSelect) {
-            timeSelect.innerHTML = '';
-            let tOptions = [];
-            if (period === '午') {
-                tOptions = ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30'];
-            } else {
-                tOptions = ['19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00'];
-            }
-            tOptions.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                timeSelect.appendChild(opt);
-            });
-            const defaultTime = (period === '午') ? '14:00' : '20:00';
-            timeSelect.value = defaultTime;
-            preDraftState.targetTimeStr = defaultTime;
-            timeSelect.onchange = () => {
-                preDraftState.targetTimeStr = timeSelect.value;
-            };
-        }
+        // Populate Date and Time dropdowns
+        populatePreDraftDateSelect(preDraftState.dateObj);
+        populatePreDraftTimeSelect((period === '午') ? '14:00' : '20:00');
 
         // Category Filter Buttons & Search Input
         preDraftState.catFilter = 'all';
@@ -1714,6 +2015,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function getTacticalRoleInfo(roleTag) {
         if (!roleTag) return { icon: '', cssClass: '', label: '' };
         const r = String(roleTag).trim();
+        if (r === '控時' || r.includes('控時')) return { icon: '⏳', cssClass: 'time-control', label: r };
+        if (r === '副控' || r.includes('副控')) return { icon: '⏱️', cssClass: 'sub-control', label: r };
+        if (r === '清球' || r.includes('清球')) return { icon: '🔮', cssClass: 'clear-orb', label: r };
         if (r.includes('魅惑')) return { icon: '💖', cssClass: 'seduce', label: r };
         if (r === '煙1' || r === '煙2') return { icon: '💨', cssClass: 'smoke', label: r };
         if (r === '煙' || r.includes('煙')) return { icon: '💨', cssClass: 'smoke', label: r };
@@ -1721,14 +2025,30 @@ document.addEventListener('DOMContentLoaded', () => {
         if (r === '轉屬' || r.includes('轉屬')) return { icon: '🌀', cssClass: 'trans', label: r };
         if (r.includes('楓20') || r.includes('楓')) return { icon: '🍁', cssClass: 'maple', label: r };
         if (r === '速' || r.includes('速')) return { icon: '⚡', cssClass: 'speed', label: r };
+        if (r.includes('腿')) return { icon: '🦵', cssClass: 'leg', label: r };
+        if (r.includes('醬油')) return { icon: '🍮', cssClass: 'soy', label: r };
         return { icon: '🏷️', cssClass: 'general', label: r };
     }
 
-    function getTacticalRoleSelectOptionsHtml(isDragonKing, roleTag) {
-        const isDk = Boolean(isDragonKing);
-        const standardRoles = isDk 
-            ? ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2', '火', '煙', '轉屬', '楓20', '速']
-            : ['火', '煙', '轉屬', '楓20', '速'];
+    function getTacticalRoleSelectOptionsHtml(bossOrIsDk, roleTag) {
+        let isDk = false;
+        let isHardPap = false;
+
+        if (typeof bossOrIsDk === 'boolean') {
+            isDk = bossOrIsDk;
+        } else if (typeof bossOrIsDk === 'string') {
+            isDk = isDragonKingBoss(bossOrIsDk);
+            isHardPap = isHardPapulatusBoss(bossOrIsDk);
+        }
+
+        let standardRoles = [];
+        if (isDk) {
+            standardRoles = ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2', '火', '煙', '轉屬', '楓20', '速'];
+        } else if (isHardPap) {
+            standardRoles = ['控時', '副控', '清球', '火', '煙', '轉屬', '楓20', '速'];
+        } else {
+            standardRoles = ['火', '煙', '轉屬', '楓20', '速'];
+        }
         const isCustom = roleTag && !standardRoles.includes(roleTag);
 
         if (isDk) {
@@ -1740,6 +2060,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 <option value="魅惑4" ${roleTag === '魅惑4' ? 'selected' : ''}>💖 魅惑 4</option>
                 <option value="煙1" ${roleTag === '煙1' ? 'selected' : ''}>💨 煙 1</option>
                 <option value="煙2" ${roleTag === '煙2' ? 'selected' : ''}>💨 煙 2</option>
+                <option value="火" ${roleTag === '火' ? 'selected' : ''}>🔥 火</option>
+                <option value="煙" ${roleTag === '煙' ? 'selected' : ''}>💨 煙</option>
+                <option value="轉屬" ${roleTag === '轉屬' ? 'selected' : ''}>🌀 轉屬</option>
+                <option value="楓20" ${roleTag === '楓20' ? 'selected' : ''}>🍁 楓20</option>
+                <option value="速" ${roleTag === '速' ? 'selected' : ''}>⚡ 速</option>
+                ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
+                <option value="__custom__">✏️ 自訂...</option>
+            `;
+        } else if (isHardPap) {
+            return `
+                <option value="">定位</option>
+                <option value="控時" ${roleTag === '控時' ? 'selected' : ''}>⏳ 控時</option>
+                <option value="副控" ${roleTag === '副控' ? 'selected' : ''}>⏱️ 副控</option>
+                <option value="清球" ${roleTag === '清球' ? 'selected' : ''}>🔮 清球</option>
                 <option value="火" ${roleTag === '火' ? 'selected' : ''}>🔥 火</option>
                 <option value="煙" ${roleTag === '煙' ? 'selected' : ''}>💨 煙</option>
                 <option value="轉屬" ${roleTag === '轉屬' ? 'selected' : ''}>🌀 轉屬</option>
@@ -1767,7 +2101,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (val === '__custom__') {
             const currentRole = preDraftState.slots[slotIdx].roleTag || '';
             const isDk = isDragonKingBoss(preDraftState.boss);
-            const exampleText = isDk ? "魅惑1、煙1、火、轉屬、楓20、速、自訂備註" : "火、煙、轉屬、楓20、速、自訂備註";
+            const isHardPap = isHardPapulatusBoss(preDraftState.boss);
+            let exampleText = "火、煙、轉屬、楓20、速、自訂備註";
+            if (isDk) exampleText = "魅惑1、煙1、火、轉屬、楓20、速、自訂備註";
+            else if (isHardPap) exampleText = "控時、副控、清球、火、煙、轉屬、楓20、速、自訂備註";
             const customVal = prompt(`請輸入此席位的自訂定位或備註 (例如: ${exampleText})：`, currentRole);
             if (customVal !== null) {
                 preDraftState.slots[slotIdx].roleTag = customVal.trim();
@@ -1782,11 +2119,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const s = preDraftState.slots[idx] || { slotIndex: idx, name: '', job: '', level: '', roleTag: '' };
         const isFilled = !!(s && s.name);
         const numLabel = teamPrefix ? `${teamPrefix}-${slotNum}` : `#${slotNum}`;
-        const isDragonKing = isDragonKingBoss(preDraftState.boss);
         const roleTag = s.roleTag || '';
         const roleInfo = getTacticalRoleInfo(roleTag);
 
-        const optionsHtml = getTacticalRoleSelectOptionsHtml(isDragonKing, roleTag);
+        const optionsHtml = getTacticalRoleSelectOptionsHtml(preDraftState.boss, roleTag);
 
         const roleSelectHtml = `
             <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${roleInfo.cssClass}" 
@@ -1817,7 +2153,10 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         } else {
             let roleColor = '#2563eb';
-            if (roleInfo.cssClass === 'seduce') roleColor = '#db2777';
+            if (roleInfo.cssClass === 'time-control') roleColor = '#dc2626';
+            else if (roleInfo.cssClass === 'sub-control') roleColor = '#b45309';
+            else if (roleInfo.cssClass === 'clear-orb') roleColor = '#0d9488';
+            else if (roleInfo.cssClass === 'seduce') roleColor = '#db2777';
             else if (roleInfo.cssClass === 'smoke') roleColor = '#475569';
             else if (roleInfo.cssClass === 'fire') roleColor = '#ea580c';
             else if (roleInfo.cssClass === 'trans') roleColor = '#7c3aed';
@@ -2145,6 +2484,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const closeModal = () => {
             if (modal) modal.style.display = 'none';
             preDraftState.editingRaidId = null;
+            preDraftState.editingConfirmedTeamId = null;
+            preDraftState.editingConfirmedTeamIndex = null;
             const titleEl = document.getElementById('predraft-modal-title');
             if (titleEl) titleEl.textContent = '🎯 時段快速預排';
             const applyBtnText = document.getElementById('predraft-apply-btn-text');
@@ -2186,9 +2527,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     const maxPlayers = isDk ? 12 : 6;
 
                     // Date & Time computation
+                    const dateSelectEl = document.getElementById('predraft-date-select');
+                    const timeSelectEl = document.getElementById('predraft-time-select');
+                    let dateStr = (dateSelectEl && dateSelectEl.value) ? dateSelectEl.value : preDraftState.dateStr;
+                    const timeStr = (timeSelectEl && timeSelectEl.value) ? timeSelectEl.value : (preDraftState.targetTimeStr || '20:00');
                     const dateObj = preDraftState.dateObj || new Date();
-                    let dateStr = preDraftState.dateStr;
-                    const timeStr = preDraftState.targetTimeStr || '20:00';
 
                     // Parse parts into scheduled timestamp
                     let y = 0, m = 0, d = 0;
@@ -2240,7 +2583,35 @@ document.addEventListener('DOMContentLoaded', () => {
                         };
                     });
 
-                    if (preDraftState.editingRaidId) {
+                    if (preDraftState.editingConfirmedTeamId !== null && preDraftState.editingConfirmedTeamId !== undefined) {
+                        // UPDATE EXISTING CONFIRMED TEAM
+                        const teamIdx = confirmedTeams.findIndex(t => t && t.id === preDraftState.editingConfirmedTeamId);
+                        const targetTeam = teamIdx !== -1 ? confirmedTeams[teamIdx] : confirmedTeams[preDraftState.editingConfirmedTeamIndex];
+                        if (!targetTeam) {
+                            alert("找不到該已確認隊伍資料！");
+                            return;
+                        }
+
+                        targetTeam.boss = bossName;
+                        targetTeam.gamesCount = gamesCount;
+                        targetTeam.maxPlayers = maxPlayers;
+                        targetTeam.date = standardDateStr;
+                        targetTeam.timeStr = timeStr;
+                        targetTeam.time = fullTimeText;
+                        targetTeam.timeText = fullTimeText;
+                        targetTeam.timeslot = fullTimeText;
+                        targetTeam.scheduledTimestamp = !isNaN(schedDate.getTime()) ? schedDate.getTime() : (targetTeam.scheduledTimestamp || Date.now());
+                        targetTeam.note = noteText;
+                        targetTeam.slotRoles = slotRolesMap;
+                        targetTeam.members = finalMembers;
+                        targetTeam.updatedAt = Date.now();
+
+                        saveDB();
+                        closeModal();
+                        renderConfirmedTeams();
+
+                        alert(`🎉【${bossName}】已確認隊伍修改已成功儲存！\n時間：${fullTimeText}\n人數：${finalMembers.length}/${maxPlayers} 人`);
+                    } else if (preDraftState.editingRaidId) {
                         // UPDATE EXISTING RAID
                         const raidId = preDraftState.editingRaidId;
                         await db.ref('raids/' + raidId).update({
@@ -2451,7 +2822,10 @@ document.addEventListener('DOMContentLoaded', () => {
             if (val === '__custom__') {
                 const currentRole = createRaidState.slots[slotIdx].roleTag || '';
                 const isDk = isDragonKingBoss(createRaidState.boss);
-                const exampleText = isDk ? "魅惑1、煙1、火、轉屬、楓20、速、自訂備註" : "火、煙、轉屬、楓20、速、自訂備註";
+                const isHardPap = isHardPapulatusBoss(createRaidState.boss);
+                let exampleText = "火、煙、轉屬、楓20、速、自訂備註";
+                if (isDk) exampleText = "魅惑1、煙1、火、轉屬、楓20、速、自訂備註";
+                else if (isHardPap) exampleText = "控時、副控、清球、火、煙、轉屬、楓20、速、自訂備註";
                 const customVal = prompt(`請輸入此席位的自訂定位或備註 (例如: ${exampleText})：`, currentRole);
                 if (customVal !== null) {
                     createRaidState.slots[slotIdx].roleTag = customVal.trim();
@@ -2490,7 +2864,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             onclick="event.stopPropagation();" 
                             onchange="event.stopPropagation(); window.handleCreateSlotRoleChange(${idx}, this.value);"
                             title="設定席位戰術定位">
-                        ${getTacticalRoleSelectOptionsHtml(isDragonKing, roleTag)}
+                        ${getTacticalRoleSelectOptionsHtml(createRaidState.boss, roleTag)}
                     </select>
                 `;
 
@@ -2513,7 +2887,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                 } else {
                     let roleColor = '#2563eb';
-                    if (roleInfo.cssClass === 'seduce') roleColor = '#db2777';
+                    if (roleInfo.cssClass === 'time-control') roleColor = '#dc2626';
+                    else if (roleInfo.cssClass === 'sub-control') roleColor = '#b45309';
+                    else if (roleInfo.cssClass === 'clear-orb') roleColor = '#0d9488';
+                    else if (roleInfo.cssClass === 'seduce') roleColor = '#db2777';
                     else if (roleInfo.cssClass === 'smoke') roleColor = '#475569';
                     else if (roleInfo.cssClass === 'fire') roleColor = '#ea580c';
                     else if (roleInfo.cssClass === 'trans') roleColor = '#7c3aed';
@@ -3547,9 +3924,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!effectiveCreator) effectiveCreator = currentLoggedIn || '公會成員';
 
             const newTeam = {
+                id: raid.id || ('team_' + Date.now()),
                 boss: raid.boss,
                 timeslot: raid.time,
                 timeText: raid.time,
+                date: raid.date || '',
+                timeStr: raid.timeStr || '',
                 scheduledTimestamp: raid.scheduledTimestamp || Date.now(),
                 members: raidMembers,
                 gamesCount: raid.gamesCount || 7,
@@ -3615,86 +3995,15 @@ document.addEventListener('DOMContentLoaded', () => {
         preDraftState.editingRaidId = raidId;
 
         // Parse date and time accurately
-        let targetDateObj = null;
+        const parsedDateTime = parseTeamOrRaidDate(raid);
+        const targetDateObj = parsedDateTime.dateObj;
+        const targetTimeStr = parsedDateTime.timeStr;
 
-        // 1. Try scheduledTimestamp (most accurate)
-        if (raid.scheduledTimestamp && !isNaN(Number(raid.scheduledTimestamp))) {
-            const d = new Date(Number(raid.scheduledTimestamp));
-            if (!isNaN(d.getTime())) {
-                targetDateObj = d;
-            }
-        }
+        const [tHour] = targetTimeStr.split(':').map(Number);
+        const period = (!isNaN(tHour) && tHour < 18) ? '午' : '晚';
 
-        // 2. Try raid.date (e.g., "2026-10-19", "2026/10/19", "10月19日", "10/19")
-        if (!targetDateObj && raid.date && typeof raid.date === 'string') {
-            const m = raid.date.match(/(?:(\d{4})[年/-])?(\d{1,2})[月/-](\d{1,2})/);
-            if (m) {
-                const yr = m[1] ? parseInt(m[1], 10) : new Date().getFullYear();
-                const mo = parseInt(m[2], 10) - 1;
-                const dy = parseInt(m[3], 10);
-                const d = new Date(yr, mo, dy);
-                if (!isNaN(d.getTime())) {
-                    targetDateObj = d;
-                }
-            }
-        }
-
-        // 3. Try raid.time or raid.timeText (e.g. "10/19 (一) 21:00")
-        if (!targetDateObj && (raid.time || raid.timeText)) {
-            const str = raid.time || raid.timeText || '';
-            const m = str.match(/(?:(\d{4})[/.-])?(\d{1,2})[/.-](\d{1,2})/);
-            if (m) {
-                const yr = m[1] ? parseInt(m[1], 10) : new Date().getFullYear();
-                const mo = parseInt(m[2], 10) - 1;
-                const dy = parseInt(m[3], 10);
-                const d = new Date(yr, mo, dy);
-                if (!isNaN(d.getTime())) {
-                    targetDateObj = d;
-                }
-            }
-        }
-
-        // 4. Try getTeamTimestamp(raid)
-        if (!targetDateObj) {
-            const ts = getTeamTimestamp(raid);
-            if (ts > 0) {
-                const d = new Date(ts);
-                if (!isNaN(d.getTime())) targetDateObj = d;
-            }
-        }
-
-        // 5. Fallback
-        if (!targetDateObj) {
-            targetDateObj = new Date();
-        }
-
-        // Determine targetTimeStr
-        let targetTimeStr = '';
-        if (raid.timeStr) {
-            targetTimeStr = raid.timeStr;
-        } else if (raid.time || raid.timeText) {
-            const tm = (raid.time || raid.timeText || '').match(/(\d{1,2}:\d{2})/);
-            if (tm) targetTimeStr = tm[1];
-        } else if (raid.scheduledTimestamp) {
-            const d = new Date(Number(raid.scheduledTimestamp));
-            targetTimeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
-        }
-        if (!targetTimeStr) targetTimeStr = '20:00';
-
-        // Apply hour & minute to targetDateObj if not already applied
-        const [tHour, tMin] = targetTimeStr.split(':').map(Number);
-        if (!isNaN(tHour)) {
-            targetDateObj.setHours(tHour, tMin || 0, 0, 0);
-        }
-
-        // Determine period
-        let period = '晚';
-        if (!isNaN(tHour) && tHour < 18) {
-            period = '午';
-        }
         preDraftState.period = period;
         preDraftState.targetTimeStr = targetTimeStr;
-
         preDraftState.dateObj = targetDateObj;
         preDraftState.dateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
 
@@ -3812,57 +4121,217 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Init Time Select
-        const timeSelect = document.getElementById('predraft-time-select');
-        if (timeSelect) {
-            timeSelect.innerHTML = '';
-            const allTimes = [
-                '13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00', '16:30', '17:00', '17:30',
-                '18:00', '18:30', '19:00', '19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30', '23:00'
-            ];
-            if (preDraftState.targetTimeStr && !allTimes.includes(preDraftState.targetTimeStr)) {
-                allTimes.push(preDraftState.targetTimeStr);
-                allTimes.sort();
-            }
-            allTimes.forEach(t => {
-                const opt = document.createElement('option');
-                opt.value = t;
-                opt.textContent = t;
-                timeSelect.appendChild(opt);
-            });
-            timeSelect.value = preDraftState.targetTimeStr;
-            timeSelect.onchange = () => {
-                preDraftState.targetTimeStr = timeSelect.value;
-                const newHour = parseInt(timeSelect.value.split(':')[0], 10);
-                const newPeriod = (!isNaN(newHour) && newHour < 18) ? '午' : '晚';
-                if (newPeriod !== preDraftState.period) {
-                    preDraftState.period = newPeriod;
-                    let newTargetSlotDef = null;
-                    if (dayDef.isWeekend || dayDef.isSpecialHoliday) {
-                        newTargetSlotDef = (newPeriod === '午') ? dayDef.slots[0] : dayDef.slots[1];
-                    } else {
-                        newTargetSlotDef = dayDef.slots[0];
-                    }
-                    const newResponses = Object.values(surveyResponses || {}).filter(r => {
-                        if (!isResponseMatchWeek(r, targetWeekId)) return false;
-                        return isUserSlotChecked(r.slots, newTargetSlotDef, dayDef);
-                    });
-                    preDraftState.availableRespondents = newResponses;
-                    if (countBadge) {
-                        countBadge.textContent = `可出團成員 ${newResponses.length} 人`;
-                    }
-                    renderPreDraftAvailableCharacters();
-                }
-                if (badgeEl) {
-                    badgeEl.textContent = `📅 ${dayDef.dateLabel}【${preDraftState.period === '午' ? '下午' : '晚上'}】`;
-                }
-            };
-        }
+        // Populate Date and Time dropdowns
+        populatePreDraftDateSelect(targetDateObj);
+        populatePreDraftTimeSelect(targetTimeStr);
 
         // Note Input
         const noteInput = document.getElementById('predraft-note-input');
         if (noteInput) {
             noteInput.value = raid.note || '';
+        }
+
+        // Search Input & Filter
+        const searchInput = document.getElementById('predraft-search-input');
+        if (searchInput) {
+            searchInput.value = '';
+            searchInput.oninput = () => {
+                preDraftState.searchKeyword = searchInput.value || '';
+                renderPreDraftAvailableCharacters();
+            };
+        }
+
+        const catBtnGroup = document.getElementById('predraft-cat-filter-group');
+        if (catBtnGroup) {
+            catBtnGroup.querySelectorAll('button').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.cat === 'all');
+                btn.onclick = () => {
+                    catBtnGroup.querySelectorAll('button').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    preDraftState.catFilter = btn.dataset.cat || 'all';
+                    renderPreDraftAvailableCharacters();
+                };
+            });
+        }
+
+        renderPreDraftSlots();
+        renderPreDraftAvailableCharacters();
+
+        modal.style.display = 'flex';
+    };
+
+    window.editConfirmedTeam = function(team) {
+        if (!team) {
+            alert('找不到該隊伍資料！');
+            return;
+        }
+
+        const loggedUser = getCurrentEffectiveUser();
+        const isOwner = Boolean(loggedUser && team.creator && loggedUser.toLowerCase() === team.creator.toLowerCase());
+        const isMaster = (typeof isAdmin === 'function' && isAdmin());
+        if (!isOwner && !isMaster) {
+            alert('⚠️ 編輯出團隊伍僅限管理員或隊伍建立者！請先以管理員身分登入。');
+            const adminAuthBtn = document.getElementById('btn-admin-auth');
+            if (adminAuthBtn) adminAuthBtn.click();
+            return;
+        }
+
+        const modal = document.getElementById('survey-predraft-modal');
+        if (!modal) {
+            alert('找不到預排視窗元件！');
+            return;
+        }
+
+        const actualIdx = confirmedTeams.indexOf(team);
+        if (actualIdx === -1) {
+            alert('找不到該隊伍資料！');
+            return;
+        }
+
+        if (!team.id) {
+            team.id = 'team_' + (team.createdAt || Date.now()) + '_' + Math.random().toString(36).substr(2, 6);
+            saveDB();
+        }
+
+        preDraftState.editingRaidId = null;
+        preDraftState.editingConfirmedTeamId = team.id;
+        preDraftState.editingConfirmedTeamIndex = actualIdx;
+
+        // Parse date and time accurately
+        const parsedDateTime = parseTeamOrRaidDate(team);
+        const targetDateObj = parsedDateTime.dateObj;
+        const targetTimeStr = parsedDateTime.timeStr;
+
+        const [tHour] = targetTimeStr.split(':').map(Number);
+        const period = (!isNaN(tHour) && tHour < 18) ? '午' : '晚';
+
+        preDraftState.period = period;
+        preDraftState.targetTimeStr = targetTimeStr;
+        preDraftState.dateObj = targetDateObj;
+        preDraftState.dateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+
+        const mNum = targetDateObj.getMonth() + 1;
+        const dNum = targetDateObj.getDate();
+        const dayNames = ['日','一','二','三','四','五','六'];
+        const weekDay = dayNames[targetDateObj.getDay()];
+        preDraftState.dateLabel = `${mNum}/${dNum}(${weekDay})`;
+
+        preDraftState.boss = normalizeBossName(team.boss || '克雷塞爾');
+        preDraftState.games = parseInt(team.gamesCount, 10) || 7;
+        preDraftState.catFilter = 'all';
+        preDraftState.searchKeyword = '';
+
+        // Initialize slots
+        const isDragonKing = isDragonKingBoss(preDraftState.boss);
+        const maxSlots = isDragonKing ? 12 : 6;
+        const newSlots = Array.from({ length: maxSlots }, (_, i) => ({
+            slotIndex: i,
+            name: '',
+            job: '',
+            level: '',
+            roleTag: (team.slotRoles && team.slotRoles[i]) || ''
+        }));
+
+        const teamMembers = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
+        teamMembers.forEach((member, idx) => {
+            const sIdx = (member && typeof member.slotIndex === 'number') ? member.slotIndex : idx;
+            if (member && sIdx < maxSlots) {
+                newSlots[sIdx] = {
+                    slotIndex: sIdx,
+                    name: member.name || '',
+                    job: member.job || '',
+                    level: member.level || 120,
+                    roleTag: member.roleTag || (team.slotRoles && team.slotRoles[sIdx]) || ''
+                };
+            }
+        });
+        preDraftState.slots = newSlots;
+
+        // Determine week, dayDef, and targetSlotDef for this team's scheduled date & period
+        const tue = getTuesdayOfWeek(targetDateObj);
+        const targetWeekId = `${tue.getFullYear()}-${String(tue.getMonth() + 1).padStart(2, '0')}-${String(tue.getDate()).padStart(2, '0')}`;
+
+        const weekDays = getWeekDaysDetails(targetWeekId);
+        let dayDef = weekDays.find(d => 
+            d.dateObj.getFullYear() === targetDateObj.getFullYear() &&
+            d.dateObj.getMonth() === targetDateObj.getMonth() &&
+            d.dateObj.getDate() === targetDateObj.getDate()
+        );
+        if (!dayDef) {
+            const dayMap = [5, 6, 0, 1, 2, 3, 4];
+            dayDef = weekDays[dayMap[targetDateObj.getDay()]] || weekDays[0];
+        }
+
+        let targetSlotDef = null;
+        if (dayDef.isWeekend || dayDef.isSpecialHoliday) {
+            targetSlotDef = (period === '午') ? dayDef.slots[0] : dayDef.slots[1];
+        } else {
+            targetSlotDef = dayDef.slots[0];
+        }
+
+        // Filter respondents specifically for this team's scheduled timeslot
+        const responses = Object.values(surveyResponses || {}).filter(r => {
+            if (!isResponseMatchWeek(r, targetWeekId)) return false;
+            return isUserSlotChecked(r.slots, targetSlotDef, dayDef);
+        });
+
+        preDraftState.availableRespondents = responses;
+
+        // Set UI text & Badges
+        const titleEl = document.getElementById('predraft-modal-title');
+        if (titleEl) titleEl.textContent = '✏️ 編輯已確認隊伍 (陣容與定位)';
+
+        const applyBtnText = document.getElementById('predraft-apply-btn-text');
+        if (applyBtnText) applyBtnText.textContent = '💾 儲存隊伍修改';
+
+        const charsTitle = document.getElementById('predraft-chars-section-title');
+        if (charsTitle) charsTitle.textContent = '🎴 當天可出戰角色卡';
+
+        const badgeEl = document.getElementById('predraft-timeslot-badge');
+        if (badgeEl) {
+            badgeEl.textContent = `📅 ${dayDef.dateLabel}【${period === '午' ? '下午' : '晚上'}】`;
+        }
+
+        const countBadge = document.getElementById('predraft-members-count-badge');
+        if (countBadge) {
+            countBadge.textContent = `可出團成員 ${responses.length} 人`;
+        }
+
+        // Init Boss Select
+        const bossSelect = document.getElementById('predraft-boss-select');
+        if (bossSelect) {
+            bossSelect.innerHTML = BOSS_LIST.map(b => `
+                <option value="${b.name}" ${b.name === preDraftState.boss ? 'selected' : ''}>${b.icon} ${b.name}</option>
+            `).join('');
+            bossSelect.onchange = () => {
+                preDraftState.boss = bossSelect.value;
+                const newMaxSlots = isDragonKingBoss(preDraftState.boss) ? 12 : 6;
+                const updatedSlots = [];
+                for (let i = 0; i < newMaxSlots; i++) {
+                    updatedSlots.push(preDraftState.slots[i] || { slotIndex: i, name: '', job: '', level: '', roleTag: '' });
+                }
+                preDraftState.slots = updatedSlots;
+                renderPreDraftSlots();
+            };
+        }
+
+        // Init Games Select
+        const gamesSelect = document.getElementById('predraft-games-select');
+        if (gamesSelect) {
+            gamesSelect.value = String(preDraftState.games || 7);
+            gamesSelect.onchange = () => {
+                preDraftState.games = parseInt(gamesSelect.value, 10) || 7;
+            };
+        }
+
+        // Populate Date and Time dropdowns
+        populatePreDraftDateSelect(targetDateObj);
+        populatePreDraftTimeSelect(targetTimeStr);
+
+        // Note Input
+        const noteInput = document.getElementById('predraft-note-input');
+        if (noteInput) {
+            noteInput.value = team.note || '';
         }
 
         // Search Input & Filter
@@ -4331,6 +4800,506 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- Confirmed Teams Weekly Report Modal State & Logic ---
+    let currentConfirmedReportWeekId = '';
+
+    function parseConfirmedTeamDate(team) {
+        if (!team) return null;
+        if (team.scheduledTimestamp && typeof team.scheduledTimestamp === 'number' && team.scheduledTimestamp > 0) {
+            const d = new Date(team.scheduledTimestamp);
+            if (!isNaN(d.getTime())) return d;
+        }
+        if (team.timeslot && typeof team.timeslot === 'string') {
+            const parts = team.timeslot.split('-');
+            if (parts.length >= 4) {
+                const year = parseInt(parts[0], 10) || 0;
+                const month = (parseInt(parts[1], 10) || 1) - 1;
+                const day = parseInt(parts[2], 10) || 1;
+                const row = parseInt(parts[3], 10) || 0;
+                const hour = Math.floor(row / 2) + 8;
+                const min = row % 2 === 0 ? 0 : 30;
+                const d = new Date(year, month, day, hour, min);
+                if (!isNaN(d.getTime())) return d;
+            }
+        }
+        const str = team.timeText || team.timeslot || team.time || '';
+        const m = str.match(/(?:(\d{4})[/-])?(\d{1,2})[/-](\d{1,2}).*?(\d{1,2}):(\d{2})/);
+        if (m) {
+            const year = m[1] ? parseInt(m[1], 10) : new Date().getFullYear();
+            const month = parseInt(m[2], 10) - 1;
+            const day = parseInt(m[3], 10);
+            const hour = parseInt(m[4], 10);
+            const min = parseInt(m[5], 10);
+            const d = new Date(year, month, day, hour, min);
+            if (!isNaN(d.getTime())) return d;
+        }
+        const ts = typeof getTeamTimestamp === 'function' ? getTeamTimestamp(team) : 0;
+        if (ts > 0) {
+            const d = new Date(ts);
+            if (!isNaN(d.getTime())) return d;
+        }
+        return null;
+    }
+
+    function getConfirmedReportWeekOptions() {
+        const weekTeamsMap = new Map();
+
+        if (Array.isArray(confirmedTeams)) {
+            confirmedTeams.forEach(team => {
+                if (!team) return;
+                const d = parseConfirmedTeamDate(team);
+                let weekId = '';
+                let tue = null;
+                if (d) {
+                    tue = getTuesdayOfWeek(d);
+                    weekId = formatDateISO(tue);
+                } else if (team.weekId) {
+                    weekId = team.weekId;
+                    const parts = weekId.split('-');
+                    if (parts.length === 3) {
+                        tue = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+                    }
+                }
+                if (weekId && tue) {
+                    if (!weekTeamsMap.has(weekId)) {
+                        weekTeamsMap.set(weekId, { tueDate: tue, teams: [] });
+                    }
+                    weekTeamsMap.get(weekId).teams.push(team);
+                }
+            });
+        }
+
+        const now = new Date();
+        const curTue = getTuesdayOfWeek(now);
+
+        // If no confirmed teams exist at all, provide fallback for current ongoing week
+        if (weekTeamsMap.size === 0) {
+            const curWeekId = formatDateISO(curTue);
+            const curMon = new Date(curTue.getTime() + 6 * 86400000);
+            return [{
+                weekId: curWeekId,
+                tueDate: curTue,
+                teamsCount: 0,
+                isOngoing: true,
+                isExpired: false,
+                label: `📅 ${curTue.getMonth() + 1}/${curTue.getDate()}(二) ～ ${curMon.getMonth() + 1}/${curMon.getDate()}(一) 【本週進行中】`,
+                shortLabel: `${curTue.getMonth() + 1}/${curTue.getDate()}(二) ~ ${curMon.getMonth() + 1}/${curMon.getDate()}(一)`
+            }];
+        }
+
+        const allWeeks = [];
+        weekTeamsMap.forEach((data, weekId) => {
+            const tue = data.tueDate;
+            const mon = new Date(tue.getTime() + 6 * 86400000);
+            const monEnd = new Date(tue.getFullYear(), tue.getMonth(), tue.getDate() + 6, 23, 59, 59, 999);
+            const isExpired = now > monEnd;
+            const isOngoing = now >= tue && now <= monEnd;
+            const teamsCount = data.teams.length;
+
+            let tag = '';
+            if (isOngoing) tag = ' 【本週進行中】';
+            else if (isExpired) tag = ' 【歷史紀錄】';
+            else tag = ' 【預排】';
+
+            allWeeks.push({
+                weekId: weekId,
+                tueDate: tue,
+                teamsCount: teamsCount,
+                isOngoing: isOngoing,
+                isExpired: isExpired,
+                label: `📅 ${tue.getMonth() + 1}/${tue.getDate()}(二) ～ ${mon.getMonth() + 1}/${mon.getDate()}(一)${tag} (${teamsCount}隊)`,
+                shortLabel: `${tue.getMonth() + 1}/${tue.getDate()}(二) ~ ${mon.getMonth() + 1}/${mon.getDate()}(一)`
+            });
+        });
+
+        // Split into active/ongoing weeks vs expired historical weeks
+        const activeWeeks = allWeeks.filter(w => !w.isExpired);
+        const expiredWeeks = allWeeks.filter(w => w.isExpired);
+
+        // Active weeks: ongoing week first, then upcoming weeks by soonest date
+        activeWeeks.sort((a, b) => {
+            if (a.isOngoing && !b.isOngoing) return -1;
+            if (!a.isOngoing && b.isOngoing) return 1;
+            return a.tueDate.getTime() - b.tueDate.getTime();
+        });
+
+        // Expired weeks: sorted at the bottom, newest expired week first
+        expiredWeeks.sort((a, b) => b.tueDate.getTime() - a.tueDate.getTime());
+
+        return [...activeWeeks, ...expiredWeeks];
+    }
+
+    window.openConfirmedReportModal = function() {
+        const modal = document.getElementById('confirmed-report-modal');
+        if (!modal) return;
+        modal.style.display = 'flex';
+
+        const weekOptions = getConfirmedReportWeekOptions();
+        if (!currentConfirmedReportWeekId || !weekOptions.some(o => o.weekId === currentConfirmedReportWeekId)) {
+            // Default to the first option (ongoing week with confirmed teams, or nearest active week)
+            currentConfirmedReportWeekId = weekOptions[0] ? weekOptions[0].weekId : '';
+        }
+
+        const selectEl = document.getElementById('confirmed-report-week-select');
+        if (selectEl) {
+            selectEl.innerHTML = weekOptions.map(o => `
+                <option value="${escapeHtml(o.weekId)}" ${o.weekId === currentConfirmedReportWeekId ? 'selected' : ''}>
+                    ${escapeHtml(o.label)}
+                </option>
+            `).join('');
+
+            selectEl.onchange = function() {
+                currentConfirmedReportWeekId = this.value;
+                renderConfirmedReportTable();
+            };
+        }
+
+        renderConfirmedReportTable();
+    };
+
+    window.closeConfirmedReportModal = function() {
+        const modal = document.getElementById('confirmed-report-modal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    function renderConfirmedReportTable() {
+        const container = document.getElementById('confirmed-report-table-container');
+        const badgeEl = document.getElementById('confirmed-report-total-badge');
+        if (!container) return;
+
+        const weekOptions = getConfirmedReportWeekOptions();
+        if (!currentConfirmedReportWeekId) {
+            const ongoingOpt = weekOptions.find(o => o.isOngoing);
+            currentConfirmedReportWeekId = ongoingOpt ? ongoingOpt.weekId : (weekOptions[0] ? weekOptions[0].weekId : '');
+        }
+
+        const weekDays = getWeekDaysDetails(currentConfirmedReportWeekId);
+        const currentUser = typeof getCurrentEffectiveUser === 'function' ? getCurrentEffectiveUser() : '';
+
+        // Filter confirmed teams for this week
+        const matchingTeams = (confirmedTeams || []).filter(team => {
+            if (!team) return false;
+            const d = parseConfirmedTeamDate(team);
+            if (d) {
+                const tue = getTuesdayOfWeek(d);
+                return formatDateISO(tue) === currentConfirmedReportWeekId;
+            }
+            return team.weekId === currentConfirmedReportWeekId;
+        });
+
+        // Group matching teams by day (0 to 6)
+        const dayTeams = [ [], [], [], [], [], [], [] ];
+        let totalParticipations = 0;
+
+        matchingTeams.forEach(team => {
+            const teamDate = parseConfirmedTeamDate(team);
+            let dayIdx = -1;
+            if (teamDate) {
+                dayIdx = weekDays.findIndex(wd => 
+                    wd.dateObj.getFullYear() === teamDate.getFullYear() &&
+                    wd.dateObj.getMonth() === teamDate.getMonth() &&
+                    wd.dateObj.getDate() === teamDate.getDate()
+                );
+            }
+            if (dayIdx === -1 && (team.timeText || team.timeslot || team.time)) {
+                const fullText = (team.timeText || team.timeslot || team.time || '');
+                dayIdx = weekDays.findIndex(wd => fullText.includes(wd.dateLabel.split('(')[0]));
+            }
+
+            const teamMembers = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
+            totalParticipations += teamMembers.length;
+
+            if (dayIdx >= 0 && dayIdx < 7) {
+                dayTeams[dayIdx].push(team);
+            }
+        });
+
+        // Sort teams within each day by timestamp
+        dayTeams.forEach(teams => {
+            teams.sort((a, b) => (getTeamTimestamp(a) || 0) - (getTeamTimestamp(b) || 0));
+        });
+
+        if (badgeEl) {
+            badgeEl.textContent = `已確認 ${matchingTeams.length} 隊 ｜ ${totalParticipations} 人次`;
+        }
+
+        if (matchingTeams.length === 0) {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 3rem 1.5rem; color: #64748b;">
+                    <div style="font-size: 2.2rem; margin-bottom: 0.5rem;">📅</div>
+                    <div style="font-size: 1.05rem; font-weight: 800; color: #334155;">所選週次尚無任何已確認出團隊伍</div>
+                    <div style="font-size: 0.85rem; color: #94a3b8; margin-top: 0.35rem;">當團隊發佈並在「出團招募看板」點擊【確認出團】後，名單明細將自動統整於此。</div>
+                </div>
+            `;
+            return;
+        }
+
+        const getBossNickname = (bossName) => {
+            if (!bossName) return '出團';
+            const b = String(bossName).trim();
+            if (b.includes('困難拉圖斯') || b.includes('困拉')) return '困拉';
+            if (b.includes('拉圖斯') || b.includes('普通拉圖斯') || b.includes('普拉')) return '普拉';
+            if (b.includes('混沌暗黑龍王') || b.includes('混龍')) return '混龍';
+            if (b.includes('暗黑龍王') || b.includes('龍王')) return '龍王';
+            if (b.includes('克雷塞爾') || b.includes('樹王')) return '樹王';
+            if (b.includes('困難炎魔') || b.includes('困炎')) return '困炎';
+            if (b.includes('炎魔') || b.includes('普通炎魔') || b.includes('普炎')) return '普炎';
+            if (b.includes('蝴蝶') || b.includes('露希妲')) return '蝴蝶';
+            if (b.includes('皮卡丘') || b.includes('皮卡')) return '皮卡';
+            return normalizeBossName(b).replace(/\[|\]/g, '').slice(0, 3);
+        };
+
+        const getBossBadgeIcon = (boss) => {
+            const b = normalizeBossName(boss || '');
+            if (b.includes('龍王')) return '🐲';
+            if (b.includes('拉圖斯') || b.includes('拉')) return '🔮';
+            if (b.includes('克雷塞爾') || b.includes('樹')) return '🌳';
+            if (b.includes('炎魔') || b.includes('炎')) return '🔥';
+            if (b.includes('蝴蝶') || b.includes('露希妲')) return '🦋';
+            if (b.includes('皮卡丘') || b.includes('皮卡')) return '🐱';
+            return '⚔️';
+        };
+
+        // Determine maxSlots across all teams (6 for regular bosses, 12 if Dragon King)
+        let maxSlots = 6;
+        matchingTeams.forEach(t => {
+            if (isDragonKingBoss(t.boss)) maxSlots = Math.max(maxSlots, 12);
+        });
+
+        // Calculate total columns across the 7 days (days with 0 teams take 1 column, days with N teams take N columns)
+        const totalColumns = dayTeams.reduce((sum, teams) => sum + Math.max(1, teams.length), 0);
+        const colWidthPct = (100 / totalColumns).toFixed(3);
+
+        // Build colgroup so all columns share the exact same width without forcing overflow
+        let colgroupHtml = '<colgroup>';
+        for (let i = 0; i < totalColumns; i++) {
+            colgroupHtml += `<col style="width: ${colWidthPct}%;">`;
+        }
+        colgroupHtml += '</colgroup>';
+
+        // Header Row 1: Dates (with colspan for multi-team days)
+        const headerDatesThs = weekDays.map((wd, dIdx) => {
+            const teams = dayTeams[dIdx];
+            const colSpan = Math.max(1, teams.length);
+            const isWeekend = wd.isWeekend || wd.isSpecialHoliday;
+            let holBadge = '';
+            if (wd.isSpecialHoliday) {
+                const badgeText = (wd.holidayName && (wd.holidayName.includes('補') || wd.holidayName.includes('連假'))) ? '補' : (wd.holidayName ? wd.holidayName.slice(0, 2) : '補');
+                holBadge = `<span class="matrix-holiday-corner-badge" style="background: #ef4444 !important; color: #ffffff !important;" title="${escapeHtml(wd.holidayName || '補假')}">${escapeHtml(badgeText)}</span>`;
+            }
+
+            return `
+                <th colspan="${colSpan}" class="col-day ${isWeekend ? 'col-weekend' : ''}" style="position: relative;">
+                    <span>${escapeHtml(wd.dateLabel)}</span>${holBadge}
+                    ${teams.length > 1 ? `<span style="font-size: 0.72rem; background: rgba(37,99,235,0.12); color: #2563eb; padding: 1px 4px; border-radius: 8px; margin-left: 3px; font-weight: 800;">${teams.length}團</span>` : ''}
+                </th>
+            `;
+        }).join('');
+
+        // Header Row 2: Raid (突襲綽號) and Time (時間) directly under date
+        const headerTeamsThs = weekDays.map((wd, dIdx) => {
+            const teams = dayTeams[dIdx];
+            if (teams.length === 0) {
+                return `<th class="col-empty-team-header"><span style="color:#94a3b8; font-weight:normal;">無出團</span></th>`;
+            }
+            return teams.map((team) => {
+                const boss = normalizeBossName(team.boss || '');
+                const bossIcon = getBossBadgeIcon(boss);
+                const bossNick = getBossNickname(boss);
+                const gamesStr = team.gamesCount ? ` ${team.gamesCount}場` : '';
+                const timeStr = team.timeText ? (team.timeText.match(/\d{1,2}:\d{2}/) ? team.timeText.match(/\d{1,2}:\d{2}/)[0] : '') : '';
+                const channelStr = team.finalChannel ? `(${team.finalChannel}頻)` : (team.channels && team.channels !== '未指定' ? `(${team.channels}頻)` : '');
+                const noteHtml = team.note ? `<div class="report-team-note" title="${escapeHtml(team.note)}">📝 ${escapeHtml(team.note)}</div>` : '';
+
+                return `
+                    <th class="col-team-header" title="${escapeHtml(boss)}${gamesStr}">
+                        <div class="report-team-title">${bossIcon} ${bossNick}${gamesStr}</div>
+                        <div class="report-team-time">⏰ ${timeStr} <span class="report-team-ch">${channelStr}</span></div>
+                        ${noteHtml}
+                    </th>
+                `;
+            }).join('');
+        }).join('');
+
+        // Body Rows: Slots 1 to maxSlots (No numbers 1.2.3, display Job, ID, Role)
+        let rowsHtml = '';
+        for (let slotIdx = 0; slotIdx < maxSlots; slotIdx++) {
+            let rowCells = '';
+
+            weekDays.forEach((wd, dIdx) => {
+                const teams = dayTeams[dIdx];
+                if (teams.length === 0) {
+                    if (slotIdx === 0) {
+                        rowCells += `<td rowspan="${maxSlots}" class="col-empty-cell"><span style="color:#cbd5e1; font-weight:500;">-</span></td>`;
+                    }
+                    return;
+                }
+
+                teams.forEach(team => {
+                    const members = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
+                    const isDk = isDragonKingBoss(team.boss);
+
+                    // For 6-person teams, if slotIdx >= 6, show blank
+                    if (!isDk && slotIdx >= 6) {
+                        rowCells += `<td class="col-slot-cell" style="background:#f8fafc; opacity:0.35;">-</td>`;
+                        return;
+                    }
+
+                    const m = members.find((item, idx) => (item.slotIndex !== undefined ? item.slotIndex : idx) === slotIdx) || members[slotIdx];
+                    const squadHeader = (isDk && slotIdx === 0) ? '<div class="squad-divider">第一隊</div>' : ((isDk && slotIdx === 6) ? '<div class="squad-divider">第二隊</div>' : '');
+
+                    if (!m || !m.name) {
+                        const reservedRole = (team.slotRoles && team.slotRoles[slotIdx]) ? team.slotRoles[slotIdx] : '';
+                        const roleInfo = getTacticalRoleInfo(reservedRole);
+                        const roleBadge = reservedRole ? `<span class="member-role-badge ${roleInfo.cssClass}">${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(reservedRole)}</span>` : '';
+
+                        rowCells += `
+                            <td class="col-slot-cell is-empty-slot" style="text-align: center;">
+                                ${squadHeader}
+                                <div class="slot-inner" style="justify-content: center;">
+                                    <span class="slot-empty-text">-</span>
+                                    ${roleBadge}
+                                </div>
+                            </td>
+                        `;
+                    } else {
+                        const name = String(m.name).trim();
+                        const isMe = currentUser && name.toLowerCase() === currentUser.toLowerCase();
+                        const roleTag = m.roleTag || ((team.slotRoles && team.slotRoles[slotIdx]) ? team.slotRoles[slotIdx] : '');
+                        const roleInfo = getTacticalRoleInfo(roleTag);
+                        const roleBadge = roleTag ? `<span class="member-role-badge ${roleInfo.cssClass}">${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)}</span>` : '';
+                        const jobTag = m.job ? `<span class="slot-job-text" title="Lv.${m.level || '?'}">${escapeHtml(m.job)}</span>` : '';
+
+                        rowCells += `
+                            <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''}">
+                                ${squadHeader}
+                                <div class="slot-inner">
+                                    <div style="display:inline-flex; align-items:center; gap:2px; min-width:0; overflow:hidden; white-space:nowrap; flex:1;">
+                                        ${jobTag}
+                                        <span class="slot-member-name ${isMe ? 'is-me-name' : ''}">
+                                            ${escapeHtml(name)}
+                                            ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.6rem; font-weight:800; padding:0 3px; border-radius:4px; margin-left:1px;">我</small>' : ''}
+                                        </span>
+                                    </div>
+                                    ${roleBadge}
+                                </div>
+                            </td>
+                        `;
+                    }
+                });
+            });
+
+            rowsHtml += `<tr class="report-slot-row">${rowCells}</tr>`;
+        }
+
+        // Footer Row: Squad capacity counts
+        const footerTds = weekDays.map((wd, dIdx) => {
+            const teams = dayTeams[dIdx];
+            if (teams.length === 0) {
+                return `<td class="col-empty-team-header" style="text-align:center; font-size:0.78rem; color:#94a3b8; font-weight:700;">-</td>`;
+            }
+            return teams.map(team => {
+                const members = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
+                const maxCap = isDragonKingBoss(team.boss) ? 12 : 6;
+                return `
+                    <td style="text-align:center; padding:0.45rem 0.2rem; font-weight:800; font-size:0.82rem; color:#2563eb; background:#f8fafc;">
+                        <span>👥 ${members.length} / ${maxCap} 人</span>
+                    </td>
+                `;
+            }).join('');
+        }).join('');
+
+        container.innerHTML = `
+            <table class="confirmed-report-table">
+                ${colgroupHtml}
+                <thead>
+                    <tr class="report-header-dates">
+                        ${headerDatesThs}
+                    </tr>
+                    <tr class="report-header-teams">
+                        ${headerTeamsThs}
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rowsHtml}
+                </tbody>
+                <tfoot>
+                    <tr>
+                        ${footerTds}
+                    </tr>
+                </tfoot>
+            </table>
+        `;
+    }
+
+    window.copyConfirmedReportText = function() {
+        const weekOptions = getConfirmedReportWeekOptions();
+        const opt = weekOptions.find(o => o.weekId === currentConfirmedReportWeekId) || weekOptions[0];
+        const weekLabel = opt ? opt.label : currentConfirmedReportWeekId;
+        const weekDays = getWeekDaysDetails(currentConfirmedReportWeekId);
+
+        const matchingTeams = (confirmedTeams || []).filter(team => {
+            if (!team) return false;
+            const d = parseConfirmedTeamDate(team);
+            if (d) {
+                const tue = getTuesdayOfWeek(d);
+                return formatDateISO(tue) === currentConfirmedReportWeekId;
+            }
+            return team.weekId === currentConfirmedReportWeekId;
+        });
+
+        matchingTeams.sort((a, b) => (getTeamTimestamp(a) || 0) - (getTeamTimestamp(b) || 0));
+
+        let text = `【SoulMine 當週已確認出團名單】\n`;
+        text += `${weekLabel}\n`;
+        text += `共確認 ${matchingTeams.length} 隊出團\n`;
+        text += `===============================\n\n`;
+
+        weekDays.forEach(wd => {
+            const dayTeams = matchingTeams.filter(team => {
+                const td = parseConfirmedTeamDate(team);
+                if (td) {
+                    return wd.dateObj.getFullYear() === td.getFullYear() &&
+                           wd.dateObj.getMonth() === td.getMonth() &&
+                           wd.dateObj.getDate() === td.getDate();
+                }
+                const fullText = (team.timeText || team.timeslot || team.time || '');
+                return fullText.includes(wd.dateLabel.split('(')[0]);
+            });
+
+            if (dayTeams.length > 0) {
+                text += `📅 ● ${wd.dateLabel} (共 ${dayTeams.length} 隊)：\n`;
+                dayTeams.forEach((t, tIdx) => {
+                    const boss = normalizeBossName(t.boss || 'Boss');
+                    const timeStr = t.timeText || t.time || '時間未定';
+                    const channel = t.finalChannel ? ` (頻道: ${t.finalChannel})` : (t.channels && t.channels !== '未指定' ? ` (頻道: ${t.channels})` : '');
+                    text += `  ▶ [隊伍 ${tIdx + 1}] [${boss}] ${t.gamesCount || 7}場 ⏰ ${timeStr}${channel}\n`;
+                    if (t.note) {
+                        text += `     📝 備註：${t.note}\n`;
+                    }
+                    const members = t.members ? (Array.isArray(t.members) ? t.members : Object.values(t.members)) : [];
+                    text += `     👥 成員 (${members.length}人)：\n`;
+                    members.forEach((m, mIdx) => {
+                        const role = m.roleTag ? `【${m.roleTag}】` : '';
+                        text += `        ${mIdx + 1}. [${m.job || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
+                    });
+                    text += `\n`;
+                });
+                text += `-------------------------------\n`;
+            }
+        });
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert("✅ 已成功複製當週已確認出團名單文字至剪貼簿！可直接傳送至 LINE 或 Discord！");
+            }).catch(() => {
+                prompt("請手動複製下方出團名單文字：", text);
+            });
+        } else {
+            prompt("請手動複製下方出團名單文字：", text);
+        }
+    };
+
     // --- Tab 2: Confirmed & Historical Teams ---
     function renderConfirmedTeams() {
         const container = document.getElementById('confirmed-teams-container');
@@ -4635,9 +5604,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 footer.innerHTML = `
                     <span style="font-size: 0.85rem; color: var(--text-muted);">建立者: ${displayCreator}</span>
-                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                    <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                         <button type="button" class="copy-team-btn" style="background: var(--primary-color); border: none; color: #fff; border-radius: 6px; padding: 0.35rem 0.85rem; cursor: pointer; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 0.3rem;" title="複製原班人馬建立新出團">
                             📋 複製隊伍
+                        </button>
+                        <button type="button" class="edit-team-btn" style="background: transparent; border: 1px solid #3b82f6; color: #60a5fa; border-radius: 6px; padding: 0.35rem 0.85rem; cursor: pointer; font-size: 0.85rem; font-weight: bold; display: flex; align-items: center; gap: 0.25rem;" title="編輯調整成員站位與戰術定位">
+                            ✏️ 編輯隊伍
                         </button>
                         <button type="button" class="delete-team-btn" style="background: transparent; border: 1px solid var(--danger-color); color: #ff6666; border-radius: 6px; padding: 0.35rem 0.8rem; cursor: pointer; font-size: 0.85rem;">
                             刪除紀錄
@@ -4649,6 +5621,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (copyBtn) {
                     copyBtn.onclick = () => {
                         window.openCreateRaidModal(team.boss, team);
+                    };
+                }
+
+                const editBtn = footer.querySelector('.edit-team-btn');
+                if (editBtn) {
+                    editBtn.onclick = () => {
+                        window.editConfirmedTeam(team);
                     };
                 }
 
@@ -4679,6 +5658,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (historyContainer && historyCount === 0) {
             historyContainer.innerHTML = '<p class="empty-state" style="color:var(--text-muted); grid-column: 1 / -1; padding: 1.5rem; text-align: center;">目前沒有歷史出團紀錄。</p>';
+        }
+
+        // Auto-refresh confirmed report table if modal is visible
+        const confirmedReportModal = document.getElementById('confirmed-report-modal');
+        if (confirmedReportModal && confirmedReportModal.style.display !== 'none' && typeof renderConfirmedReportTable === 'function') {
+            renderConfirmedReportTable();
         }
     }
 
