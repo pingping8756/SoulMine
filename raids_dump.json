@@ -1,0 +1,162 @@
+﻿{
+    "-P2i2ZEvYHDXExOIfClT":  {
+                                 "boss":  "樹王",
+                                 "channel":  12,
+                                 "createdAt":  1790700306253,
+                                 "creator":  "Lumi",
+                                 "id":  "-P2i2ZEvYHDXExOIfClT",
+                                 "isConfirmed":  true,
+                                 "members":  [
+                                                 {
+                                                     "isCreator":  true,
+                                                     "job":  "主教",
+                                                     "level":  "155",
+                                                     "name":  "Lumi",
+                                                     "uid":  "Lumi"
+                                                 }
+                                             ],
+                                 "time":  "2026/10/03 (週六) 21:30"
+                             },
+    "-P3ZE3KNeKAX5svDj64a":  {
+                                 "boss":  "困難拉圖斯",
+                                 "createdAt":  1791609292333,
+                                 "creator":  "阿甘",
+                                 "creatorClientId":  "c_1791088446709_qjmcnhp",
+                                 "date":  "10月19日",
+                                 "gamesCount":  7,
+                                 "id":  "-P3ZE3KNeKAX5svDj64a",
+                                 "isConfirmed":  false,
+                                 "maxPlayers":  6,
+                                 "members":  [
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "主教",
+                                                     "level":  174,
+                                                     "name":  "小龜",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  0
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "冰雷",
+                                                     "level":  164,
+                                                     "name":  "CC",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  1
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "黑騎士",
+                                                     "level":  163,
+                                                     "name":  "Ohni",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  2
+                                                 },
+                                                 {
+                                                     "clientId":  "c_1791088446709_qjmcnhp",
+                                                     "isCreator":  true,
+                                                     "job":  "箭神",
+                                                     "level":  153,
+                                                     "name":  "阿甘",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  3
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "夜使者",
+                                                     "level":  163,
+                                                     "name":  "Eric",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  4
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "聖騎士",
+                                                     "level":  162,
+                                                     "name":  "小茵",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  5
+                                                 }
+                                             ],
+                                 "note":  "",
+                                 "scheduledTimestamp":  1792414800000,
+                                 "time":  "10/19 (一) 21:00",
+                                 "timeStr":  "21:00"
+                             },
+    "-P3ZEdky2NR5kS8dooNI":  {
+                                 "boss":  "困難拉圖斯",
+                                 "createdAt":  1791609445651,
+                                 "creator":  "阿甘",
+                                 "creatorClientId":  "c_1791088446709_qjmcnhp",
+                                 "date":  "10月18日",
+                                 "gamesCount":  7,
+                                 "id":  "-P3ZEdky2NR5kS8dooNI",
+                                 "isConfirmed":  false,
+                                 "maxPlayers":  6,
+                                 "members":  [
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "主教",
+                                                     "level":  165,
+                                                     "name":  "CC",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  0
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "主教",
+                                                     "level":  155,
+                                                     "name":  "Lumi",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  1
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "黑騎士",
+                                                     "level":  165,
+                                                     "name":  "大鎖",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  2
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "夜使者",
+                                                     "level":  163,
+                                                     "name":  "Eric",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  3
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "神射手",
+                                                     "level":  175,
+                                                     "name":  "IE",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  4
+                                                 },
+                                                 {
+                                                     "clientId":  "assigned",
+                                                     "isCreator":  false,
+                                                     "job":  "箭神",
+                                                     "level":  174,
+                                                     "name":  "小茵",
+                                                     "roleTag":  "",
+                                                     "slotIndex":  5
+                                                 }
+                                             ],
+                                 "note":  "",
+                                 "scheduledTimestamp":  1792324800000,
+                                 "time":  "10/18 (日) 20:00",
+                                 "timeStr":  "20:00"
+                             }
+}

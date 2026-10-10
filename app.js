@@ -2187,12 +2187,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Date & Time computation
                     const dateObj = preDraftState.dateObj || new Date();
-                    const dateStr = preDraftState.dateStr || `${dateObj.getFullYear()}-${String(dateObj.getMonth() + 1).padStart(2, '0')}-${String(dateObj.getDate()).padStart(2, '0')}`;
+                    let dateStr = preDraftState.dateStr;
                     const timeStr = preDraftState.targetTimeStr || '20:00';
 
                     // Parse parts into scheduled timestamp
-                    let [y, m, d] = dateStr.split('-').map(Number);
-                    if (!y || isNaN(y)) {
+                    let y = 0, m = 0, d = 0;
+                    if (dateStr && typeof dateStr === 'string') {
+                        const ym = dateStr.match(/(?:(\d{4})[年/-])?(\d{1,2})[月/-](\d{1,2})/);
+                        if (ym) {
+                            y = ym[1] ? parseInt(ym[1], 10) : dateObj.getFullYear();
+                            m = parseInt(ym[2], 10);
+                            d = parseInt(ym[3], 10);
+                        }
+                    }
+                    if (!y || !m || !d) {
                         y = dateObj.getFullYear();
                         m = dateObj.getMonth() + 1;
                         d = dateObj.getDate();
@@ -2203,6 +2211,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const weekDays = ['日','一','二','三','四','五','六'];
                     const weekDay = weekDays[schedDate.getDay()];
                     const fullTimeText = `${m}/${d} (${weekDay}) ${timeStr}`;
+                    const standardDateStr = `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 
                     const predraftNoteInput = document.getElementById('predraft-note-input');
                     const noteText = predraftNoteInput ? predraftNoteInput.value.trim() : '';
@@ -2238,7 +2247,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             boss: bossName,
                             gamesCount: gamesCount,
                             maxPlayers: maxPlayers,
-                            date: dateStr,
+                            date: standardDateStr,
                             timeStr: timeStr,
                             time: fullTimeText,
                             scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
@@ -2261,7 +2270,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             boss: bossName,
                             gamesCount: gamesCount,
                             maxPlayers: maxPlayers,
-                            date: dateStr,
+                            date: standardDateStr,
                             timeStr: timeStr,
                             time: fullTimeText,
                             scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
@@ -3605,33 +3614,95 @@ document.addEventListener('DOMContentLoaded', () => {
 
         preDraftState.editingRaidId = raidId;
 
-        // Parse date
-        let targetDateObj = new Date();
-        if (raid.date) {
-            const parts = raid.date.replace(/-/g, '/').split('/').map(Number);
-            if (parts.length === 3 && !isNaN(parts[0])) {
-                targetDateObj = new Date(parts[0], parts[1] - 1, parts[2]);
+        // Parse date and time accurately
+        let targetDateObj = null;
+
+        // 1. Try scheduledTimestamp (most accurate)
+        if (raid.scheduledTimestamp && !isNaN(Number(raid.scheduledTimestamp))) {
+            const d = new Date(Number(raid.scheduledTimestamp));
+            if (!isNaN(d.getTime())) {
+                targetDateObj = d;
             }
         }
-        preDraftState.dateObj = targetDateObj;
-        preDraftState.dateStr = raid.date || `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
 
-        const m = targetDateObj.getMonth() + 1;
-        const d = targetDateObj.getDate();
-        const dayNames = ['日','一','二','三','四','五','六'];
-        const weekDay = dayNames[targetDateObj.getDay()];
-        preDraftState.dateLabel = `${m}/${d}(${weekDay})`;
+        // 2. Try raid.date (e.g., "2026-10-19", "2026/10/19", "10月19日", "10/19")
+        if (!targetDateObj && raid.date && typeof raid.date === 'string') {
+            const m = raid.date.match(/(?:(\d{4})[年/-])?(\d{1,2})[月/-](\d{1,2})/);
+            if (m) {
+                const yr = m[1] ? parseInt(m[1], 10) : new Date().getFullYear();
+                const mo = parseInt(m[2], 10) - 1;
+                const dy = parseInt(m[3], 10);
+                const d = new Date(yr, mo, dy);
+                if (!isNaN(d.getTime())) {
+                    targetDateObj = d;
+                }
+            }
+        }
+
+        // 3. Try raid.time or raid.timeText (e.g. "10/19 (一) 21:00")
+        if (!targetDateObj && (raid.time || raid.timeText)) {
+            const str = raid.time || raid.timeText || '';
+            const m = str.match(/(?:(\d{4})[/.-])?(\d{1,2})[/.-](\d{1,2})/);
+            if (m) {
+                const yr = m[1] ? parseInt(m[1], 10) : new Date().getFullYear();
+                const mo = parseInt(m[2], 10) - 1;
+                const dy = parseInt(m[3], 10);
+                const d = new Date(yr, mo, dy);
+                if (!isNaN(d.getTime())) {
+                    targetDateObj = d;
+                }
+            }
+        }
+
+        // 4. Try getTeamTimestamp(raid)
+        if (!targetDateObj) {
+            const ts = getTeamTimestamp(raid);
+            if (ts > 0) {
+                const d = new Date(ts);
+                if (!isNaN(d.getTime())) targetDateObj = d;
+            }
+        }
+
+        // 5. Fallback
+        if (!targetDateObj) {
+            targetDateObj = new Date();
+        }
+
+        // Determine targetTimeStr
+        let targetTimeStr = '';
+        if (raid.timeStr) {
+            targetTimeStr = raid.timeStr;
+        } else if (raid.time || raid.timeText) {
+            const tm = (raid.time || raid.timeText || '').match(/(\d{1,2}:\d{2})/);
+            if (tm) targetTimeStr = tm[1];
+        } else if (raid.scheduledTimestamp) {
+            const d = new Date(Number(raid.scheduledTimestamp));
+            targetTimeStr = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+        }
+        if (!targetTimeStr) targetTimeStr = '20:00';
+
+        // Apply hour & minute to targetDateObj if not already applied
+        const [tHour, tMin] = targetTimeStr.split(':').map(Number);
+        if (!isNaN(tHour)) {
+            targetDateObj.setHours(tHour, tMin || 0, 0, 0);
+        }
 
         // Determine period
         let period = '晚';
-        if (raid.timeStr) {
-            const hour = parseInt(raid.timeStr.split(':')[0], 10);
-            if (!isNaN(hour) && hour < 18) {
-                period = '午';
-            }
+        if (!isNaN(tHour) && tHour < 18) {
+            period = '午';
         }
         preDraftState.period = period;
-        preDraftState.targetTimeStr = raid.timeStr || (period === '午' ? '14:00' : '20:00');
+        preDraftState.targetTimeStr = targetTimeStr;
+
+        preDraftState.dateObj = targetDateObj;
+        preDraftState.dateStr = `${targetDateObj.getFullYear()}-${String(targetDateObj.getMonth() + 1).padStart(2, '0')}-${String(targetDateObj.getDate()).padStart(2, '0')}`;
+
+        const mNum = targetDateObj.getMonth() + 1;
+        const dNum = targetDateObj.getDate();
+        const dayNames = ['日','一','二','三','四','五','六'];
+        const weekDay = dayNames[targetDateObj.getDay()];
+        preDraftState.dateLabel = `${mNum}/${dNum}(${weekDay})`;
 
         preDraftState.boss = normalizeBossName(raid.boss || '克雷塞爾');
         preDraftState.games = parseInt(raid.gamesCount, 10) || 7;
@@ -3665,10 +3736,8 @@ document.addEventListener('DOMContentLoaded', () => {
         preDraftState.slots = newSlots;
 
         // Determine week, dayDef, and targetSlotDef for this raid's scheduled date & period
-        const activeWeekId = currentMatrixWeekId || TARGET_DEFAULT_WEEK_ID;
         const tue = getTuesdayOfWeek(targetDateObj);
-        const calcWeekId = `${tue.getFullYear()}-${String(tue.getMonth() + 1).padStart(2, '0')}-${String(tue.getDate()).padStart(2, '0')}`;
-        const targetWeekId = (typeof weekOptions !== 'undefined' && Array.isArray(weekOptions) && weekOptions.some(o => o.weekId === calcWeekId)) ? calcWeekId : activeWeekId;
+        const targetWeekId = `${tue.getFullYear()}-${String(tue.getMonth() + 1).padStart(2, '0')}-${String(tue.getDate()).padStart(2, '0')}`;
 
         const weekDays = getWeekDaysDetails(targetWeekId);
         let dayDef = weekDays.find(d => 
@@ -4084,7 +4153,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isActuallyCreator = Boolean(m.name && displayCreator && m.name.toLowerCase() === displayCreator.toLowerCase());
                     if (isExpired) {
                         return `
-                            <div style="background: rgba(255,255,255,0.03); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.06);">
+                            <div style="background: rgba(255,255,255,0.03); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.06); min-height: 44px; box-sizing: border-box;">
                                 <div style="display: flex; align-items: center; flex-wrap: wrap;">
                                     <strong style="color: #94a3b8;">${m.job}</strong> 
                                     <span style="color: #cbd5e1; font-weight: 500; margin-left: 0.3rem;">${m.name}</span> 
@@ -4097,7 +4166,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     }
                     return `
-                        <div style="background: rgba(255,255,255,0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.12);">
+                        <div style="background: rgba(255,255,255,0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.12); min-height: 44px; box-sizing: border-box;">
                             <div style="display: flex; align-items: center; flex-wrap: wrap;">
                                 <strong style="color: var(--primary-color);">${m.job}</strong> 
                                 <span style="color: #fff; font-weight: 600; margin-left: 0.3rem;">${m.name}</span> 
@@ -4111,12 +4180,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     if (isExpired) {
                         return `
-                            <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: #64748b; text-align: center;">未入座 (已流團)</div>
+                            <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: #64748b; text-align: center; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">未入座 (已流團)</div>
                         `;
                     }
                     const slotRoleText = slotRole ? ` - ${roleInfo.icon ? roleInfo.icon + ' ' : ''}${slotRole}` : '';
                     return `
-                        <div onclick="openJoinModal('${raid.id}', ${slotIdx})" style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s;" onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" title="點擊報名此位置 (第 ${slotNum} 位${slotRoleText})">➕ 點擊報名 (第 ${slotNum} 位${slotRoleText})</div>
+                        <div onclick="openJoinModal('${raid.id}', ${slotIdx})" style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" title="點擊報名此位置 (第 ${slotNum} 位${slotRoleText})">➕ 點擊報名 (第 ${slotNum} 位${slotRoleText})</div>
                     `;
                 }
             };
@@ -4153,7 +4222,7 @@ document.addEventListener('DOMContentLoaded', () => {
             let actionsHtml = '';
             if (isExpired) {
                 actionsHtml = `
-                    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.8rem;">
+                    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: auto; padding-top: 0.8rem;">
                         <div style="text-align: center; font-size: 0.85rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; padding: 0.65rem; font-weight: 600;">
                             ⏳ 時段已過．已流團
                         </div>
@@ -4166,7 +4235,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             } else {
                 actionsHtml = `
-                    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: 0.8rem;">
+                    <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: auto; padding-top: 0.8rem;">
                         <div style="display: flex; gap: 0.5rem;">
                             <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex: 1.4; min-width: 110px; padding: 0.65rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 8px; cursor: pointer; color: #fff;">✅ 確認出團</button>
                             <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 95px; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 8px; padding: 0.65rem; font-size: 0.9rem; font-weight: bold; cursor: pointer;" title="複製原班人馬建立新出團">📋 複製隊伍</button>
@@ -4181,6 +4250,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const card = document.createElement('div');
             card.className = 'glass-card' + (isDragonKing ? ' dragon-recruit-card' : '');
+            card.style.display = 'flex';
+            card.style.flexDirection = 'column';
+            card.style.boxSizing = 'border-box';
             if (isExpired) {
                 card.style.background = 'rgba(20, 15, 26, 0.65)';
                 card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
@@ -4192,10 +4264,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const bossTitleName = normalizeBossName(raid.boss);
             const titleHtml = isExpired
-                ? `<h3 style="margin:0; color:#94a3b8; font-size: 1.15rem;">[${bossTitleName}]${raid.gamesCount || 7}場 <span style="color: #ef4444; font-size: 0.85rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); padding: 0.15rem 0.5rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.3); margin-left: 0.3rem;">(流團)</span></h3>
-                   <span style="font-weight:bold; font-size: 1.05rem; color: #64748b; text-decoration: line-through;" title="出團時間已過">${raid.time}</span>`
-                : `<h3 style="margin:0; color:var(--primary-color); font-size: 1.2rem;">[${bossTitleName}]${raid.gamesCount || 7}場</h3>
-                   <span style="font-weight:bold; font-size: 1.05rem; color: #fff;">${raid.time}</span>`;
+                ? `<div style="display:flex; flex-direction: column; gap: 0.35rem; width: 100%;">
+                     <div style="display:flex; justify-content: space-between; align-items: center;">
+                       <h3 style="margin:0; color:#94a3b8; font-size: 1.18rem; font-weight: 800; line-height: 1.25;">[${bossTitleName}]${raid.gamesCount || 7}場 <span style="color: #ef4444; font-size: 0.8rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); padding: 0.1rem 0.45rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.3); margin-left: 0.2rem;">(流團)</span></h3>
+                     </div>
+                     <div style="font-weight:700; font-size: 1.05rem; color: #64748b; line-height: 1.25; text-decoration: line-through;" title="出團時間已過">${raid.time}</div>
+                   </div>`
+                : `<div style="display:flex; flex-direction: column; gap: 0.35rem; width: 100%;">
+                     <div style="display:flex; justify-content: space-between; align-items: center;">
+                       <h3 style="margin:0; color:var(--primary-color); font-size: 1.2rem; font-weight: 800; line-height: 1.25;">[${bossTitleName}]${raid.gamesCount || 7}場</h3>
+                     </div>
+                     <div style="font-weight:700; font-size: 1.05rem; color: #fff; line-height: 1.25;">${raid.time}</div>
+                   </div>`;
 
             const noteBannerHtml = raid.note ? `
                 <div class="raid-note-banner" style="color: ${isExpired ? '#94a3b8' : '#fed7aa'};">
@@ -4205,11 +4285,11 @@ document.addEventListener('DOMContentLoaded', () => {
             ` : '';
 
             card.innerHTML = `
-                <div style="display:flex; justify-content:space-between; align-items: baseline; margin-bottom: 0.8rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.08)' : 'var(--card-border)'}; padding-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
+                <div style="margin-bottom: 0.8rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.08)' : 'var(--card-border)'}; padding-bottom: 0.6rem; min-height: 56px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
                     ${titleHtml}
                 </div>
                 ${noteBannerHtml}
-                <div style="margin-bottom: 0.8rem; color: ${isExpired ? '#64748b' : 'var(--text-muted)'}; font-size: 0.9rem; display: flex; justify-content: space-between;">
+                <div style="margin-bottom: 0.8rem; color: ${isExpired ? '#64748b' : 'var(--text-muted)'}; font-size: 0.9rem; display: flex; justify-content: space-between; align-items: center; min-height: 24px; box-sizing: border-box;">
                     <span>發起人：<strong style="color: ${isExpired ? '#94a3b8' : '#fff'};">${displayCreator}</strong></span>
                     <span>成員：<strong style="color: ${isExpired ? '#94a3b8' : (isFull ? 'var(--danger-color)' : 'var(--success-color)')}; font-size: 1rem;">${members.length}</strong> / ${maxSlots}</span>
                 </div>
