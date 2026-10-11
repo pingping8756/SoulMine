@@ -979,7 +979,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (holidayHint) {
                 if (specialHolidays.length > 0) {
                     const holNames = specialHolidays.map(d => `${d.dateLabel} ${d.holidayName}`).join('、');
-                    holidayHint.innerHTML = `㊗️ 本週含國定假日：<strong>${escapeHtml(holNames)}</strong>`;
+                    holidayHint.innerHTML = `㊗️ <strong>${escapeHtml(holNames)}</strong>`;
                 } else {
                     holidayHint.innerHTML = '';
                 }
