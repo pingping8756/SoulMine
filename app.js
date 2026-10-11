@@ -260,17 +260,20 @@ function getMemberBoundRoster(surveyMemberName) {
         }
     }
 
-    // 若包含「偷哭」或「der」，確保自動綁定 derder
+    // 若填寫名稱明確為「偷哭」或「der」，確保自動綁定 derder
     if (rawLower.includes('偷哭') || rawLower === 'der' || rawLower === 'derder') {
         aliasSet.add('derder');
     }
 
     const matched = CHARACTER_ROSTER.filter(c => {
         const cIdLower = (c.id || '').trim().toLowerCase();
+        // 1. 完全比對別名集合（例如 c.id 為 derder 或 WonderW）
         if (aliasSet.has(cIdLower)) return true;
-        // 包含字串自動匹配（例如問卷填寫「毛毛娃」，自動對應「長吉毛毛娃」）
+        // 2. 僅對含中文的別名進行多字元包含比對（例如問卷填寫「毛毛娃」，自動對應「長吉毛毛娃」）
+        // 絕對不對純英文字串做 includes 比對，避免 "der" 誤判比對到 "wonderw"
         for (const alias of aliasSet) {
-            if (alias.length >= 2 && (cIdLower.includes(alias) || alias.includes(cIdLower))) {
+            const hasChinese = /[\u4e00-\u9fa5]/.test(alias);
+            if (hasChinese && alias.length >= 2 && (cIdLower.includes(alias) || alias.includes(cIdLower))) {
                 return true;
             }
         }
@@ -1612,23 +1615,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     let btns = [];
                     // 人數達 6 人或以上即顯示預排 (>= 6)，且如果該時段已過期則不顯示預排
                     if (aftCount >= 6 && !status.isAftExpired) {
-                        btns.push(`<button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '午', ${dIdx})" title="快速預排此時段 (午: ${aftCount}人)">預排(午)</button>`);
+                        btns.push(`<button type="button" class="matrix-predraft-badge" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '午', ${dIdx})" title="快速預排此時段 (午: ${aftCount}人)">午</button>`);
                     }
                     if (eveCount >= 6 && !status.isEveExpired) {
-                        btns.push(`<button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (晚: ${eveCount}人)">預排(晚)</button>`);
+                        btns.push(`<button type="button" class="matrix-predraft-badge" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (晚: ${eveCount}人)">晚</button>`);
                     }
-                    if (btns.length > 0) {
-                        predraftBtnHtml = `<div style="display: flex; gap: 2px; justify-content: center; margin-top: 3px;">${btns.join('')}</div>`;
+                    if (btns.length === 1) {
+                        predraftBtnHtml = btns[0];
+                    } else if (btns.length > 1) {
+                        predraftBtnHtml = `<div class="matrix-predraft-corner-group">${btns.join('')}</div>`;
                     }
                 } else {
                     const eveSlot = d.slots[0];
                     const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
                     if (eveCount >= 6 && !status.isEveExpired) {
-                        predraftBtnHtml = `
-                            <div style="margin-top: 3px;">
-                                <button type="button" class="matrix-predraft-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (${eveCount}人)">🎯 預排</button>
-                            </div>
-                        `;
+                        predraftBtnHtml = `<button type="button" class="matrix-predraft-badge" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="快速預排此時段 (${eveCount}人)">排</button>`;
                     }
                 }
             }
@@ -1638,7 +1639,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 : '';
 
             return `<th class="col-day ${isHolidayCol ? 'col-weekend' : ''} ${colExpiredCls}" style="position: relative;">
-                <span>${d.dateLabel}</span>${holCornerBadge}
+                ${holCornerBadge}
+                <span>${d.dateLabel}</span>
                 ${predraftBtnHtml}
             </th>`;
         }).join('');
@@ -1660,37 +1662,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
                 const totalCount = responses.filter(r => isUserSlotChecked(r.slots, aftSlot, d) || isUserSlotChecked(r.slots, eveSlot, d)).length;
 
-                let fBtns = [];
-                if (hasAdmin) {
-                    if (aftCount >= 6 && !status.isAftExpired) {
-                        fBtns.push(`<button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '午', ${dIdx})" title="預排(午: ${aftCount}人)">預(午)</button>`);
-                    }
-                    if (eveCount >= 6 && !status.isEveExpired) {
-                        fBtns.push(`<button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="預排(晚: ${eveCount}人)">預(晚)</button>`);
-                    }
-                }
-                const fBtnHtml = fBtns.length > 0 ? `<div style="margin-top: 4px; display: flex; gap: 2px; justify-content: center;">${fBtns.join('')}</div>` : '';
-
                 return `
                     <td class="col-day ${isHolidayCol ? 'col-weekend' : ''} ${colExpiredCls}">
                         <div class="matrix-total-count">${totalCount}</div>
                         <span class="matrix-total-sub">午:${aftCount} 晚:${eveCount}</span>
-                        ${fBtnHtml}
                     </td>
                 `;
             } else {
                 const eveSlot = d.slots[0];
                 const eveCount = responses.filter(r => isUserSlotChecked(r.slots, eveSlot, d)).length;
-                const fBtnHtml = (hasAdmin && eveCount >= 6 && !status.isEveExpired) ? `
-                    <div style="margin-top: 4px;">
-                        <button type="button" class="matrix-predraft-btn footer-btn" onclick="window.openSurveyPreDraftModal('${d.dateStr}', '${d.dateLabel}', '晚', ${dIdx})" title="預排(晚: ${eveCount}人)">🎯 預排</button>
-                    </div>
-                ` : '';
 
                 return `
                     <td class="col-day ${isHolidayCol ? 'col-weekend' : ''} ${colExpiredCls}">
                         <div class="matrix-total-count">${eveCount}</div>
-                        ${fBtnHtml}
                     </td>
                 `;
             }
@@ -1731,8 +1715,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tfoot>
                     <tr>
                         <td class="col-member">
-                            <div class="matrix-total-label">總填寫</div>
-                            <div class="matrix-total-count" style="color:#2563eb;">${responses.length}人</div>
+                            <div style="font-size:0.75rem; font-weight:800; color:#475569; white-space:nowrap;">總填寫 <strong style="color:#2563eb; font-size:0.86rem;">${responses.length}人</strong></div>
                         </td>
                         ${footerTds}
                         <td class="matrix-footer-summary">
@@ -1890,7 +1873,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const dIso = `${day.dateObj.getFullYear()}-${String(day.dateObj.getMonth() + 1).padStart(2, '0')}-${String(day.dateObj.getDate()).padStart(2, '0')}`;
                 const opt = document.createElement('option');
                 opt.value = dIso;
-                opt.textContent = `${day.dateLabel}${day.holidayName ? ' (' + day.holidayName + ')' : ''}`;
+                let holSuffix = '';
+                if (day.holidayName && day.holidayName.includes('補')) {
+                    holSuffix = ' (補假)';
+                } else if (day.isWeekend || day.isSpecialHoliday || day.holidayName) {
+                    holSuffix = ' (假日)';
+                }
+                opt.textContent = `${day.dateLabel}${holSuffix}`;
                 if (dIso === targetIso) opt.selected = true;
                 optgroup.appendChild(opt);
             });
@@ -2290,17 +2279,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const jobColor = getHighContrastJobColor(s.job);
             return `
                 <div class="predraft-slot-box filled">
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem;">
-                        <span style="font-size: 0.72rem; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; white-space: nowrap;">${numLabel}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem; line-height: 1;">
+                        <span style="font-size: 0.7rem; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 0.05rem 0.25rem; border-radius: 3px; white-space: nowrap;">${numLabel}</span>
                         ${roleSelectHtml}
-                        <button type="button" onclick="window.removePreDraftSlot(${idx})" style="background: none; border: none; color: #ef4444; font-weight: 800; cursor: pointer; padding: 0 0.15rem; font-size: 0.95rem; line-height: 1;" title="移出席位">✕</button>
+                        <button type="button" onclick="window.removePreDraftSlot(${idx})" style="background: none; border: none; color: #ef4444; font-weight: 800; cursor: pointer; padding: 0 0.15rem; font-size: 0.9rem; line-height: 1;" title="移出席位">✕</button>
                     </div>
-                    <div style="font-size: 0.92rem; font-weight: 900; color: #0f172a; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin: 0.15rem 0;" title="${escapeHtml(s.name)}">
-                        ${escapeHtml(s.name)}
-                    </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; font-size: 0.72rem;">
-                        <span style="color: ${jobColor}; font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(s.job)}</span>
-                        <span style="color: #64748b; font-weight: 700; white-space: nowrap; margin-left: 0.2rem;">Lv.${s.level}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 0.2rem; margin-top: 2px;">
+                        <span style="font-size: 0.86rem; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(s.job)} <small style="color: #64748b; font-weight: 700;">Lv.${s.level}</small></span>
                     </div>
                 </div>
             `;
@@ -2318,11 +2304,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return `
                 <div class="predraft-slot-box empty">
-                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.2rem;">
-                        <span style="font-size: 0.72rem; font-weight: 800; color: #94a3b8; background: #f1f5f9; padding: 0.1rem 0.3rem; border-radius: 4px; white-space: nowrap;">${numLabel}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; width: 100%; gap: 0.2rem; line-height: 1;">
+                        <span style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; background: #f1f5f9; padding: 0.05rem 0.25rem; border-radius: 3px; white-space: nowrap;">${numLabel}</span>
                         ${roleSelectHtml}
                     </div>
-                    <span style="font-size: 0.76rem; color: ${roleTag ? roleColor : '#94a3b8'}; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%;">${roleTag ? `(${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)})` : '待排空位'}</span>
+                    <div style="font-size: 0.75rem; color: ${roleTag ? roleColor : '#94a3b8'}; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-top: 2px;">
+                        ${roleTag ? `(${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)})` : '待排空位'}
+                    </div>
                 </div>
             `;
         }
@@ -2569,8 +2557,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const jobColor = getHighContrastJobColor(c.job);
 
             const scrollTag = c.isScrollYes 
-                ? '<span style="font-size:0.68rem; color:#15803d; background:#dcfce7; padding:1px 4px; border-radius:3px; font-weight:800; white-space:nowrap;">吃券</span>' 
-                : '<span style="font-size:0.68rem; color:#dc2626; background:#fee2e2; padding:1px 4px; border-radius:3px; font-weight:800; white-space:nowrap;">不吃</span>';
+                ? '<span style="font-size:0.64rem; color:#15803d; background:#dcfce7; padding:1px 3px; border-radius:3px; font-weight:800; white-space:nowrap;">吃券</span>' 
+                : '<span style="font-size:0.64rem; color:#dc2626; background:#fee2e2; padding:1px 3px; border-radius:3px; font-weight:800; white-space:nowrap;">不吃</span>';
 
             const cardTitle = isSelected 
                 ? `[席位 ${slotNum}] 點擊退選` 
@@ -2581,14 +2569,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div class="predraft-card-chip ${catClass} ${selectedClass}"
                      onclick="window.togglePreDraftCharacter('${escapeHtml(c.id)}', '${escapeHtml(c.job)}', ${c.level})"
                      title="${cardTitle}">
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem;">
-                        <strong style="font-size: 0.88rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(c.id)}</strong>
-                        ${isSelected ? `<span style="background: #16a34a; color: #ffffff; font-size: 0.68rem; font-weight: 800; padding: 1px 5px; border-radius: 4px; white-space: nowrap;">✓ ${slotNum}</span>` : 
-                          (isSameMemberDrafted ? `<span style="background: #fef3c7; color: #b45309; font-size: 0.65rem; font-weight: 700; padding: 1px 4px; border-radius: 3px; white-space: nowrap;" title="${escapeHtml(c.memberName)} 已出戰其他角色">同人出戰</span>` : 
-                          `<span style="font-size: 0.72rem; color: #64748b; font-weight: 700; white-space: nowrap;">Lv.${c.level}</span>`)}
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.15rem; line-height: 1.15;">
+                        <strong style="font-size: 0.82rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(c.id)}</strong>
+                        ${isSelected ? `<span style="background: #16a34a; color: #ffffff; font-size: 0.64rem; font-weight: 800; padding: 1px 4px; border-radius: 3px; white-space: nowrap;">✓ ${slotNum}</span>` : 
+                          (isSameMemberDrafted ? `<span style="background: #fef3c7; color: #b45309; font-size: 0.62rem; font-weight: 700; padding: 1px 3px; border-radius: 3px; white-space: nowrap;" title="${escapeHtml(c.memberName)} 已出戰其他角色">同人</span>` : 
+                          `<span style="font-size: 0.68rem; color: #64748b; font-weight: 700; white-space: nowrap;">Lv.${c.level}</span>`)}
                     </div>
-                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem;">
-                        <span style="font-size: 0.78rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(c.job)}</span>
+                    <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.15rem; line-height: 1.15;">
+                        <span style="font-size: 0.74rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(c.job)}</span>
                         ${scrollTag}
                     </div>
                 </div>
