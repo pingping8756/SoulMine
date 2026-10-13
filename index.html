@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=189">
+    <link rel="stylesheet" href="style.css?v=194">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -394,8 +394,11 @@
                         <span id="survey-total-respondents" style="font-size: 0.82rem; background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; padding: 0.2rem 0.65rem; border-radius: 12px; font-weight: 800; white-space: nowrap;">已回覆 0 人</span>
                     </div>
 
-                    <!-- Right Side: 複製統整文字 + 關閉按鈕 -->
+                    <!-- Right Side: 智能排班按鈕 + 複製統整文字 + 關閉按鈕 -->
                     <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <button type="button" id="btn-modal-trigger-smart-schedule" class="btn-primary btn-smart-schedule-trigger" style="font-size: 0.84rem; padding: 0.3rem 0.85rem; background: linear-gradient(135deg, #7c3aed, #ea580c); color: #ffffff; border: none; border-radius: 6px; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap; box-shadow: 0 2px 8px rgba(124, 58, 237, 0.25);">
+                            ✨ 智能自動排班
+                        </button>
                         <button type="button" id="btn-copy-survey-text" class="btn-secondary" style="font-size: 0.84rem; padding: 0.3rem 0.8rem; background: #f8fafc; color: #1e293b; border: 1.5px solid #cbd5e1; border-radius: 6px; font-weight: 700; cursor: pointer; display: flex; align-items: center; gap: 0.35rem; white-space: nowrap;">
                             📋 複製時段統整文字
                         </button>
@@ -593,6 +596,71 @@
         </div>
     </div>
 
+    <!-- Smart Schedule Member Picker Modal (點選入座專用彈窗，純點選操作) -->
+    <div id="smart-sched-picker-modal" class="modal-overlay" style="display:none; z-index: 1060;">
+        <div class="glass-card modal-content" style="max-width: 540px; width: 92%; max-height: 85vh; padding: 1.2rem; display: flex; flex-direction: column; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); color: #0f172a; border-radius: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.5rem;">
+                <div>
+                    <h3 style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: 900; display: flex; align-items: center; gap: 0.4rem;">
+                        <span id="smart-picker-title">🎯 挑選入座成員</span>
+                    </h3>
+                    <div id="smart-picker-subtitle" style="font-size: 0.78rem; color: #64748b; font-weight: 600; margin-top: 0.2rem;">
+                        時段：-- ｜ 席位：--
+                    </div>
+                </div>
+                <button type="button" id="btn-close-smart-picker-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.1rem 0.4rem;">&times;</button>
+            </div>
+
+            <!-- Search Filter Inside Picker -->
+            <div style="margin-bottom: 0.55rem;">
+                <input type="text" id="smart-picker-search" placeholder="🔍 搜尋 ID / 職業..." style="width: 100%; padding: 0.4rem 0.65rem; border-radius: 6px; border: 1.5px solid #cbd5e1; font-size: 0.85rem; font-weight: 600; box-sizing: border-box;">
+            </div>
+
+            <!-- Candidate List Container -->
+            <div id="smart-picker-candidates-list" style="flex: 1; min-height: 0; overflow-y: auto; padding-right: 0.2rem; display: flex; flex-direction: column; gap: 0.4rem;">
+                <!-- Populated dynamically via JS -->
+            </div>
+
+            <!-- Footer Action -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.6rem; padding-top: 0.5rem; border-top: 1.5px solid #e2e8f0;">
+                <button type="button" id="btn-smart-picker-clear-slot" class="btn-secondary" style="font-size: 0.82rem; padding: 0.35rem 0.85rem; background: #fff1f2; color: #e11d48; border-color: #fecdd3; font-weight: 800;">
+                    ✕ 清空此席位
+                </button>
+                <button type="button" id="btn-close-smart-picker" class="btn-secondary" style="padding: 0.35rem 1.1rem; font-size: 0.85rem; font-weight: 700;">
+                    關閉
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Character Select Modal (點選下方成員快速選擇出戰角色入座) -->
+    <div id="smart-char-quick-select-modal" class="modal-overlay" style="display:none; z-index: 1070; align-items: center; justify-content: center;">
+        <div class="glass-card modal-content" style="max-width: 440px; width: 92%; padding: 1.3rem; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35); color: #0f172a; border-radius: 14px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.4rem;">
+                <h3 id="smart-char-modal-title" style="margin: 0; font-size: 1.15rem; color: #0f172a; font-weight: 800;">🎯 選擇出戰角色</h3>
+                <button type="button" id="btn-close-smart-char-modal-x" style="background: none; border: none; color: #64748b; font-size: 1.5rem; cursor: pointer; line-height: 1; padding: 0.1rem 0.4rem;">&times;</button>
+            </div>
+            <p id="smart-char-modal-subtitle" style="font-size: 0.82rem; color: #64748b; font-weight: 600; margin: 0 0 0.8rem 0;">請選擇要排入此時段的角色：</p>
+            <div id="smart-char-modal-cards-list" style="display: flex; flex-direction: column; gap: 0.45rem; max-height: 55vh; overflow-y: auto; padding-right: 2px;">
+                <!-- Dynamically populated via JS -->
+            </div>
+            <div style="margin-top: 0.8rem; text-align: right;">
+                <button type="button" id="btn-close-smart-char-modal" class="btn-secondary" style="padding: 0.35rem 1.1rem; font-size: 0.85rem; border-radius: 6px; font-weight: 700;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Mini Role Picker Popover (點選上方席位定位標籤浮動切換) -->
+    <div id="smart-mini-role-popover" style="display: none; position: fixed; z-index: 99999; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; box-shadow: 0 12px 32px rgba(0,0,0,0.22); padding: 0.55rem; width: 220px; box-sizing: border-box;">
+        <div style="font-size: 0.76rem; font-weight: 800; color: #64748b; margin-bottom: 0.4rem; border-bottom: 1px solid #f1f5f9; padding-bottom: 0.25rem; display: flex; justify-content: space-between; align-items: center;">
+            <span>🏷️ 選擇席位定位</span>
+            <span style="font-size: 0.7rem; color: #94a3b8; cursor: pointer;" onclick="window.closeMiniRolePopover()">✕ 關閉</span>
+        </div>
+        <div id="smart-mini-role-options" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.3rem;">
+            <!-- Rendered dynamically -->
+        </div>
+    </div>
+
     <div class="app-container" id="main-app">
         <header class="app-header">
             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.8rem; margin-bottom: 0.8rem;">
@@ -613,7 +681,8 @@
                 <button class="tab-btn active" data-target="tab-survey">1. 時間調查</button>
                 <button class="tab-btn" data-target="tab-recruit">2. 突襲王專區</button>
                 <button class="tab-btn" data-target="tab-status">3. 出團看板</button>
-                <button class="tab-btn" data-target="tab-changelog">4. 更新日誌</button>
+                <button class="tab-btn tab-admin-only" id="tab-btn-smart-schedule" data-target="tab-smart-schedule" style="display: none; background: linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(249, 115, 22, 0.15)); border-color: #c084fc; color: #a855f7;">✨ 4. 全週智能排班</button>
+                <button class="tab-btn" data-target="tab-changelog">5. 更新日誌</button>
             </nav>
         </header>
 
@@ -636,6 +705,9 @@
                             </div>
                         </div>
                         <div class="survey-h-top-actions">
+                            <button type="button" id="btn-trigger-smart-schedule" class="btn-open-detail btn-smart-schedule-trigger" style="background: linear-gradient(135deg, #7c3aed, #ea580c); box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3);">
+                                <span>✨ 智能自動排班</span>
+                            </button>
                             <button type="button" id="btn-open-survey-detail" class="btn-open-detail">
                                 <span>👥 查看成員名單明細</span>
                                 <span id="survey-count-pill" class="detail-count-badge">0人填寫</span>
@@ -756,7 +828,74 @@
                 </div>
             </section>
 
-            <!-- Tab 3: Changelog -->
+            <!-- Tab 4: Smart Schedule (全週智能排班工作台) -->
+            <section id="tab-smart-schedule" class="tab-content">
+                <div class="glass-card smart-schedule-card">
+                    <!-- Header Bar -->
+                    <div class="smart-sched-header">
+                        <div class="smart-sched-title-wrap">
+                            <h2 class="smart-sched-title">
+                                <span>✨ 全週智能排班工作台</span>
+                                <span class="admin-badge-pill">👑 管理員專屬</span>
+                            </h2>
+                            <div class="smart-sched-week-picker">
+                                <label for="smart-sched-week-select" style="font-weight: 800; font-size: 0.86rem; color: #1e293b; white-space: nowrap;">📅 排班週次：</label>
+                                <select id="smart-sched-week-select" class="smart-sched-select-input">
+                                    <!-- Populated dynamically via JS -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Action Buttons Bar -->
+                        <div class="smart-sched-actions-bar">
+                            <button type="button" id="btn-smart-sched-auto-assign" class="btn-primary btn-gradient-purple" title="根據填寫時間與核心職業(火/眼/法)智能排定最佳出團">
+                                <span>🤖 一鍵智慧排隊伍</span>
+                            </button>
+                            <button type="button" id="btn-smart-sched-clear" class="btn-secondary" style="font-size: 0.84rem; padding: 0.4rem 0.85rem; background: #fff1f2; color: #e11d48; border-color: #fecdd3; font-weight: 800;">
+                                <span>🧹 清空排班</span>
+                            </button>
+                            <button type="button" id="btn-smart-sched-copy-summary" class="btn-secondary" style="font-size: 0.84rem; padding: 0.4rem 0.85rem; font-weight: 800;">
+                                <span>📋 複製總出團表</span>
+                            </button>
+                            <button type="button" id="btn-smart-sched-publish-all" class="btn-primary" style="font-size: 0.88rem; padding: 0.42rem 1.1rem; background: #16a34a; font-weight: 800; box-shadow: 0 2px 10px rgba(22, 163, 74, 0.3);">
+                                <span>🚀 一鍵發布至看板</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Statistics Summary Banner -->
+                    <div class="smart-sched-stats-banner">
+                        <div class="stats-item">
+                            <span class="stats-label">本週填寫人數</span>
+                            <span id="smart-stat-total-respondents" class="stats-val">0 人</span>
+                        </div>
+                        <div class="stats-item">
+                            <span class="stats-label">已排入總席位</span>
+                            <span id="smart-stat-total-slots" class="stats-val">0 席</span>
+                        </div>
+                        <div class="stats-item">
+                            <span class="stats-label">每人保底覆蓋率</span>
+                            <span id="smart-stat-coverage" class="stats-val" style="color: #16a34a;">0%</span>
+                        </div>
+                        <div class="stats-item">
+                            <span class="stats-label">吃券成員雙開率</span>
+                            <span id="smart-stat-scroll-rate" class="stats-val" style="color: #ea580c;">0%</span>
+                        </div>
+                        <div id="smart-sched-conflict-alert" class="smart-sched-conflict-tag" style="display: none;">
+                            ⚠️ 發現排班衝突：請檢查紅字/紅底警示！
+                        </div>
+                    </div>
+
+                    <!-- Main Matrix Workspace: Full-width table mimicking Excel/Sheet (上方排人 6席/12席 + 席位角色標籤，中間時段表頭與Boss，下方填寫名冊與人數統計) -->
+                    <div class="smart-matrix-workspace">
+                        <div id="smart-sched-matrix-table-container" class="smart-sched-matrix-scroll">
+                            <!-- Populated dynamically via JS: Vertical columns (Slots/Days) x Rows (Top Assigned Squads, Middle Dates, Bottom Member Availability) -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Tab 5: Changelog -->
             <section id="tab-changelog" class="tab-content">
                 <div class="glass-card">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 0.5rem;">
@@ -794,6 +933,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=189" defer></script>
+    <script src="app.js?v=194" defer></script>
 </body>
 </html>

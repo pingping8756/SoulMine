@@ -3304,3 +3304,505 @@ body::after {
     margin: -0.22rem -0.35rem 0.15rem -0.35rem;
     text-align: center;
 }
+
+/* ========================================================
+   Tab 4: Smart Schedule (全週智能排班工作台樣式)
+   ======================================================== */
+.smart-schedule-card {
+    background: #ffffff !important;
+    border-radius: 14px;
+    border: 1.5px solid #cbd5e1;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    padding: 1.1rem 1.3rem;
+    color: #0f172a;
+    width: 100%;
+    max-width: 1380px;
+    margin: 0 auto;
+}
+
+.smart-sched-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    padding-bottom: 0.65rem;
+    border-bottom: 1.5px solid #e2e8f0;
+}
+.smart-sched-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+}
+.smart-sched-title {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 900;
+    color: #0f172a;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.admin-badge-pill {
+    font-size: 0.76rem;
+    font-weight: 800;
+    background: #fdf4ff;
+    color: #9333ea;
+    border: 1px solid #f0abfc;
+    padding: 0.15rem 0.55rem;
+    border-radius: 12px;
+}
+.smart-sched-week-picker {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: #f8fafc;
+    border: 1.5px solid #cbd5e1;
+    padding: 0.22rem 0.6rem;
+    border-radius: 6px;
+}
+.smart-sched-select-input {
+    padding: 0.22rem 0.55rem;
+    font-size: 0.85rem;
+    font-weight: 700;
+    border-radius: 5px;
+    border: 1px solid #94a3b8;
+    background: #ffffff;
+    color: #0f172a;
+    cursor: pointer;
+}
+
+.smart-sched-actions-bar {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+.btn-gradient-purple {
+    background: linear-gradient(135deg, #7c3aed 0%, #ea580c 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    font-weight: 800 !important;
+    box-shadow: 0 3px 10px rgba(124, 58, 237, 0.3) !important;
+}
+
+/* Statistics Banner */
+.smart-sched-stats-banner {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    background: #f8fafc;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 0.5rem 0.9rem;
+    margin: 0.7rem 0 0.85rem 0;
+}
+.smart-sched-stats-banner .stats-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.84rem;
+}
+.smart-sched-stats-banner .stats-label {
+    font-weight: 700;
+    color: #64748b;
+}
+.smart-sched-stats-banner .stats-val {
+    font-weight: 900;
+    color: #0f172a;
+    font-size: 0.95rem;
+}
+.smart-sched-conflict-tag {
+    margin-left: auto;
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1.5px solid #fca5a5;
+    padding: 0.2rem 0.65rem;
+    border-radius: 6px;
+    font-weight: 800;
+    font-size: 0.82rem;
+    animation: pulse 1.5s infinite;
+}
+
+/* Workspace Layout: Left Pool (290px) + Right Board (1fr) */
+/* ========================================================
+   Vertical Matrix Spreadsheet Styles (上方排人，中間日期Boss，下方名單可打時間)
+   ======================================================== */
+.smart-matrix-workspace {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.smart-sched-matrix-scroll {
+    width: 100%;
+    overflow-x: auto;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.smart-matrix-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.86rem;
+    color: #0f172a;
+    table-layout: auto;
+}
+
+.smart-matrix-table th,
+.smart-matrix-table td {
+    border-right: 1px solid #e2e8f0;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.35rem 0.5rem;
+    text-align: center;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+/* Sticky First Column: Slot number or Member name */
+.smart-matrix-table .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background: #ffffff;
+    font-weight: 800;
+    min-width: 80px;
+    max-width: 95px;
+    width: 85px;
+    text-align: center;
+    border-right: 2px solid #cbd5e1 !important;
+}
+
+/* Sticky top sections */
+.smart-matrix-table thead th {
+    z-index: 11;
+}
+
+/* Section Header Separator Rows */
+.smart-matrix-section-title-row td {
+    background: #f1f5f9;
+    color: #334155;
+    font-weight: 900;
+    font-size: 0.82rem;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+    border-top: 2px solid #94a3b8;
+    border-bottom: 1.5px solid #cbd5e1;
+}
+
+/* 1. Very Top Section: Date & Period Header */
+.smart-matrix-date-row th,
+.smart-matrix-date-row td {
+    background: #f8fafc;
+    font-weight: 900;
+    font-size: 0.88rem;
+    color: #0f172a;
+    padding: 0.45rem 0.4rem;
+    border-bottom: 1px solid #cbd5e1;
+}
+.smart-matrix-date-row .sticky-col {
+    background: #e2e8f0;
+    color: #0f172a;
+    font-weight: 900;
+}
+.smart-matrix-date-weekend {
+    background: #fff7ed !important;
+    color: #c2410c !important;
+}
+
+/* 2. Boss Selector Row directly under Date (Top of Table) */
+.smart-matrix-boss-row td {
+    background: #ffffff;
+    padding: 0.35rem 0.4rem;
+    border-bottom: 2px solid #94a3b8;
+}
+.smart-matrix-boss-row .sticky-col {
+    background: #f1f5f9;
+    font-size: 0.82rem;
+    color: #334155;
+    font-weight: 800;
+}
+
+.smart-matrix-boss-select {
+    width: 100%;
+    padding: 0.25rem 0.3rem;
+    font-size: 0.82rem;
+    font-weight: 800;
+    border-radius: 6px;
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #0f172a;
+    cursor: pointer;
+    box-sizing: border-box;
+    text-align: center;
+}
+.smart-matrix-boss-select:focus {
+    border-color: #7c3aed;
+    outline: none;
+}
+
+/* 3. Top Section: Assigned Slots Chips (直立席位) */
+.smart-matrix-assigned-row td {
+    background: #ffffff;
+    padding: 0.25rem 0.3rem;
+    min-height: 42px;
+}
+.smart-matrix-assigned-row:hover td {
+    background: #faf5ff;
+}
+.smart-matrix-assigned-row .sticky-col {
+    background: #f8fafc;
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 800;
+}
+
+/* Cell chip in top section - Compact 2-line layout */
+.smart-matrix-chip-cell {
+    min-width: 120px;
+    max-width: 145px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border-radius: 6px;
+    padding: 0.25rem 0.4rem;
+    user-select: none;
+    box-sizing: border-box;
+}
+.smart-matrix-chip-cell.empty-slot {
+    border: 1px dashed #cbd5e1;
+    background: #f8fafc;
+    color: #94a3b8;
+    font-size: 0.76rem;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.smart-matrix-chip-cell.empty-slot:hover {
+    border-color: #7c3aed;
+    background: #f3e8ff;
+    color: #6b21a8;
+}
+.smart-matrix-chip-cell.filled-slot {
+    border: 1.5px solid #94a3b8;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+.smart-matrix-chip-cell.filled-slot:hover {
+    border-color: #ef4444;
+    background: #fff1f2;
+}
+.smart-matrix-chip-cell.has-conflict {
+    border-color: #ef4444 !important;
+    background: #fef2f2 !important;
+}
+
+/* Line 1 inside Chip: Role tag + Name + Cancel X */
+.smart-chip-line1 {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.25rem;
+    line-height: 1.2;
+}
+
+.smart-role-pill {
+    font-size: 0.68rem;
+    padding: 0.06rem 0.3rem;
+    border-radius: 4px;
+    border: 1px solid #cbd5e1;
+    background: #f1f5f9;
+    color: #475569;
+    font-weight: 800;
+    cursor: pointer;
+    flex-shrink: 0;
+    user-select: none;
+    transition: all 0.12s ease;
+}
+.smart-role-pill:hover {
+    border-color: #7c3aed;
+    background: #f5f3ff;
+    color: #6d28d9;
+}
+.smart-role-pill.has-role {
+    background: #ede9fe;
+    border-color: #c4b5fd;
+    color: #6d28d9;
+}
+
+.smart-cell-char-name {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #0f172a;
+    flex: 1;
+    text-align: left;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-left: 0.15rem;
+}
+.smart-cell-char-name.text-conflict {
+    color: #dc2626 !important;
+}
+
+.smart-chip-cancel-btn {
+    font-size: 0.72rem;
+    color: #94a3b8;
+    padding: 0 0.15rem;
+    cursor: pointer;
+    transition: color 0.12s;
+    flex-shrink: 0;
+}
+.smart-chip-cancel-btn:hover {
+    color: #ef4444;
+    font-weight: 900;
+}
+
+/* Line 2 inside Chip: Job & Level */
+.smart-chip-line2 {
+    font-size: 0.72rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.2rem;
+    margin-top: 2px;
+}
+
+/* 4. Bottom Section: Members Availability Rows (下方名冊填寫時間) */
+.smart-matrix-avail-row td {
+    background: #ffffff;
+    padding: 0.22rem 0.35rem;
+    font-size: 0.82rem;
+    color: #334155;
+    height: 32px;
+}
+.smart-matrix-avail-row:hover td {
+    background: #f8fafc;
+}
+.smart-matrix-avail-row .sticky-col {
+    background: #ffffff;
+    text-align: left;
+    padding-left: 0.5rem;
+    font-weight: 800;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    height: 100%;
+}
+.smart-matrix-avail-row.member-conflict .sticky-col,
+.smart-matrix-avail-row.member-conflict td {
+    background: #fff1f2 !important;
+}
+
+/* Clickable Cell in Member Availability Rows (點擊成員自動往上排) */
+.smart-avail-clickable-cell {
+    cursor: pointer;
+    padding: 0.16rem 0.45rem;
+    border-radius: 6px;
+    background: #f8fafc;
+    border: 1px solid #cbd5e1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.25rem;
+    transition: all 0.15s ease;
+    width: 90%;
+    box-sizing: border-box;
+}
+.smart-avail-clickable-cell:hover {
+    background: #f0fdf4;
+    border-color: #22c55e;
+    color: #15803d;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(34, 197, 94, 0.2);
+}
+.smart-avail-name-text {
+    font-weight: 800;
+    font-size: 0.82rem;
+    color: #0f172a;
+}
+.smart-avail-add-icon {
+    font-size: 0.72rem;
+    opacity: 0.7;
+    transition: transform 0.12s;
+}
+.smart-avail-clickable-cell:hover .smart-avail-add-icon {
+    opacity: 1;
+    transform: scale(1.15);
+}
+
+.smart-avail-assigned-marker {
+    background: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #cbd5e1;
+    font-weight: 800;
+    font-size: 0.74rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 4px;
+    display: inline-block;
+}
+.smart-avail-empty-marker {
+    color: #cbd5e1;
+    font-size: 0.75rem;
+}
+
+/* 5. Bottom Total Count Row */
+.smart-matrix-total-row td {
+    background: #f8fafc;
+    font-weight: 900;
+    font-size: 0.92rem;
+    color: #0f172a;
+    border-top: 2px solid #cbd5e1;
+    padding: 0.4rem 0.5rem;
+}
+.smart-matrix-total-row .sticky-col {
+    background: #e2e8f0;
+    color: #0f172a;
+    font-size: 0.84rem;
+}
+
+/* Mini Role Picker Popover Buttons */
+.smart-mini-role-btn {
+    padding: 0.32rem 0.4rem;
+    font-size: 0.78rem;
+    font-weight: 800;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+    background: #f8fafc;
+    color: #1e293b;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.12s;
+}
+.smart-mini-role-btn:hover {
+    background: #eff6ff;
+    border-color: #3b82f6;
+    color: #1d4ed8;
+}
+
+/* Quick Character Select Modal button cards */
+.smart-char-pick-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.55rem 0.75rem;
+    border-radius: 8px;
+    border: 1.5px solid #e2e8f0;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    text-align: left;
+    width: 100%;
+    box-sizing: border-box;
+}
+.smart-char-pick-btn:hover {
+    border-color: #2563eb;
+    background: #eff6ff;
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.15);
+}
