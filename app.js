@@ -8333,7 +8333,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 在排班時段右上角點擊「+」新增 B 隊 (第二隊，可打不同突襲)
     window.addSmartSlotSquadB = function(slotKey) {
         if (!isAdmin()) {
-            alert('全週智能排班為管理員專屬功能，請先登入管理員！');
+            alert('全週排班為管理員專屬功能，請先登入管理員！');
             return;
         }
         if (!smartSchedState.squadsByDaySlot[slotKey]) {
@@ -8356,7 +8356,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 移除 B 隊 (第二隊)
     window.removeSmartSlotSquadB = function(slotKey) {
         if (!isAdmin()) {
-            alert('全週智能排班為管理員專屬功能，請先登入管理員！');
+            alert('全週排班為管理員專屬功能，請先登入管理員！');
             return;
         }
         const currentSquads = smartSchedState.squadsByDaySlot[slotKey] || [];
@@ -8401,7 +8401,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // 點選下方成員可打時間：跑出綁定角色，選擇後自動往上排 (可指定排入 A 隊或 B 隊)
     window.clickSmartAvailMember = function(memberName, slotKey, targetSquadIdx) {
         if (!isAdmin()) {
-            alert('全週智能排班為管理員專屬功能，請先登入管理員！');
+            alert('全週排班為管理員專屬功能，請先登入管理員！');
             return;
         }
 
@@ -8511,22 +8511,27 @@ document.addEventListener('DOMContentLoaded', () => {
         const boss = getSmartSlotBoss(slotKey, targetSquadIdx);
         const sqName = (typeof targetSquadIdx === 'number' && targetSquadIdx === 1) ? ' ｜ 隊伍：B隊' : (typeof targetSquadIdx === 'number' ? ' ｜ 隊伍：A隊' : '');
 
-        if (titleEl) titleEl.textContent = `🎯 選擇出戰角色：${memberName}`;
+        if (titleEl) titleEl.textContent = `選擇出戰角色：${memberName}`;
         if (subtitleEl) subtitleEl.textContent = `時段：${slotKey}${sqName} ｜ 討伐 Boss：${boss}`;
 
         if (listContainer) {
             listContainer.innerHTML = boundChars.map(c => {
                 const jobColor = getHighContrastJobColor(c.job);
                 const normJob = normalizeJobName(c.job);
+                const charRoleTag = stripRoleIcon(getSmartRoleTagForJob(normJob)) || '打手';
+                const charDisplayName = (c.id && c.id.toLowerCase() !== memberName.toLowerCase())
+                    ? `${c.id} (${memberName})`
+                    : (c.id || memberName);
                 return `
-                    <button type="button" class="smart-char-pick-btn" onclick="window.confirmPickCharFromModal('${escapeHtml(slotKey)}', '${encodeURIComponent(memberName)}', '${encodeURIComponent(normJob)}', ${c.level || 120}, '${encodeURIComponent(roleTag)}', ${typeof targetSquadIdx === 'number' ? targetSquadIdx : 0})">
+                    <button type="button" class="smart-char-pick-btn" onclick="window.confirmPickCharFromModal('${escapeHtml(slotKey)}', '${encodeURIComponent(memberName)}', '${encodeURIComponent(normJob)}', ${c.level || 120}, '${encodeURIComponent(charRoleTag)}', ${typeof targetSquadIdx === 'number' ? targetSquadIdx : 0})">
                         <div style="display: flex; align-items: baseline; gap: 0.55rem;">
                             <span style="font-size: 0.92rem; font-weight: 800; color: ${jobColor};">${escapeHtml(normJob)}</span>
-                            <strong style="font-size: 1.02rem; color: #0f172a;">${escapeHtml(memberName)}</strong>
+                            <strong style="font-size: 1.02rem; color: #0f172a;">${escapeHtml(charDisplayName)}</strong>
                             <span style="font-size: 0.8rem; color: #64748b; font-weight: 700;">Lv.${c.level}</span>
                         </div>
-                        <div>
-                            ${roleTag ? `<span class="smart-role-pill has-role">${escapeHtml(roleTag)}</span>` : '<span style="font-size: 0.78rem; color: #2563eb; font-weight: 700;">選擇入座 ➔</span>'}
+                        <div style="display: flex; align-items: center; gap: 0.35rem;">
+                            <span class="smart-role-pill has-role">${escapeHtml(charRoleTag)}</span>
+                            <span style="font-size: 0.78rem; color: #2563eb; font-weight: 700;">選擇入座 ➔</span>
                         </div>
                     </button>
                 `;
@@ -8535,6 +8540,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (modal) modal.style.display = 'flex';
     }
+    window.openSmartCharQuickSelectModal = openSmartCharQuickSelectModal;
 
     window.confirmPickCharFromModal = function(slotKey, encName, encJob, level, encRole, targetSquadIdx) {
         const memberName = decodeURIComponent(encName);
@@ -8906,7 +8912,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
                     creator: creatorName,
                     creatorClientId: myClientId,
-                    note: `【全週智能排班】自動發布隊伍${team.squadLetter}`,
+                    note: `【全週排班】自動發布隊伍${team.squadLetter}`,
                     slotRoles: slotRolesMap,
                     isConfirmed: false,
                     members: finalMembers,
