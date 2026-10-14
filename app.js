@@ -5213,7 +5213,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 teamsCount: teamsCount,
                 isOngoing: isOngoing,
                 isExpired: isExpired,
-                label: `📅 ${tue.getMonth() + 1}/${tue.getDate()}(二) ～ ${mon.getMonth() + 1}/${mon.getDate()}(一)${tag} (${teamsCount}隊)`,
+                label: `${tue.getMonth() + 1}/${tue.getDate()}(二) ～ ${mon.getMonth() + 1}/${mon.getDate()}(一)${tag} (${teamsCount}隊)`,
                 shortLabel: `${tue.getMonth() + 1}/${tue.getDate()}(二) ~ ${mon.getMonth() + 1}/${mon.getDate()}(一)`
             });
         });
@@ -5235,43 +5235,53 @@ document.addEventListener('DOMContentLoaded', () => {
         return [...activeWeeks, ...expiredWeeks];
     }
 
-    window.openConfirmedReportModal = function() {
-        const modal = document.getElementById('confirmed-report-modal');
-        if (!modal) return;
-        modal.style.display = 'flex';
+    function initConfirmedReportWeekSelect() {
+        const selectEl = document.getElementById('confirmed-report-week-select');
+        if (!selectEl) return;
 
         const weekOptions = getConfirmedReportWeekOptions();
         if (!currentConfirmedReportWeekId || !weekOptions.some(o => o.weekId === currentConfirmedReportWeekId)) {
-            // Default to the first option (ongoing week with confirmed teams, or nearest active week)
-            currentConfirmedReportWeekId = weekOptions[0] ? weekOptions[0].weekId : '';
+            const ongoingOpt = weekOptions.find(o => o.isOngoing);
+            currentConfirmedReportWeekId = ongoingOpt ? ongoingOpt.weekId : (weekOptions[0] ? weekOptions[0].weekId : '');
         }
 
-        const selectEl = document.getElementById('confirmed-report-week-select');
-        if (selectEl) {
-            selectEl.innerHTML = weekOptions.map(o => `
-                <option value="${escapeHtml(o.weekId)}" ${o.weekId === currentConfirmedReportWeekId ? 'selected' : ''}>
-                    ${escapeHtml(o.label)}
-                </option>
-            `).join('');
+        const html = weekOptions.map(o => `
+            <option value="${escapeHtml(o.weekId)}" ${o.weekId === currentConfirmedReportWeekId ? 'selected' : ''}>
+                ${escapeHtml(o.label)}
+            </option>
+        `).join('');
 
-            selectEl.onchange = function() {
-                currentConfirmedReportWeekId = this.value;
-                renderConfirmedReportTable();
-            };
+        if (selectEl.innerHTML !== html) {
+            selectEl.innerHTML = html;
         }
+        selectEl.value = currentConfirmedReportWeekId;
 
-        renderConfirmedReportTable();
+        selectEl.onchange = function() {
+            currentConfirmedReportWeekId = this.value;
+            renderConfirmedReportTable();
+        };
+    }
+    window.initConfirmedReportWeekSelect = initConfirmedReportWeekSelect;
+
+    window.openConfirmedReportModal = function() {
+        const statusTabBtn = document.querySelector('.tab-btn[data-target="tab-status"]');
+        if (statusTabBtn) statusTabBtn.click();
+        const container = document.getElementById('confirmed-report-table-container');
+        if (container) {
+            container.scrollIntoView({ behavior: 'smooth' });
+        }
     };
 
     window.closeConfirmedReportModal = function() {
-        const modal = document.getElementById('confirmed-report-modal');
-        if (modal) modal.style.display = 'none';
+        // no-op (confirmed report is embedded directly into tab-status)
     };
 
     function renderConfirmedReportTable() {
         const container = document.getElementById('confirmed-report-table-container');
         const badgeEl = document.getElementById('confirmed-report-total-badge');
         if (!container) return;
+
+        initConfirmedReportWeekSelect();
 
         const weekOptions = getConfirmedReportWeekOptions();
         if (!currentConfirmedReportWeekId) {
@@ -5402,25 +5412,42 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
         }).join('');
 
-        // Header Row 2: Raid (突襲綽號) and Time (時間) directly under date
+        // Header Row 2: Raid (Boss 名稱與時間同一行，無 icon) + Channel & Dice (無鎖定按鈕)
         const headerTeamsThs = weekDays.map((wd, dIdx) => {
             const teams = dayTeams[dIdx];
             if (teams.length === 0) {
                 return `<th class="col-empty-team-header"><span style="color:#94a3b8; font-weight:normal;">無出團</span></th>`;
             }
             return teams.map((team) => {
+                const actualTeamIdx = confirmedTeams.indexOf(team);
                 const boss = normalizeBossName(team.boss || '');
-                const bossIcon = getBossBadgeIcon(boss);
                 const bossNick = getBossNickname(boss);
                 const gamesStr = team.gamesCount ? ` ${team.gamesCount}場` : '';
                 const timeStr = team.timeText ? (team.timeText.match(/\d{1,2}:\d{2}/) ? team.timeText.match(/\d{1,2}:\d{2}/)[0] : '') : '';
-                const channelStr = team.finalChannel ? `(${team.finalChannel}頻)` : (team.channels && team.channels !== '未指定' ? `(${team.channels}頻)` : '');
                 const noteHtml = team.note ? `<div class="report-team-note" title="${escapeHtml(team.note)}">📝 ${escapeHtml(team.note)}</div>` : '';
 
+                // Channel value (無鎖定按鈕，有號碼就顯示)
+                const currentCh = team.finalChannel || (team.rolledChannels && team.rolledChannels[0]) || (team.channels && team.channels !== '未指定' ? parseInt(team.channels) : '') || (Math.floor(Math.random() * 2000) + 1);
+                if (!team.finalChannel) {
+                    team.finalChannel = currentCh;
+                    team.channels = String(currentCh);
+                    if (!team.rolledChannels || !Array.isArray(team.rolledChannels)) {
+                        team.rolledChannels = [currentCh];
+                    }
+                }
+
                 return `
-                    <th class="col-team-header" title="${escapeHtml(boss)}${gamesStr}">
-                        <div class="report-team-title">${bossIcon} ${bossNick}${gamesStr}</div>
-                        <div class="report-team-time">⏰ ${timeStr} <span class="report-team-ch">${channelStr}</span></div>
+                    <th class="col-team-header" title="${escapeHtml(boss)}${gamesStr} ${timeStr}">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 0.3rem; white-space: nowrap; line-height: 1.25;">
+                            <span class="report-team-title" style="font-weight: 800; font-size: 0.82rem; color: #1e3a8a; white-space: nowrap;">
+                                ${bossNick}${gamesStr}
+                            </span>
+                            ${timeStr ? `<span style="font-weight: 800; font-size: 0.78rem; color: #ea580c; background: #fff7ed; padding: 1px 5px; border-radius: 4px; border: 1px solid #fed7aa; white-space: nowrap; flex-shrink: 0; line-height: 1.2;">${timeStr}</span>` : ''}
+                        </div>
+                        <div class="report-channel-box" style="margin-top: 0.32rem; display: flex; align-items: center; justify-content: center; gap: 0.28rem;">
+                            <input type="number" min="1" max="2000" class="report-channel-input" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" style="width: 60px; padding: 2px 4px; font-size: 0.85rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 800; color: #1e293b; background: #ffffff;">
+                            <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" title="隨機骰頻道" style="padding: 1px 5px; font-size: 0.88rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2;">🎲</button>
+                        </div>
                         ${noteHtml}
                     </th>
                 `;
@@ -5498,18 +5525,55 @@ document.addEventListener('DOMContentLoaded', () => {
             rowsHtml += `<tr class="report-slot-row">${rowCells}</tr>`;
         }
 
-        // Footer Row: Squad capacity counts
+        // Footer Row: Squad capacity counts + Action buttons (複製/編輯/刪除 同一行無icon) OR Historical Drop Records (過期只要掉寶紀錄)
         const footerTds = weekDays.map((wd, dIdx) => {
             const teams = dayTeams[dIdx];
             if (teams.length === 0) {
                 return `<td class="col-empty-team-header" style="text-align:center; font-size:0.78rem; color:#94a3b8; font-weight:700;">-</td>`;
             }
             return teams.map(team => {
+                const actualTeamIdx = confirmedTeams.indexOf(team);
                 const members = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
                 const maxCap = isDragonKingBoss(team.boss) ? 12 : 6;
+                const now = Date.now();
+                const teamTimestamp = getTeamTimestamp(team);
+                const isHistory = !!team.isHistorical || (teamTimestamp > 0 && now > teamTimestamp);
+
+                if (isHistory) {
+                    return `
+                        <td style="text-align:center; padding:0.45rem 0.2rem; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
+                            <div style="font-weight: 800; font-size: 0.82rem; color: #64748b; margin-bottom: 0.35rem; white-space: nowrap;">
+                                <span>👥 ${members.length} / ${maxCap} 人</span>
+                            </div>
+                            <!-- 過期隊伍：不需要三個按鈕，只要掉寶紀錄 -->
+                            <div class="report-table-drop-section" style="text-align: left; margin-top: 0.25rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                    <span style="font-size: 0.72rem; font-weight: 800; color: #b45309;">掉寶紀錄</span>
+                                    <button type="button" class="btn-table-save-drop" data-team-index="${actualTeamIdx}" style="font-size: 0.7rem; padding: 1px 5px; background: #16a34a; color: #ffffff; border: none; border-radius: 3px; cursor: pointer; font-weight: 700;">儲存</button>
+                                </div>
+                                <textarea class="report-table-drop-input" data-team-index="${actualTeamIdx}" placeholder="輸入掉寶紀錄..." style="width: 100%; height: 38px; font-size: 0.72rem; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #ffffff; color: #1e293b; font-family: inherit;">${escapeHtml(team.drops || '')}</textarea>
+                            </div>
+                        </td>
+                    `;
+                }
+
                 return `
-                    <td style="text-align:center; padding:0.45rem 0.2rem; font-weight:800; font-size:0.82rem; color:#2563eb; background:#f8fafc;">
-                        <span>👥 ${members.length} / ${maxCap} 人</span>
+                    <td style="text-align:center; padding:0.45rem 0.2rem; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
+                        <div style="font-weight: 800; font-size: 0.82rem; color: #2563eb; margin-bottom: 0.35rem; white-space: nowrap;">
+                            <span>👥 ${members.length} / ${maxCap} 人</span>
+                        </div>
+                        <!-- 複製、編輯、刪除 三個按鈕同一行，無 icon -->
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 3px; white-space: nowrap;">
+                            <button type="button" class="btn-table-copy-team" data-team-index="${actualTeamIdx}" title="複製原班人馬建立新出團" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #2563eb; color: #ffffff; border: none; font-weight: 800; cursor: pointer; white-space: nowrap;">
+                                複製
+                            </button>
+                            <button type="button" class="btn-table-edit-team" data-team-index="${actualTeamIdx}" title="編輯調整成員站位與戰術定位" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #ffffff; color: #2563eb; border: 1px solid #3b82f6; font-weight: 800; cursor: pointer; white-space: nowrap;">
+                                編輯
+                            </button>
+                            <button type="button" class="btn-table-delete-team" data-team-index="${actualTeamIdx}" title="刪除出團紀錄" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #ffffff; color: #dc2626; border: 1px solid #f87171; font-weight: 800; cursor: pointer; white-space: nowrap;">
+                                刪除
+                            </button>
+                        </div>
                     </td>
                 `;
             }).join('');
@@ -5536,6 +5600,109 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tfoot>
             </table>
         `;
+
+        // Bind Reroll Channel Buttons (點擊直接隨機骰並儲存，無鎖定按鈕)
+        container.querySelectorAll('.btn-table-reroll-channel').forEach(btn => {
+            btn.onclick = (e) => {
+                const idx = parseInt(e.currentTarget.dataset.teamIndex);
+                const team = confirmedTeams[idx];
+                if (!team) return;
+                const inputEl = container.querySelector(`.report-channel-input[data-team-index="${idx}"]`);
+                if (!inputEl) return;
+
+                if (btn.dataset.timer) clearInterval(parseInt(btn.dataset.timer));
+
+                let duration = 400;
+                let interval = 40;
+                let elapsed = 0;
+                const timer = setInterval(() => {
+                    const randCh = Math.floor(Math.random() * 2000) + 1;
+                    inputEl.value = randCh;
+                    elapsed += interval;
+                    if (elapsed >= duration) {
+                        clearInterval(timer);
+                        btn.dataset.timer = "";
+                        const val = parseInt(inputEl.value);
+                        team.finalChannel = val;
+                        team.channels = String(val);
+                        team.rolledChannels = [val];
+                        saveDB();
+                    }
+                }, interval);
+                btn.dataset.timer = timer;
+            };
+        });
+
+        // Bind Channel Input manual change
+        container.querySelectorAll('.report-channel-input').forEach(input => {
+            input.onchange = (e) => {
+                const idx = parseInt(e.target.dataset.teamIndex);
+                const team = confirmedTeams[idx];
+                if (!team) return;
+                const val = parseInt(e.target.value);
+                if (val && val >= 1 && val <= 2000) {
+                    team.finalChannel = val;
+                    team.channels = String(val);
+                    team.rolledChannels = [val];
+                    saveDB();
+                }
+            };
+        });
+
+        // Bind Copy Team Buttons
+        container.querySelectorAll('.btn-table-copy-team').forEach(btn => {
+            btn.onclick = (e) => {
+                const idx = parseInt(e.currentTarget.dataset.teamIndex);
+                const team = confirmedTeams[idx];
+                if (team && typeof window.openCreateRaidModal === 'function') {
+                    window.openCreateRaidModal(team.boss, team);
+                }
+            };
+        });
+
+        // Bind Edit Team Buttons
+        container.querySelectorAll('.btn-table-edit-team').forEach(btn => {
+            btn.onclick = (e) => {
+                const idx = parseInt(e.currentTarget.dataset.teamIndex);
+                const team = confirmedTeams[idx];
+                if (team && typeof window.editConfirmedTeam === 'function') {
+                    window.editConfirmedTeam(team);
+                }
+            };
+        });
+
+        // Bind Delete Team Buttons
+        container.querySelectorAll('.btn-table-delete-team').forEach(btn => {
+            btn.onclick = (e) => {
+                const idx = parseInt(e.currentTarget.dataset.teamIndex);
+                const team = confirmedTeams[idx];
+                if (!team) return;
+                if (confirm(`確定要刪除【${team.boss || '出團'}】這筆出團紀錄嗎？`)) {
+                    confirmedTeams.splice(idx, 1);
+                    saveDB();
+                    renderConfirmedTeams();
+                }
+            };
+        });
+
+        // Bind Save Drop Record Buttons
+        container.querySelectorAll('.btn-table-save-drop').forEach(btn => {
+            btn.onclick = (e) => {
+                const idx = parseInt(e.currentTarget.dataset.teamIndex);
+                const team = confirmedTeams[idx];
+                if (!team) return;
+                const textarea = container.querySelector(`.report-table-drop-input[data-team-index="${idx}"]`);
+                if (!textarea) return;
+                team.drops = textarea.value.trim();
+                saveDB();
+                btn.textContent = '已儲存！';
+                btn.style.background = '#22c55e';
+                setTimeout(() => {
+                    btn.textContent = '儲存';
+                    btn.style.background = '#16a34a';
+                }, 1500);
+            };
+        });
     }
 
     window.copyConfirmedReportText = function() {
@@ -5966,9 +6133,9 @@ document.addEventListener('DOMContentLoaded', () => {
             historyContainer.innerHTML = '<p class="empty-state" style="color:var(--text-muted); grid-column: 1 / -1; padding: 1.5rem; text-align: center;">目前沒有歷史出團紀錄。</p>';
         }
 
-        // Auto-refresh confirmed report table if modal is visible
-        const confirmedReportModal = document.getElementById('confirmed-report-modal');
-        if (confirmedReportModal && confirmedReportModal.style.display !== 'none' && typeof renderConfirmedReportTable === 'function') {
+        // Auto-refresh confirmed report table embedded in tab-status
+        if (typeof renderConfirmedReportTable === 'function') {
+            initConfirmedReportWeekSelect();
             renderConfirmedReportTable();
         }
     }
