@@ -157,73 +157,104 @@ function getNextTuesdayReset(timestamp) {
     return target.getTime();
 }
 
+// --- 12 職業單一字簡稱正規化：火、聖、英、弓、弩、鏢、刀、槍、拳、毒、冰、主 ---
+function normalizeJobName(job) {
+    if (!job) return '';
+    const j = String(job).trim();
+    if (j === '毒' || j.includes('毒')) return '毒'; // 火毒 -> 毒 (優先判斷毒)
+    if (j === '火' || j.includes('黑騎士') || j.includes('黑騎') || j.includes('龍騎士') || j.includes('槍騎士')) return '火';
+    if (j === '聖' || j.includes('聖騎士') || j.includes('聖騎') || j.includes('十字軍') || j.includes('見習騎士')) return '聖';
+    if (j === '英' || j.includes('英雄') || j.includes('狂戰士')) return '英';
+    if (j === '弓' || j.includes('箭神') || j.includes('獵人') || j.includes('弓箭手')) return '弓';
+    if (j === '弩' || j.includes('神射手') || j.includes('神射') || j.includes('弩弓手') || j.includes('弩手')) return '弩';
+    if (j === '鏢' || j.includes('夜使者') || j.includes('夜使') || j.includes('鏢賊') || j.includes('標賊') || j.includes('刺客')) return '鏢';
+    if (j === '刀' || j.includes('神偷') || j.includes('暗影神偷') || j.includes('刀賊') || j.includes('俠盜')) return '刀';
+    if (j === '槍' || j.includes('槍神') || j.includes('槍手')) return '槍';
+    if (j === '拳' || j.includes('拳霸') || j.includes('打手')) return '拳';
+    if (j === '冰' || j.includes('冰雷') || j.includes('巫師(冰、雷)')) return '冰';
+    if (j === '主' || j.includes('主教') || j.includes('祭司') || j.includes('僧侶')) return '主';
+    return j;
+}
+window.normalizeJobName = normalizeJobName;
+
+// --- 移除定位/戰術標籤的所有 icon，保持版面乾淨整齊 ---
+function stripRoleIcon(role) {
+    if (!role) return '';
+    return String(role)
+        .replace(/[\u{1F000}-\u{1FAFF}\u{2300}-\u{23FF}\u{2600}-\u{27BF}\u{FE00}-\u{FE0F}\u{200D}]/gu, '')
+        .trim();
+}
+window.stripRoleIcon = stripRoleIcon;
+
 function getJobColor(job) {
     if (!job) return '#ff7518';
-    if (job === '黑騎士' || job === '聖騎士' || job === '英雄') return '#fb923c';
-    if (job === '神射手' || job === '箭神') return '#4ade80';
-    if (job === '神偷' || job === '暗影神偷' || job === '夜使者') return '#38bdf8';
-    if (job === '槍神' || job === '拳霸') return '#e879f9';
-    if (job === '火毒' || job === '冰雷' || job === '主教' || (job && job.includes('魔導士'))) return '#c084fc';
+    const j = normalizeJobName(job);
+    if (['火', '聖', '英'].includes(j)) return '#fb923c';
+    if (['弓', '弩'].includes(j)) return '#4ade80';
+    if (['鏢', '刀'].includes(j)) return '#38bdf8';
+    if (['槍', '拳'].includes(j)) return '#e879f9';
+    if (['毒', '冰', '主'].includes(j)) return '#c084fc';
     return '#ff7518';
 }
 
 function getHighContrastJobColor(job) {
     if (!job) return '#c2410c';
-    if (job === '黑騎士' || job === '聖騎士' || job === '英雄') return '#c2410c';
-    if (job === '神射手' || job === '箭神') return '#15803d';
-    if (job === '神偷' || job === '暗影神偷' || job === '夜使者') return '#0284c7';
-    if (job === '槍神' || job === '拳霸') return '#a21caf';
-    if (job === '火毒' || job === '冰雷' || job === '主教' || (job && job.includes('魔導士'))) return '#7e22ce';
+    const j = normalizeJobName(job);
+    if (['火', '聖', '英'].includes(j)) return '#c2410c';
+    if (['弓', '弩'].includes(j)) return '#15803d';
+    if (['鏢', '刀'].includes(j)) return '#0284c7';
+    if (['槍', '拳'].includes(j)) return '#a21caf';
+    if (['毒', '冰', '主'].includes(j)) return '#7e22ce';
     return '#c2410c';
 }
 
 // --- Character Roster (Ordered by 力職 ➔ 敏職 ➔ 法職) ---
-const CURRENT_ROSTER_VERSION = 5;
+const CURRENT_ROSTER_VERSION = 6;
 const DEFAULT_CHARACTER_ROSTER = [
-    // --- 力職 (10位: 火/黑騎 ➔ 聖騎 ➔ 英雄) ---
-    { id: "Eric", job: "黑騎士", level: 180, category: "力職" },
-    { id: "大鎖", job: "黑騎士", level: 165, category: "力職" },
-    { id: "Ohni", job: "黑騎士", level: 163, category: "力職" },
-    { id: "長吉毛毛娃", job: "黑騎士", level: 158, category: "力職" },
-    { id: "汪德", job: "黑騎士", level: 147, category: "力職" },
-    { id: "漢堡王", job: "黑騎士", level: 145, category: "力職" },
-    { id: "小茵", job: "聖騎士", level: 162, category: "力職" },
-    { id: "小皮", job: "聖騎士", level: 140, category: "力職" },
-    { id: "Eric", job: "英雄", level: 168, category: "力職" },
-    { id: "毛毛蟲", job: "英雄", level: 152, category: "力職" },
+    // --- 力職 (10位: 火 ➔ 聖 ➔ 英) ---
+    { id: "Eric", job: "火", level: 180, category: "力職" },
+    { id: "大鎖", job: "火", level: 165, category: "力職" },
+    { id: "Ohni", job: "火", level: 163, category: "力職" },
+    { id: "長吉毛毛娃", job: "火", level: 158, category: "力職" },
+    { id: "汪德", job: "火", level: 147, category: "力職" },
+    { id: "漢堡王", job: "火", level: 145, category: "力職" },
+    { id: "小茵", job: "聖", level: 162, category: "力職" },
+    { id: "小皮", job: "聖", level: 140, category: "力職" },
+    { id: "Eric", job: "英", level: 168, category: "力職" },
+    { id: "毛毛蟲", job: "英", level: 152, category: "力職" },
 
-    // --- 敏職 (17位: 眼 ➔ 盜賊 ➔ 海盜) ---
-    { id: "IE", job: "神射手", level: 175, category: "敏職" },
-    { id: "小茵", job: "箭神", level: 174, category: "敏職" },
-    { id: "毛毛蟲", job: "神射手", level: 168, category: "敏職" },
-    { id: "小皮", job: "箭神", level: 160, category: "敏職" },
-    { id: "阿甘", job: "箭神", level: 153, category: "敏職" },
-    { id: "Lumi", job: "箭神", level: 138, category: "敏職" },
-    { id: "阿仁", job: "神偷", level: 180, category: "敏職" },
-    { id: "Bagel", job: "神偷", level: 163, category: "敏職" },
-    { id: "derder", job: "神偷", level: 151, category: "敏職" },
-    { id: "阿偉", job: "神偷", level: 149, category: "敏職" },
-    { id: "阿甘", job: "夜使者", level: 174, category: "敏職" },
-    { id: "Eric", job: "夜使者", level: 163, category: "敏職" },
-    { id: "Bagel", job: "夜使者", level: 121, category: "敏職" },
-    { id: "derder", job: "夜使者", level: 118, category: "敏職" },
-    { id: "WonderW", job: "槍神", level: 170, category: "敏職" },
-    { id: "阿仁", job: "拳霸", level: 167, category: "敏職" },
-    { id: "小皮", job: "拳霸", level: 140, category: "敏職" },
+    // --- 敏職 (17位: 弩/弓 ➔ 刀/鏢 ➔ 槍/拳) ---
+    { id: "IE", job: "弩", level: 175, category: "敏職" },
+    { id: "小茵", job: "弓", level: 174, category: "敏職" },
+    { id: "毛毛蟲", job: "弩", level: 168, category: "敏職" },
+    { id: "小皮", job: "弓", level: 160, category: "敏職" },
+    { id: "阿甘", job: "弓", level: 153, category: "敏職" },
+    { id: "Lumi", job: "弓", level: 138, category: "敏職" },
+    { id: "阿仁", job: "刀", level: 180, category: "敏職" },
+    { id: "Bagel", job: "刀", level: 163, category: "敏職" },
+    { id: "derder", job: "刀", level: 151, category: "敏職" },
+    { id: "阿偉", job: "刀", level: 149, category: "敏職" },
+    { id: "阿甘", job: "鏢", level: 174, category: "敏職" },
+    { id: "Eric", job: "鏢", level: 163, category: "敏職" },
+    { id: "Bagel", job: "鏢", level: 121, category: "敏職" },
+    { id: "derder", job: "鏢", level: 118, category: "敏職" },
+    { id: "WonderW", job: "槍", level: 170, category: "敏職" },
+    { id: "阿仁", job: "拳", level: 167, category: "敏職" },
+    { id: "小皮", job: "拳", level: 140, category: "敏職" },
 
-    // --- 法職 (12位: 火毒 ➔ 冰雷 ➔ 主教) ---
-    { id: "Bagel", job: "火毒", level: 174, category: "法職" },
-    { id: "Eric", job: "冰雷", level: 169, category: "法職" },
-    { id: "CC", job: "冰雷", level: 164, category: "法職" },
-    { id: "小龜", job: "主教", level: 174, category: "法職" },
-    { id: "CC", job: "主教", level: 165, category: "法職" },
-    { id: "Ohni", job: "主教", level: 162, category: "法職" },
-    { id: "Lumi", job: "主教", level: 155, category: "法職" },
-    { id: "Bagel", job: "主教", level: 137, category: "法職" },
-    { id: "Eric", job: "主教", level: 132, category: "法職" },
-    { id: "毛毛蟲", job: "主教", level: 132, category: "法職" },
-    { id: "小茵", job: "主教", level: 131, category: "法職" },
-    { id: "阿仁", job: "主教", level: 131, category: "法職" }
+    // --- 法職 (12位: 毒 ➔ 冰 ➔ 主) ---
+    { id: "Bagel", job: "毒", level: 174, category: "法職" },
+    { id: "Eric", job: "冰", level: 169, category: "法職" },
+    { id: "CC", job: "冰", level: 164, category: "法職" },
+    { id: "小龜", job: "主", level: 174, category: "法職" },
+    { id: "CC", job: "主", level: 165, category: "法職" },
+    { id: "Ohni", job: "主", level: 162, category: "法職" },
+    { id: "Lumi", job: "主", level: 155, category: "法職" },
+    { id: "Bagel", job: "主", level: 137, category: "法職" },
+    { id: "Eric", job: "主", level: 132, category: "法職" },
+    { id: "毛毛蟲", job: "主", level: 132, category: "法職" },
+    { id: "小茵", job: "主", level: 131, category: "法職" },
+    { id: "阿仁", job: "主", level: 131, category: "法職" }
 ];
 let CHARACTER_ROSTER = DEFAULT_CHARACTER_ROSTER.map(c => ({ ...c }));
 
@@ -296,9 +327,10 @@ function getMemberBoundRoster(surveyMemberName) {
 
 function getCategoryByJob(job) {
     if (!job) return '力職';
-    if (['黑騎士', '聖騎士', '英雄'].includes(job)) return '力職';
-    if (['箭神', '神射手', '神偷', '暗影神偷', '夜使者', '槍神', '拳霸'].includes(job)) return '敏職';
-    if (['火毒', '冰雷', '主教'].includes(job) || job.includes('魔導士') || job.includes('僧侶') || job.includes('法師')) return '法職';
+    const j = normalizeJobName(job);
+    if (['火', '聖', '英'].includes(j)) return '力職';
+    if (['弓', '弩', '鏢', '刀', '槍', '拳'].includes(j)) return '敏職';
+    if (['毒', '冰', '主'].includes(j)) return '法職';
     return '力職';
 }
 
@@ -512,18 +544,18 @@ document.addEventListener('DOMContentLoaded', () => {
         return `${m}/${dt} ${h}:${min}`;
     }
 
-    // 動態計算問卷調查起始週二：每週五早上 08:00 自動切換至下週調查，當週調查自問卷移除
+    // 動態計算問卷調查起始週二：每週三晚上 19:00 自動切換至下週調查，當週調查自問卷移除
     function getActiveSurveyTuesday(d = new Date()) {
         const date = new Date(d);
         const day = date.getDay(); // 0: Sun, 1: Mon, ..., 5: Fri, 6: Sat
-        let daysSinceFri;
-        if (day === 5) {
-            daysSinceFri = (date.getHours() >= 8) ? 0 : 7;
+        let daysSinceWed;
+        if (day === 3) {
+            daysSinceWed = (date.getHours() >= 19) ? 0 : 7;
         } else {
-            daysSinceFri = (day + 7 - 5) % 7;
+            daysSinceWed = (day + 7 - 3) % 7;
         }
-        const fri = new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysSinceFri, 8, 0, 0, 0);
-        return new Date(fri.getFullYear(), fri.getMonth(), fri.getDate() + 4, 0, 0, 0, 0);
+        const wed = new Date(date.getFullYear(), date.getMonth(), date.getDate() - daysSinceWed, 19, 0, 0, 0);
+        return new Date(wed.getFullYear(), wed.getMonth(), wed.getDate() + 6, 0, 0, 0, 0);
     }
 
     function getActiveSurveyWeekId(d = new Date()) {
@@ -532,7 +564,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const TARGET_DEFAULT_WEEK_ID = getActiveSurveyWeekId();
 
-    // 問卷調查週次（每週五 08:00 自動輪替下週，往後推 4 週）
+    // 問卷調查週次（每週三 19:00 自動輪替下週，往後推 4 週）
     function getSurveyWeekOptions() {
         const baseTue = getActiveSurveyTuesday();
         baseTue.setHours(0, 0, 0, 0);
@@ -760,7 +792,15 @@ document.addEventListener('DOMContentLoaded', () => {
         
         // Preserve all historical and confirmed teams
         const rawTeams = data.teams ? (Array.isArray(data.teams) ? data.teams : Object.values(data.teams)) : [];
-        confirmedTeams = rawTeams.filter(t => t !== null && t !== undefined);
+        confirmedTeams = rawTeams.filter(t => t !== null && t !== undefined).map(team => {
+            if (team && team.members) {
+                const members = Array.isArray(team.members) ? team.members : Object.values(team.members);
+                members.forEach(m => {
+                    if (m && m.job) m.job = normalizeJobName(m.job);
+                });
+            }
+            return team;
+        });
         
         const rawChangelogs = data.changelog || data.changelogs || [];
         changelogs = Array.isArray(rawChangelogs) ? rawChangelogs.filter(c => c !== null && c !== undefined) : Object.values(rawChangelogs);
@@ -778,9 +818,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (rawRoster && rawRoster.length > 0) {
                 const mapped = rawRoster.map(c => ({
                     id: String(c.id || '').trim(),
-                    job: String(c.job || '').trim(),
+                    job: normalizeJobName(c.job || '火'),
                     level: parseInt(c.level, 10) || 120,
-                    category: c.category || getCategoryByJob(c.job),
+                    category: c.category || getCategoryByJob(normalizeJobName(c.job)),
                     isCustom: !!c.isCustom
                 })).filter(c => c.id && c.job);
                 if (mapped.length > 0) {
@@ -983,6 +1023,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof window.renderRosterMgList === 'function') {
             window.renderRosterMgList();
         }
+        if (typeof window.updateSurveyNameDatalist === 'function') {
+            window.updateSurveyNameDatalist();
+        }
     }
 
     function getMySurveyName() {
@@ -1076,12 +1119,41 @@ document.addEventListener('DOMContentLoaded', () => {
         window.renderSurveyFormSlots = renderSurveyFormSlots;
         renderSurveyFormSlots();
 
+        function updateSurveyNameDatalist() {
+            const datalist = document.getElementById('survey-name-datalist');
+            if (!datalist) return;
+            const namesSet = new Set();
+            if (surveyResponses && typeof surveyResponses === 'object') {
+                Object.values(surveyResponses).forEach(r => {
+                    if (r && r.name && r.name.trim()) namesSet.add(r.name.trim());
+                });
+            }
+            if (Array.isArray(CHARACTER_ROSTER)) {
+                CHARACTER_ROSTER.forEach(c => {
+                    if (c && c.id && c.id.trim()) namesSet.add(c.id.trim());
+                });
+            }
+            const sortedNames = Array.from(namesSet).sort((a, b) => a.localeCompare(b, 'zh-Hant'));
+            datalist.innerHTML = sortedNames.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+        }
+        window.updateSurveyNameDatalist = updateSurveyNameDatalist;
+        updateSurveyNameDatalist();
+
         function checkAndPrefillCurrentResponse() {
+            const hintContainer = document.getElementById('survey-prefill-hint');
             const curName = (nameInput ? nameInput.value : '').trim();
-            if (!curName) return;
+            if (!curName) {
+                if (hintContainer) {
+                    hintContainer.style.display = 'none';
+                    hintContainer.innerHTML = '';
+                }
+                return;
+            }
             const targetWeekId = currentSurveyFormWeekId;
+            
+            // 1. 檢查該成員在「本週次」是否已經填寫過（若是，自動載入並提示可直接修改）
             const existing = Object.values(surveyResponses || {}).find(r => 
-                r && r.name === curName && isResponseMatchWeek(r, targetWeekId)
+                r && r.name && r.name.trim().toLowerCase() === curName.toLowerCase() && isResponseMatchWeek(r, targetWeekId)
             );
 
             if (existing) {
@@ -1095,7 +1167,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 slotsContainer.querySelectorAll('.survey-slot-chip').forEach(chip => {
                     const cb = chip.querySelector('input[type="checkbox"]');
                     const key = cb ? cb.value : '';
-                    // find matching slot def
                     let slotDef = null;
                     let dayDef = null;
                     for (const d of days) {
@@ -1113,11 +1184,140 @@ document.addEventListener('DOMContentLoaded', () => {
                         chip.classList.toggle('checked', cb.checked);
                     }
                 });
+
+                if (hintContainer) {
+                    hintContainer.style.display = 'block';
+                    hintContainer.innerHTML = `
+                        <div class="survey-prefill-card is-existing">
+                            <span class="prefill-msg">✅ 已為您載入 <strong>${escapeHtml(existing.name || curName)}</strong> 本週填寫紀錄（可直接修改並送出更新）</span>
+                        </div>
+                    `;
+                }
+                return;
+            }
+
+            // 2. 做法 2：若本週未填寫，自動連線查詢資料庫中該成員「最近一次」的填寫紀錄
+            const pastResponses = Object.values(surveyResponses || {})
+                .filter(r => r && r.name && r.name.trim().toLowerCase() === curName.toLowerCase() && !isResponseMatchWeek(r, targetWeekId))
+                .sort((a, b) => {
+                    const tsA = a.updatedAt || a.timestamp || 0;
+                    const tsB = b.updatedAt || b.timestamp || 0;
+                    if (tsB !== tsA) return tsB - tsA;
+                    return (b.weekId || '').localeCompare(a.weekId || '');
+                });
+
+            const latestPast = pastResponses[0];
+            if (latestPast && Array.isArray(latestPast.slots) && latestPast.slots.length > 0) {
+                if (hintContainer) {
+                    hintContainer.style.display = 'block';
+                    hintContainer.innerHTML = `
+                        <div class="survey-prefill-card">
+                            <span class="prefill-msg">💡 找到 <strong>${escapeHtml(latestPast.name || curName)}</strong> 上次填寫時段（共 ${latestPast.slots.length} 個時段）</span>
+                            <button type="button" id="btn-prefill-past-slots" class="btn-prefill-action">
+                                ⚡ 一鍵帶入上次時段
+                            </button>
+                        </div>
+                    `;
+                    const btnPrefill = document.getElementById('btn-prefill-past-slots');
+                    if (btnPrefill) {
+                        btnPrefill.onclick = () => {
+                            applyPastSlotsToCurrentWeek(latestPast);
+                        };
+                    }
+                }
+            } else {
+                if (hintContainer) {
+                    hintContainer.style.display = 'none';
+                    hintContainer.innerHTML = '';
+                }
             }
         }
 
+        function applyPastSlotsToCurrentWeek(pastResp) {
+            if (!pastResp) return;
+            const targetWeekId = currentSurveyFormWeekId;
+            const pastSlots = pastResp.slots || [];
+
+            // 1. 同步突襲券偏好
+            if (pastResp.scroll) {
+                const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]');
+                scrollRadios.forEach(r => {
+                    r.checked = (r.value === pastResp.scroll);
+                });
+            }
+
+            // 2. 若備註為空，自動帶入前次備註
+            if (notesInput && !notesInput.value && pastResp.notes) {
+                notesInput.value = pastResp.notes;
+            }
+
+            // 3. 將前次時段對應至本週的星期與時段 (二/三/四/五/六/日/一 + 午/晚)
+            const dayNames = ["二", "三", "四", "五", "六", "日", "一"];
+            const pastPatternSet = new Set();
+
+            pastSlots.forEach(s => {
+                let dName = '';
+                for (const dn of dayNames) {
+                    if (s.includes(`(${dn})`) || s.includes(`週${dn}`) || s.includes(`星期${dn}`)) {
+                        dName = dn;
+                        break;
+                    }
+                }
+                let period = '';
+                if (s.includes('午') || s.includes('下午')) {
+                    period = '午';
+                } else if (s.includes('晚') || s.includes('晚上')) {
+                    period = '晚';
+                }
+                if (dName && period) {
+                    pastPatternSet.add(`${dName}_${period}`);
+                }
+            });
+
+            const days = getWeekDaysDetails(targetWeekId);
+            let appliedCount = 0;
+
+            slotsContainer.querySelectorAll('.survey-slot-chip').forEach(chip => {
+                const cb = chip.querySelector('input[type="checkbox"]');
+                const key = cb ? cb.value : '';
+                let slotDef = null;
+                for (const d of days) {
+                    for (const s of d.slots) {
+                        if (s.key === key) {
+                            slotDef = s;
+                            break;
+                        }
+                    }
+                    if (slotDef) break;
+                }
+
+                if (cb && slotDef) {
+                    const patternKey = `${slotDef.dayName}_${slotDef.period}`;
+                    const shouldCheck = pastPatternSet.has(patternKey);
+                    cb.checked = shouldCheck;
+                    chip.classList.toggle('checked', shouldCheck);
+                    if (shouldCheck) appliedCount++;
+                }
+            });
+
+            const hintContainer = document.getElementById('survey-prefill-hint');
+            if (hintContainer) {
+                hintContainer.innerHTML = `
+                    <div class="survey-prefill-card is-success">
+                        <span class="prefill-msg">✨ 已成功為您帶入 <strong>${appliedCount}</strong> 個時段！請確認後即可送出。</span>
+                    </div>
+                `;
+            }
+        }
+
+        let debounceTimer = null;
         if (nameInput) {
             nameInput.addEventListener('blur', checkAndPrefillCurrentResponse);
+            nameInput.addEventListener('change', checkAndPrefillCurrentResponse);
+            nameInput.addEventListener('input', () => {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(checkAndPrefillCurrentResponse, 300);
+            });
         }
 
         // Reset survey form helper to keep it completely clean
@@ -1125,6 +1325,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (form) form.reset();
             if (nameInput) nameInput.value = '';
             if (notesInput) notesInput.value = '';
+            const hintContainer = document.getElementById('survey-prefill-hint');
+            if (hintContainer) {
+                hintContainer.style.display = 'none';
+                hintContainer.innerHTML = '';
+            }
             if (slotsContainer) {
                 slotsContainer.querySelectorAll('.survey-slot-chip').forEach(chip => {
                     const cb = chip.querySelector('input[type="checkbox"]');
@@ -1134,7 +1339,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]');
             scrollRadios.forEach(r => {
-                r.checked = (r.value === '是');
+                r.checked = false;
             });
         }
         window.resetSurveyForm = resetSurveyForm;
@@ -1169,7 +1374,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]:checked');
-                const scrollPref = scrollRadios.length > 0 ? scrollRadios[0].value : "是";
+                if (scrollRadios.length === 0) {
+                    alert("請選擇「是否願意吃突襲券」（是／否）！");
+                    return;
+                }
+                const scrollPref = scrollRadios[0].value;
                 const notes = (notesInput ? notesInput.value : '').trim();
                 const targetWeekId = currentSurveyFormWeekId || weekOptions[0].weekId;
                 const activeOpt = weekOptions.find(o => o.weekId === targetWeekId) || weekOptions[0];
@@ -1599,7 +1808,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const boundChars = getMemberBoundRoster(r.name);
             let boundCharsHtml = '';
             if (boundChars.length > 0) {
-                boundCharsHtml = boundChars.map(c => `<span style="font-weight:700; color:#38bdf8;">${escapeHtml(c.id)} (${escapeHtml(c.job)} Lv.${c.level})</span>`).join('<br>');
+                boundCharsHtml = boundChars.map(c => `<span style="font-weight:700; color:#38bdf8;">${escapeHtml(c.id)} (${escapeHtml(normalizeJobName(c.job))} Lv.${c.level})</span>`).join('<br>');
             } else {
                 boundCharsHtml = '<span style="color:#94a3b8;">未綁定（自訂）</span>';
             }
@@ -2208,20 +2417,21 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getTacticalRoleInfo(roleTag) {
         if (!roleTag) return { icon: '', cssClass: '', label: '' };
-        const r = String(roleTag).trim();
-        if (r === '控時' || r.includes('控時')) return { icon: '⏳', cssClass: 'time-control', label: r };
-        if (r === '副控' || r.includes('副控')) return { icon: '⏱️', cssClass: 'sub-control', label: r };
-        if (r === '清球' || r.includes('清球')) return { icon: '🔮', cssClass: 'clear-orb', label: r };
-        if (r.includes('魅惑')) return { icon: '💖', cssClass: 'seduce', label: r };
-        if (r === '煙1' || r === '煙2') return { icon: '💨', cssClass: 'smoke', label: r };
-        if (r === '煙' || r.includes('煙')) return { icon: '💨', cssClass: 'smoke', label: r };
-        if (r === '火' || r.includes('火')) return { icon: '🔥', cssClass: 'fire', label: r };
-        if (r === '轉屬' || r.includes('轉屬')) return { icon: '🌀', cssClass: 'trans', label: r };
-        if (r.includes('楓20') || r.includes('楓')) return { icon: '🍁', cssClass: 'maple', label: r };
-        if (r === '速' || r.includes('速')) return { icon: '⚡', cssClass: 'speed', label: r };
-        if (r.includes('腿')) return { icon: '🦵', cssClass: 'leg', label: r };
-        if (r.includes('醬油')) return { icon: '🍮', cssClass: 'soy', label: r };
-        return { icon: '🏷️', cssClass: 'general', label: r };
+        const clean = stripRoleIcon(roleTag);
+        const r = String(clean).trim();
+        if (r === '控時' || r.includes('控時')) return { icon: '', cssClass: 'time-control', label: r };
+        if (r === '副控' || r.includes('副控')) return { icon: '', cssClass: 'sub-control', label: r };
+        if (r === '清球' || r.includes('清球')) return { icon: '', cssClass: 'clear-orb', label: r };
+        if (r.includes('魅惑')) return { icon: '', cssClass: 'seduce', label: r };
+        if (r === '煙1' || r === '煙2') return { icon: '', cssClass: 'smoke', label: r };
+        if (r === '煙' || r.includes('煙')) return { icon: '', cssClass: 'smoke', label: r };
+        if (r === '火' || r.includes('火')) return { icon: '', cssClass: 'fire', label: r };
+        if (r === '轉屬' || r.includes('轉屬')) return { icon: '', cssClass: 'trans', label: r };
+        if (r.includes('楓20') || r.includes('楓')) return { icon: '', cssClass: 'maple', label: r };
+        if (r === '速' || r.includes('速')) return { icon: '', cssClass: 'speed', label: r };
+        if (r.includes('腿')) return { icon: '', cssClass: 'leg', label: r };
+        if (r.includes('醬油')) return { icon: '', cssClass: 'soy', label: r };
+        return { icon: '', cssClass: 'general', label: r };
     }
 
     function getTacticalRoleSelectOptionsHtml(bossOrIsDk, roleTag) {
@@ -2235,6 +2445,8 @@ document.addEventListener('DOMContentLoaded', () => {
             isHardPap = isHardPapulatusBoss(bossOrIsDk);
         }
 
+        const cleanCurrentRole = stripRoleIcon(roleTag);
+
         let standardRoles = [];
         if (isDk) {
             standardRoles = ['魅惑1', '魅惑2', '魅惑3', '魅惑4', '煙1', '煙2', '火', '煙', '轉屬', '楓20', '速'];
@@ -2243,49 +2455,49 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             standardRoles = ['火', '煙', '轉屬', '楓20', '速'];
         }
-        const isCustom = roleTag && !standardRoles.includes(roleTag);
+        const isCustom = cleanCurrentRole && !standardRoles.includes(cleanCurrentRole);
 
         if (isDk) {
             return `
                 <option value="">定位</option>
-                <option value="魅惑1" ${roleTag === '魅惑1' ? 'selected' : ''}>💖 魅惑 1</option>
-                <option value="魅惑2" ${roleTag === '魅惑2' ? 'selected' : ''}>💖 魅惑 2</option>
-                <option value="魅惑3" ${roleTag === '魅惑3' ? 'selected' : ''}>💖 魅惑 3</option>
-                <option value="魅惑4" ${roleTag === '魅惑4' ? 'selected' : ''}>💖 魅惑 4</option>
-                <option value="煙1" ${roleTag === '煙1' ? 'selected' : ''}>💨 煙 1</option>
-                <option value="煙2" ${roleTag === '煙2' ? 'selected' : ''}>💨 煙 2</option>
-                <option value="火" ${roleTag === '火' ? 'selected' : ''}>🔥 火</option>
-                <option value="煙" ${roleTag === '煙' ? 'selected' : ''}>💨 煙</option>
-                <option value="轉屬" ${roleTag === '轉屬' ? 'selected' : ''}>🌀 轉屬</option>
-                <option value="楓20" ${roleTag === '楓20' ? 'selected' : ''}>🍁 楓20</option>
-                <option value="速" ${roleTag === '速' ? 'selected' : ''}>⚡ 速</option>
-                ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
-                <option value="__custom__">✏️ 自訂...</option>
+                <option value="魅惑1" ${cleanCurrentRole === '魅惑1' ? 'selected' : ''}>魅惑 1</option>
+                <option value="魅惑2" ${cleanCurrentRole === '魅惑2' ? 'selected' : ''}>魅惑 2</option>
+                <option value="魅惑3" ${cleanCurrentRole === '魅惑3' ? 'selected' : ''}>魅惑 3</option>
+                <option value="魅惑4" ${cleanCurrentRole === '魅惑4' ? 'selected' : ''}>魅惑 4</option>
+                <option value="煙1" ${cleanCurrentRole === '煙1' ? 'selected' : ''}>煙 1</option>
+                <option value="煙2" ${cleanCurrentRole === '煙2' ? 'selected' : ''}>煙 2</option>
+                <option value="火" ${cleanCurrentRole === '火' ? 'selected' : ''}>火</option>
+                <option value="煙" ${cleanCurrentRole === '煙' ? 'selected' : ''}>煙</option>
+                <option value="轉屬" ${cleanCurrentRole === '轉屬' ? 'selected' : ''}>轉屬</option>
+                <option value="楓20" ${cleanCurrentRole === '楓20' ? 'selected' : ''}>楓20</option>
+                <option value="速" ${cleanCurrentRole === '速' ? 'selected' : ''}>速</option>
+                ${isCustom ? `<option value="${escapeHtml(cleanCurrentRole)}" selected>${escapeHtml(cleanCurrentRole)}</option>` : ''}
+                <option value="__custom__">自訂...</option>
             `;
         } else if (isHardPap) {
             return `
                 <option value="">定位</option>
-                <option value="控時" ${roleTag === '控時' ? 'selected' : ''}>⏳ 控時</option>
-                <option value="副控" ${roleTag === '副控' ? 'selected' : ''}>⏱️ 副控</option>
-                <option value="清球" ${roleTag === '清球' ? 'selected' : ''}>🔮 清球</option>
-                <option value="火" ${roleTag === '火' ? 'selected' : ''}>🔥 火</option>
-                <option value="煙" ${roleTag === '煙' ? 'selected' : ''}>💨 煙</option>
-                <option value="轉屬" ${roleTag === '轉屬' ? 'selected' : ''}>🌀 轉屬</option>
-                <option value="楓20" ${roleTag === '楓20' ? 'selected' : ''}>🍁 楓20</option>
-                <option value="速" ${roleTag === '速' ? 'selected' : ''}>⚡ 速</option>
-                ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
-                <option value="__custom__">✏️ 自訂...</option>
+                <option value="控時" ${cleanCurrentRole === '控時' ? 'selected' : ''}>控時</option>
+                <option value="副控" ${cleanCurrentRole === '副控' ? 'selected' : ''}>副控</option>
+                <option value="清球" ${cleanCurrentRole === '清球' ? 'selected' : ''}>清球</option>
+                <option value="火" ${cleanCurrentRole === '火' ? 'selected' : ''}>火</option>
+                <option value="煙" ${cleanCurrentRole === '煙' ? 'selected' : ''}>煙</option>
+                <option value="轉屬" ${cleanCurrentRole === '轉屬' ? 'selected' : ''}>轉屬</option>
+                <option value="楓20" ${cleanCurrentRole === '楓20' ? 'selected' : ''}>楓20</option>
+                <option value="速" ${cleanCurrentRole === '速' ? 'selected' : ''}>速</option>
+                ${isCustom ? `<option value="${escapeHtml(cleanCurrentRole)}" selected>${escapeHtml(cleanCurrentRole)}</option>` : ''}
+                <option value="__custom__">自訂...</option>
             `;
         } else {
             return `
                 <option value="">定位</option>
-                <option value="火" ${roleTag === '火' ? 'selected' : ''}>🔥 火</option>
-                <option value="煙" ${roleTag === '煙' ? 'selected' : ''}>💨 煙</option>
-                <option value="轉屬" ${roleTag === '轉屬' ? 'selected' : ''}>🌀 轉屬</option>
-                <option value="楓20" ${roleTag === '楓20' ? 'selected' : ''}>🍁 楓20</option>
-                <option value="速" ${roleTag === '速' ? 'selected' : ''}>⚡ 速</option>
-                ${isCustom ? `<option value="${escapeHtml(roleTag)}" selected>🏷️ ${escapeHtml(roleTag)}</option>` : ''}
-                <option value="__custom__">✏️ 自訂...</option>
+                <option value="火" ${cleanCurrentRole === '火' ? 'selected' : ''}>火</option>
+                <option value="煙" ${cleanCurrentRole === '煙' ? 'selected' : ''}>煙</option>
+                <option value="轉屬" ${cleanCurrentRole === '轉屬' ? 'selected' : ''}>轉屬</option>
+                <option value="楓20" ${cleanCurrentRole === '楓20' ? 'selected' : ''}>楓20</option>
+                <option value="速" ${cleanCurrentRole === '速' ? 'selected' : ''}>速</option>
+                ${isCustom ? `<option value="${escapeHtml(cleanCurrentRole)}" selected>${escapeHtml(cleanCurrentRole)}</option>` : ''}
+                <option value="__custom__">自訂...</option>
             `;
         }
     }
@@ -2314,9 +2526,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const isFilled = !!(s && s.name);
         const numLabel = teamPrefix ? `${teamPrefix}-${slotNum}` : `#${slotNum}`;
         const roleTag = s.roleTag || '';
-        const roleInfo = getTacticalRoleInfo(roleTag);
+        const cleanRoleTag = stripRoleIcon(roleTag);
+        const roleInfo = getTacticalRoleInfo(cleanRoleTag);
 
-        const optionsHtml = getTacticalRoleSelectOptionsHtml(preDraftState.boss, roleTag);
+        const optionsHtml = getTacticalRoleSelectOptionsHtml(preDraftState.boss, cleanRoleTag);
 
         const roleSelectHtml = `
             <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${roleInfo.cssClass}" 
@@ -2338,7 +2551,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 0.2rem; margin-top: 2px;">
                         <span style="font-size: 0.86rem; font-weight: 900; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
-                        <span style="font-size: 0.72rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(s.job)} <small style="color: #64748b; font-weight: 700;">Lv.${s.level}</small></span>
+                        <span style="font-size: 0.72rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(normalizeJobName(s.job))} <small style="color: #64748b; font-weight: 700;">Lv.${s.level}</small></span>
                     </div>
                 </div>
             `;
@@ -2360,8 +2573,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         <span style="font-size: 0.7rem; font-weight: 800; color: #94a3b8; background: #f1f5f9; padding: 0.05rem 0.25rem; border-radius: 3px; white-space: nowrap;">${numLabel}</span>
                         ${roleSelectHtml}
                     </div>
-                    <div style="font-size: 0.75rem; color: ${roleTag ? roleColor : '#94a3b8'}; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-top: 2px;">
-                        ${roleTag ? `(${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)})` : '待排空位'}
+                    <div style="font-size: 0.75rem; color: ${cleanRoleTag ? roleColor : '#94a3b8'}; font-weight: 700; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; width: 100%; margin-top: 2px;">
+                        ${cleanRoleTag ? `(${escapeHtml(cleanRoleTag)})` : '待排空位'}
                     </div>
                 </div>
             `;
@@ -2545,9 +2758,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Sort by Job Category (力職 ➔ 敏職 ➔ 法職), then Job priority, then Level descending
         const CATEGORY_ORDER = { '力職': 1, '敏職': 2, '法職': 3 };
         const JOB_ORDER_RANK = {
-            '黑騎士': 10, '聖騎士': 11, '英雄': 12,
-            '神射手': 20, '箭神': 21, '神偷': 22, '暗影神偷': 22, '夜使者': 23, '槍神': 24, '拳霸': 25,
-            '主教': 30, '火毒': 31, '火毒魔導士': 31, '火毒大魔導士': 31, '冰雷': 32, '冰雷魔導士': 32, '冰雷大魔導士': 32
+            '火': 10, '黑騎士': 10, '黑騎': 10,
+            '聖': 11, '聖騎士': 11, '聖騎': 11,
+            '英': 12, '英雄': 12,
+            '弓': 20, '箭神': 20,
+            '弩': 21, '神射手': 21, '弩手': 21,
+            '鏢': 22, '夜使者': 22, '鏢賊': 22,
+            '刀': 23, '神偷': 23, '暗影神偷': 23,
+            '槍': 24, '槍神': 24,
+            '拳': 25, '拳霸': 25,
+            '毒': 30, '火毒': 30,
+            '冰': 31, '冰雷': 31,
+            '主': 32, '主教': 32
         };
 
         allAvailableCards.sort((a, b) => {
@@ -2555,8 +2777,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const catB = CATEGORY_ORDER[b.category] || 99;
             if (catA !== catB) return catA - catB;
 
-            const jobA = JOB_ORDER_RANK[a.job] || 99;
-            const jobB = JOB_ORDER_RANK[b.job] || 99;
+            const jobA = JOB_ORDER_RANK[normalizeJobName(a.job)] || 99;
+            const jobB = JOB_ORDER_RANK[normalizeJobName(b.job)] || 99;
             if (jobA !== jobB) return jobA - jobB;
 
             if ((b.level || 0) !== (a.level || 0)) {
@@ -2612,14 +2834,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? '<span style="font-size:0.64rem; color:#15803d; background:#dcfce7; padding:1px 3px; border-radius:3px; font-weight:800; white-space:nowrap;">吃券</span>' 
                 : '<span style="font-size:0.64rem; color:#dc2626; background:#fee2e2; padding:1px 3px; border-radius:3px; font-weight:800; white-space:nowrap;">不吃</span>';
 
+            const normJob = normalizeJobName(c.job);
             const cardTitle = isSelected 
                 ? `[席位 ${slotNum}] 點擊退選` 
-                : `角色: ${escapeHtml(c.id)} (${escapeHtml(c.job)} Lv.${c.level}) | 擁有者: ${escapeHtml(c.memberName)}${c.notes ? ' | 備註: ' + escapeHtml(c.notes) : ''} (點擊入座)`;
+                : `角色: ${escapeHtml(c.id)} (${escapeHtml(normJob)} Lv.${c.level}) | 擁有者: ${escapeHtml(c.memberName)}${c.notes ? ' | 備註: ' + escapeHtml(c.notes) : ''} (點擊入座)`;
 
             // 名字不重複：卡片頂部只顯示角色 ID，下方顯示職業與吃券狀態，擁有者在 hover tooltip 中提示
             html += `
                 <div class="predraft-card-chip ${catClass} ${selectedClass}"
-                     onclick="window.togglePreDraftCharacter('${escapeHtml(c.id)}', '${escapeHtml(c.job)}', ${c.level})"
+                     onclick="window.togglePreDraftCharacter('${escapeHtml(c.id)}', '${escapeHtml(normJob)}', ${c.level})"
                      title="${cardTitle}">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.15rem; line-height: 1.15;">
                         <strong style="font-size: 0.82rem; color: #0f172a; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(c.id)}</strong>
@@ -2628,7 +2851,7 @@ document.addEventListener('DOMContentLoaded', () => {
                           `<span style="font-size: 0.68rem; color: #64748b; font-weight: 700; white-space: nowrap;">Lv.${c.level}</span>`)}
                     </div>
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.15rem; line-height: 1.15;">
-                        <span style="font-size: 0.74rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(c.job)}</span>
+                        <span style="font-size: 0.74rem; font-weight: 800; color: ${jobColor}; white-space: nowrap;">${escapeHtml(normJob)}</span>
                         ${scrollTag}
                     </div>
                 </div>
@@ -3061,14 +3284,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 const isActive = (createRaidState.activeSlotIndex === idx);
                 const slotNum = isDragonKing ? (idx < 6 ? idx + 1 : idx - 5) : idx + 1;
                 const roleTag = (s && s.roleTag) || '';
-                const roleInfo = getTacticalRoleInfo(roleTag);
+                const cleanRoleTag = stripRoleIcon(roleTag);
+                const roleInfo = getTacticalRoleInfo(cleanRoleTag);
 
                 const roleSelectHtml = `
-                    <select class="slot-role-select ${roleTag ? 'role-active' : ''} ${roleInfo.cssClass}" 
+                    <select class="slot-role-select ${cleanRoleTag ? 'role-active' : ''} ${roleInfo.cssClass}" 
                             onclick="event.stopPropagation();" 
                             onchange="event.stopPropagation(); window.handleCreateSlotRoleChange(${idx}, this.value);"
                             title="設定席位戰術定位">
-                        ${getTacticalRoleSelectOptionsHtml(createRaidState.boss, roleTag)}
+                        ${getTacticalRoleSelectOptionsHtml(createRaidState.boss, cleanRoleTag)}
                     </select>
                 `;
 
@@ -3085,7 +3309,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         <div class="slot-box-id">${escapeHtml(s.name)}</div>
                         <div class="slot-box-bottom">
-                            <span style="color:${jobColor}; font-weight:700;">${escapeHtml(s.job)}</span>
+                            <span style="color:${jobColor}; font-weight:700;">${escapeHtml(normalizeJobName(s.job))}</span>
                             <span style="color:#64748b; font-weight:600;">Lv.${s.level}</span>
                         </div>
                     `;
@@ -3107,7 +3331,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${roleSelectHtml}
                         </div>
                         <div class="slot-box-empty-title">
-                            ${roleTag ? `<span style="font-size:0.8rem; font-weight:800; color:${roleColor};">(${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)} 空位)</span>` : `席位 ${slotNum}`}
+                            ${cleanRoleTag ? `<span style="font-size:0.8rem; font-weight:800; color:${roleColor};">(${escapeHtml(cleanRoleTag)} 空位)</span>` : `席位 ${slotNum}`}
                         </div>
                         <div style="font-size: 0.68rem; color: #94a3b8; text-align: center;">點擊入座</div>
                     `;
@@ -3229,7 +3453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             card.innerHTML = `
                                 <div class="roster-card-id" style="color: #000000 !important;">${escapeHtml(c.id)}</div>
                                 <div class="roster-card-sub">
-                                    <span style="color:${jobColor}; font-weight:700;">${escapeHtml(c.job)}</span>
+                                    <span style="color:${jobColor}; font-weight:700;">${escapeHtml(normalizeJobName(c.job))}</span>
                                     <span style="color:#15803d; font-weight:700; font-size:0.78rem;">Lv.${c.level}</span>
                                 </div>
                             `;
@@ -3238,7 +3462,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             card.innerHTML = `
                                 <div class="roster-card-id" style="color: #000000 !important;">${escapeHtml(c.id)}</div>
                                 <div class="roster-card-sub">
-                                    <span style="color:${jobColor}; font-weight:700;">${escapeHtml(c.job)}</span>
+                                    <span style="color:${jobColor}; font-weight:700;">${escapeHtml(normalizeJobName(c.job))}</span>
                                     <span style="color:#64748b; font-weight:600; font-size:0.78rem;">Lv.${c.level}</span>
                                 </div>
                             `;
@@ -4062,22 +4286,23 @@ document.addEventListener('DOMContentLoaded', () => {
                     const isJoined = members.some(m => m.name === c.id && m.job === c.job);
                     const jobColor = getHighContrastJobColor(c.job);
 
+                    const normJob = normalizeJobName(c.job);
                     if (isJoined) {
                         html += `
                             <div class="roster-card disabled" title="此角色已在此隊伍中">
                                 <div class="roster-card-name" style="color: #64748b !important; font-weight: 800;">${escapeHtml(c.id)}</div>
                                 <div class="roster-card-meta">
-                                    <span class="roster-card-job" style="color: ${jobColor}; font-weight: 700;">${escapeHtml(c.job)}</span>
+                                    <span class="roster-card-job" style="color: ${jobColor}; font-weight: 700;">${escapeHtml(normJob)}</span>
                                     <span style="color: #ef4444; font-size: 0.75rem; font-weight: 800;">已入座</span>
                                 </div>
                             </div>
                         `;
                     } else {
                         html += `
-                            <div class="roster-card" onclick="window.selectRosterCharacter('${raidId}', ${slotIndex}, '${encodeURIComponent(c.id)}', '${encodeURIComponent(c.job)}', ${c.level})" title="點擊選擇 ${escapeHtml(c.id)} 入座">
+                            <div class="roster-card" onclick="window.selectRosterCharacter('${raidId}', ${slotIndex}, '${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level})" title="點擊選擇 ${escapeHtml(c.id)} 入座">
                                 <div class="roster-card-name" style="color: #000000 !important; font-weight: 800;">${escapeHtml(c.id)}</div>
                                 <div class="roster-card-meta">
-                                    <span class="roster-card-job" style="color: ${jobColor}; font-weight: 700;">${escapeHtml(c.job)}</span>
+                                    <span class="roster-card-job" style="color: ${jobColor}; font-weight: 700;">${escapeHtml(normJob)}</span>
                                     <span class="roster-card-level" style="color: #475569 !important; font-weight: 700;">Lv.${c.level}</span>
                                 </div>
                             </div>
@@ -4917,20 +5142,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 const m = members.find((item, index) => item && (item.slotIndex !== undefined ? item.slotIndex : index) === slotIdx);
                 const slotNum = isDragonKing ? (slotIdx < 6 ? slotIdx + 1 : slotIdx - 5) : slotIdx + 1;
                 const slotRole = (m && m.roleTag) ? m.roleTag : ((raid.slotRoles && raid.slotRoles[slotIdx]) ? raid.slotRoles[slotIdx] : '');
-                const roleInfo = getTacticalRoleInfo(slotRole);
+                const cleanSlotRole = stripRoleIcon(slotRole);
+                const roleInfo = getTacticalRoleInfo(cleanSlotRole);
 
                 let roleBadgeHtml = '';
-                if (slotRole) {
-                    roleBadgeHtml = `<span class="member-role-badge ${roleInfo.cssClass}" title="戰術定位">${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(slotRole)}</span>`;
+                if (cleanSlotRole) {
+                    roleBadgeHtml = `<span class="member-role-badge ${roleInfo.cssClass}" title="戰術定位">${escapeHtml(cleanSlotRole)}</span>`;
                 }
 
                 if (m) {
                     const isActuallyCreator = Boolean(m.name && displayCreator && String(m.name).toLowerCase() === String(displayCreator).toLowerCase());
+                    const mNormJob = normalizeJobName(m.job);
                     if (isExpired) {
                         return `
                             <div style="background: rgba(255,255,255,0.03); padding: 0.45rem 0.55rem; border-radius: 8px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; border: 1px solid rgba(255,255,255,0.06); min-height: 40px; box-sizing: border-box;">
                                 <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; gap: 0.2rem; flex: 1; min-width: 0;">
-                                    <strong style="color: #94a3b8; font-size: 0.86rem; flex-shrink: 0;">${m.job}</strong> 
+                                    <strong style="color: #94a3b8; font-size: 0.86rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong> 
                                     <span style="color: #cbd5e1; font-weight: 500; font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span> 
                                     <span style="color: #64748b; font-size: 0.76rem; flex-shrink: 0;">(Lv.${m.level})</span>
                                     ${isActuallyCreator ? '<span style="color:#94a3b8; font-size:0.8rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
@@ -4943,7 +5170,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     return `
                         <div style="background: rgba(255,255,255,0.08); padding: 0.45rem 0.55rem; border-radius: 8px; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; border: 1px solid rgba(255,255,255,0.12); min-height: 40px; box-sizing: border-box;">
                             <div style="display: flex; align-items: center; flex-wrap: nowrap; overflow: hidden; white-space: nowrap; gap: 0.2rem; flex: 1; min-width: 0;">
-                                <strong style="color: var(--primary-color); font-size: 0.86rem; flex-shrink: 0;">${m.job}</strong> 
+                                <strong style="color: var(--primary-color); font-size: 0.86rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong> 
                                 <span style="color: #fff; font-weight: 600; font-size: 0.86rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span> 
                                 <span style="color: var(--text-muted); font-size: 0.76rem; flex-shrink: 0;">(Lv.${m.level})</span>
                                 <span style="color:var(--primary-color); font-size:0.8rem; flex-shrink: 0;" title="團長">${isActuallyCreator ? '👑' : ''}</span>
@@ -4958,7 +5185,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: #64748b; text-align: center; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">未入座 (已流團)</div>
                         `;
                     }
-                    const slotRoleText = slotRole ? ` - ${roleInfo.icon ? roleInfo.icon + ' ' : ''}${slotRole}` : '';
+                    const slotRoleText = cleanSlotRole ? ` - ${cleanSlotRole}` : '';
                     return `
                         <div onclick="openJoinModal('${raid.id}', ${slotIdx})" style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.65rem 0.8rem; border-radius: 8px; font-size: 0.85rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s; min-height: 44px; box-sizing: border-box; display: flex; align-items: center; justify-content: center;" onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" title="點擊報名此位置 (第 ${slotNum} 位${slotRoleText})">➕ 點擊報名 (第 ${slotNum} 位${slotRoleText})</div>
                     `;
@@ -5483,8 +5710,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     if (!m || !m.name) {
                         const reservedRole = (team.slotRoles && team.slotRoles[slotIdx]) ? team.slotRoles[slotIdx] : '';
-                        const roleInfo = getTacticalRoleInfo(reservedRole);
-                        const roleBadge = reservedRole ? `<span class="member-role-badge ${roleInfo.cssClass}">${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(reservedRole)}</span>` : '';
+                        const cleanReservedRole = stripRoleIcon(reservedRole);
+                        const roleInfo = getTacticalRoleInfo(cleanReservedRole);
+                        const roleBadge = cleanReservedRole ? `<span class="member-role-badge ${roleInfo.cssClass}">${escapeHtml(cleanReservedRole)}</span>` : '';
 
                         rowCells += `
                             <td class="col-slot-cell is-empty-slot" style="text-align: center;">
@@ -5499,9 +5727,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         const name = String(m.name).trim();
                         const isMe = currentUser && name.toLowerCase() === currentUser.toLowerCase();
                         const roleTag = m.roleTag || ((team.slotRoles && team.slotRoles[slotIdx]) ? team.slotRoles[slotIdx] : '');
-                        const roleInfo = getTacticalRoleInfo(roleTag);
-                        const roleBadge = roleTag ? `<span class="member-role-badge ${roleInfo.cssClass}">${roleInfo.icon ? roleInfo.icon + ' ' : ''}${escapeHtml(roleTag)}</span>` : '';
-                        const jobTag = m.job ? `<span class="slot-job-text" title="Lv.${m.level || '?'}">${escapeHtml(m.job)}</span>` : '';
+                        const cleanRoleTag = stripRoleIcon(roleTag);
+                        const roleInfo = getTacticalRoleInfo(cleanRoleTag);
+                        const roleBadge = cleanRoleTag ? `<span class="member-role-badge ${roleInfo.cssClass}">${escapeHtml(cleanRoleTag)}</span>` : '';
+                        const normJob = normalizeJobName(m.job);
+                        const jobTag = normJob ? `<span class="slot-job-text" title="Lv.${m.level || '?'}">${escapeHtml(normJob)}</span>` : '';
 
                         rowCells += `
                             <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''}">
@@ -5753,8 +5983,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     const members = t.members ? (Array.isArray(t.members) ? t.members : Object.values(t.members)) : [];
                     text += `     👥 成員 (${members.length}人)：\n`;
                     members.forEach((m, mIdx) => {
-                        const role = m.roleTag ? `【${m.roleTag}】` : '';
-                        text += `        ${mIdx + 1}. [${m.job || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
+                        const cleanRole = stripRoleIcon(m.roleTag);
+                        const role = cleanRole ? `【${cleanRole}】` : '';
+                        text += `        ${mIdx + 1}. [${normalizeJobName(m.job) || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
                     });
                     text += `\n`;
                 });
@@ -5917,13 +6148,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (member) {
                             const isActuallyCreator = Boolean(member.name && displayCreator && member.name.toLowerCase() === displayCreator.toLowerCase());
                             let roleBadge = '';
-                            if (slotRole) {
+                            const cleanSlotRole = stripRoleIcon(slotRole);
+                            if (cleanSlotRole) {
                                 if (isSeduce) {
-                                    roleBadge = `<span style="background:#fdf2f8; color:#db2777; border:1px solid #f472b6; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:800; margin-left:0.35rem;">💖 ${escapeHtml(slotRole)}</span>`;
+                                    roleBadge = `<span style="background:#fdf2f8; color:#db2777; border:1px solid #f472b6; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:800; margin-left:0.35rem;">${escapeHtml(cleanSlotRole)}</span>`;
                                 } else if (isSmoke) {
-                                    roleBadge = `<span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:800; margin-left:0.35rem;">💨 ${escapeHtml(slotRole)}</span>`;
+                                    roleBadge = `<span style="background:#f1f5f9; color:#334155; border:1px solid #cbd5e1; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:800; margin-left:0.35rem;">${escapeHtml(cleanSlotRole)}</span>`;
                                 } else {
-                                    roleBadge = `<span style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:700; margin-left:0.35rem;">🏷️ ${escapeHtml(slotRole)}</span>`;
+                                    roleBadge = `<span style="background:#eff6ff; color:#2563eb; border:1px solid #bfdbfe; padding:1px 5px; border-radius:10px; font-size:0.72rem; font-weight:700; margin-left:0.35rem;">${escapeHtml(cleanSlotRole)}</span>`;
                                 }
                             }
 
@@ -5933,10 +6165,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span>${escapeHtml(member.name)} ${isActuallyCreator ? '👑' : ''}</span>
                                     ${roleBadge}
                                 </div>
-                                <div style="font-size: 0.85rem; color: #4a4559;">Lv.${member.level || '?'} / ${escapeHtml(member.job || '冒險家')}</div>
+                                <div style="font-size: 0.85rem; color: #4a4559;">Lv.${member.level || '?'} / ${escapeHtml(normalizeJobName(member.job) || '冒險家')}</div>
                             `;
                         } else {
-                            const emptyRoleText = slotRole ? ` (${slotRole})` : '';
+                            const cleanSlotRole = stripRoleIcon(slotRole);
+                            const emptyRoleText = cleanSlotRole ? ` (${cleanSlotRole})` : '';
                             memberSlot.style.background = 'transparent';
                             memberSlot.style.borderStyle = 'dashed';
                             memberSlot.style.display = 'flex';
@@ -6742,17 +6975,18 @@ document.addEventListener('DOMContentLoaded', () => {
                                   (category === '敏職' ? 'background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;' :
                                   'background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff;');
 
+            const normJob = normalizeJobName(c.job || '');
             html += `
                 <div class="roster-mg-row">
                     <div class="roster-mg-col-left">
                         <span class="roster-mg-id">${escapeHtml(c.id)}</span>
-                        <span class="roster-mg-job-badge" style="color: ${jobColor}; font-weight: 800;">${escapeHtml(c.job || '')}</span>
+                        <span class="roster-mg-job-badge" style="color: ${jobColor}; font-weight: 800;">${escapeHtml(normJob)}</span>
                         <span class="roster-mg-level-badge">Lv.${c.level || 120}</span>
                         <span style="font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 700; ${catBadgeColor}">${category}</span>
                     </div>
                     <div class="roster-mg-actions">
-                        <button type="button" class="roster-mg-btn-edit" onclick="window.startEditRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(c.job || '')}', ${c.level || 120})">✏️ 編輯</button>
-                        <button type="button" class="roster-mg-btn-del" onclick="window.confirmDeleteRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(c.job || '')}')">🗑️ 刪除</button>
+                        <button type="button" class="roster-mg-btn-edit" onclick="window.startEditRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level || 120})">✏️ 編輯</button>
+                        <button type="button" class="roster-mg-btn-del" onclick="window.confirmDeleteRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}')">🗑️ 刪除</button>
                     </div>
                 </div>
             `;
@@ -6844,13 +7078,14 @@ document.addEventListener('DOMContentLoaded', () => {
         CHARACTER_ROSTER.forEach(c => {
             const low = String(c.id).toLowerCase();
             const memberName = charToMember[low] || c.id;
-            const roleTag = getSmartRoleTagForJob(c.job) || '';
+            const normJob = normalizeJobName(c.job);
+            const roleTag = getSmartRoleTagForJob(normJob) || '';
             rows.push([
                 memberName,
                 c.id,
-                c.job,
+                normJob,
                 String(c.level || 120),
-                c.category || getCategoryByJob(c.job),
+                c.category || getCategoryByJob(normJob),
                 roleTag
             ]);
         });
@@ -6976,19 +7211,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const levelStr = row[colMap.level] || '120';
             const level = parseInt(levelStr.replace(/[^0-9]/g, ''), 10) || 120;
 
-            // 常用職業別名自動正規化
-            if (job.includes('黑騎')) job = '黑騎士';
-            else if (job.includes('聖騎')) job = '聖騎士';
-            else if (job.includes('英雄')) job = '英雄';
-            else if (job.includes('箭神')) job = '箭神';
-            else if (job.includes('神射')) job = '神射手';
-            else if (job.includes('神偷')) job = '神偷';
-            else if (job.includes('夜使') || job.includes('標賊')) job = '夜使者';
-            else if (job.includes('槍神')) job = '槍神';
-            else if (job.includes('拳霸')) job = '拳霸';
-            else if (job.includes('火毒')) job = '火毒';
-            else if (job.includes('冰雷')) job = '冰雷';
-            else if (job.includes('主教')) job = '主教';
+            // 常用職業別名自動正規化為 12 職業單字：火、聖、英、弓、弩、鏢、刀、槍、拳、毒、冰、主
+            job = normalizeJobName(job);
 
             let category = row[colMap.category] || getCategoryByJob(job);
             if (!['力職', '敏職', '法職'].includes(category)) {
@@ -7165,31 +7389,33 @@ document.addEventListener('DOMContentLoaded', () => {
     window.getSmartSlotBoss = getSmartSlotBoss;
 
     function getSmartRoleTagForJob(job) {
-        if (!job) return '';
-        const j = job.trim();
-        if (j.includes('黑騎') || j.includes('龍騎士') || j.includes('槍騎')) return '🔥 火';
-        if (j.includes('箭神') || j.includes('神射手') || j.includes('弓箭手') || j.includes('獵人') || j.includes('弩弓')) return '👁️ 眼';
-        if (j.includes('主教') || j.includes('祭司') || j.includes('僧侶')) return '✨ 祈禱';
-        if (j.includes('火毒') || j.includes('冰雷') || j.includes('法師')) return '🪄 法';
-        if (j.includes('影君主') || j.includes('夜使者') || j.includes('神偷') || j.includes('盜賊')) return '🗡️ 賊';
-        if (j.includes('英雄') || j.includes('聖騎士') || j.includes('狂戰') || j.includes('見習')) return '⚔️ 戰';
-        if (j.includes('槍神') || j.includes('拳霸') || j.includes('海盜')) return '🥊 拳/槍';
+        if (!job) return '打手';
+        const j = normalizeJobName(job);
+        if (j === '火') return '火';
+        if (j === '弓' || j === '弩') return '眼';
+        if (j === '主') return '祈禱';
+        if (j === '毒' || j === '冰') return '法';
+        if (j === '鏢' || j === '刀') return '賊';
+        if (j === '英' || j === '聖') return '戰';
+        if (j === '槍' || j === '拳') return '拳/槍';
         return '打手';
     }
 
     function isFireJob(job) {
         if (!job) return false;
-        return job.includes('黑騎') || job.includes('龍騎') || job.includes('槍騎');
+        return normalizeJobName(job) === '火';
     }
 
     function isEyeJob(job) {
         if (!job) return false;
-        return job.includes('箭神') || job.includes('神射手') || job.includes('弓箭手') || job.includes('獵人') || job.includes('弩弓');
+        const j = normalizeJobName(job);
+        return j === '弓' || j === '弩';
     }
 
     function isMageJob(job) {
         if (!job) return false;
-        return job.includes('主教') || job.includes('火毒') || job.includes('冰雷') || job.includes('祭司') || job.includes('僧侶') || job.includes('法師');
+        const j = normalizeJobName(job);
+        return j === '主' || j === '毒' || j === '冰';
     }
 
     function setupSmartSchedule() {
@@ -7921,16 +8147,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 let cellBody = '';
                 if (isFilled) {
                     const jobColor = getHighContrastJobColor(chip.job);
+                    const cleanRole = stripRoleIcon(chip.roleTag);
                     cellBody = `
                         <div class="smart-matrix-chip-cell filled-slot ${conflictInfo.hasConflict ? 'has-conflict' : ''}"
                              onclick="window.unassignSmartSlot('${escapeHtml(col.slotKey)}', ${col.squadIdx}, ${rowIdx})"
                              title="${conflictInfo.hasConflict ? escapeHtml(conflictInfo.reason) + ' (點擊取消退回下方)' : '點擊直接取消並退回下方名冊'}">
                             <!-- Line 1: 定位標籤 + 職業 (固定長度) + ✕退選 -->
                             <div class="smart-chip-line1">
-                                <span class="smart-role-pill ${chip.roleTag ? 'has-role' : ''}"
+                                <span class="smart-role-pill ${cleanRole ? 'has-role' : ''}"
                                       onclick="window.openMiniRolePicker(event, '${escapeHtml(col.slotKey)}', ${col.squadIdx}, ${rowIdx})"
-                                      title="點擊切換定位">${escapeHtml(chip.roleTag || '定位 ▾')}</span>
-                                <span class="smart-cell-char-job" style="color: ${jobColor};">${escapeHtml(chip.job || '打手')}</span>
+                                      title="點擊切換定位">${escapeHtml(cleanRole || '定位 ▾')}</span>
+                                <span class="smart-cell-char-job" style="color: ${jobColor};">${escapeHtml(normalizeJobName(chip.job) || '打')}</span>
                                 <span class="smart-chip-cancel-btn" title="退回下方">✕</span>
                             </div>
                             <!-- Line 2: 角色 ID (字數截斷防爆欄寬) + 等級 Lv. + 衝突警示 -->
@@ -8290,11 +8517,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (listContainer) {
             listContainer.innerHTML = boundChars.map(c => {
                 const jobColor = getHighContrastJobColor(c.job);
-                const roleTag = getSmartRoleTagForJob(c.job);
+                const normJob = normalizeJobName(c.job);
                 return `
-                    <button type="button" class="smart-char-pick-btn" onclick="window.confirmPickCharFromModal('${escapeHtml(slotKey)}', '${encodeURIComponent(memberName)}', '${encodeURIComponent(c.job)}', ${c.level || 120}, '${encodeURIComponent(roleTag)}', ${typeof targetSquadIdx === 'number' ? targetSquadIdx : 0})">
+                    <button type="button" class="smart-char-pick-btn" onclick="window.confirmPickCharFromModal('${escapeHtml(slotKey)}', '${encodeURIComponent(memberName)}', '${encodeURIComponent(normJob)}', ${c.level || 120}, '${encodeURIComponent(roleTag)}', ${typeof targetSquadIdx === 'number' ? targetSquadIdx : 0})">
                         <div style="display: flex; align-items: baseline; gap: 0.55rem;">
-                            <span style="font-size: 0.92rem; font-weight: 800; color: ${jobColor};">${escapeHtml(c.job)}</span>
+                            <span style="font-size: 0.92rem; font-weight: 800; color: ${jobColor};">${escapeHtml(normJob)}</span>
                             <strong style="font-size: 1.02rem; color: #0f172a;">${escapeHtml(memberName)}</strong>
                             <span style="font-size: 0.8rem; color: #64748b; font-weight: 700;">Lv.${c.level}</span>
                         </div>
@@ -8331,16 +8558,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!popover || !optionsContainer) return;
 
         const roles = [
-            { val: '🔥 火', label: '🔥 火' },
-            { val: '👁️ 眼', label: '👁️ 眼' },
-            { val: '⏰ 控時', label: '⏰ 控時' },
-            { val: '🧹 清球', label: '🧹 清球' },
-            { val: '🔮 副控', label: '🔮 副控' },
-            { val: '✨ 祈禱', label: '✨ 祈禱' },
-            { val: '🪄 法', label: '🪄 法' },
-            { val: '⚔️ 打', label: '⚔️ 打' },
-            { val: '🛡️ 輔助', label: '🛡️ 輔助' },
-            { val: '', label: '🚫 清除' }
+            { val: '火', label: '火' },
+            { val: '眼', label: '眼' },
+            { val: '控時', label: '控時' },
+            { val: '清球', label: '清球' },
+            { val: '副控', label: '副控' },
+            { val: '祈禱', label: '祈禱' },
+            { val: '法', label: '法' },
+            { val: '打', label: '打' },
+            { val: '輔助', label: '輔助' },
+            { val: '', label: '清除' }
         ];
 
         optionsContainer.innerHTML = roles.map(r => `
@@ -8349,7 +8576,7 @@ document.addEventListener('DOMContentLoaded', () => {
             </button>
         `).join('') + `
             <button type="button" class="smart-mini-role-btn" style="grid-column: span 2;" onclick="window.customMiniRolePrompt()">
-                ✏️ 自訂定位...
+                自訂定位...
             </button>
         `;
 
@@ -8363,7 +8590,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.selectMiniRole = function(encVal) {
         if (!activeMiniRoleTarget) return;
         const { slotKey, squadIdx, inSquadSlotIdx } = activeMiniRoleTarget;
-        const val = decodeURIComponent(encVal);
+        const val = stripRoleIcon(decodeURIComponent(encVal));
         const squad = smartSchedState.squadsByDaySlot[slotKey]?.[squadIdx];
         if (squad && squad[inSquadSlotIdx]) {
             squad[inSquadSlotIdx].roleTag = val;
@@ -8376,11 +8603,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!activeMiniRoleTarget) return;
         const { slotKey, squadIdx, inSquadSlotIdx } = activeMiniRoleTarget;
         const squad = smartSchedState.squadsByDaySlot[slotKey]?.[squadIdx];
-        const cur = (squad && squad[inSquadSlotIdx]?.roleTag) || '';
+        const cur = (squad && stripRoleIcon(squad[inSquadSlotIdx]?.roleTag)) || '';
         const custom = prompt('請輸入此席位自訂定位名稱：', cur);
         if (custom !== null) {
             if (squad && squad[inSquadSlotIdx]) {
-                squad[inSquadSlotIdx].roleTag = custom.trim();
+                squad[inSquadSlotIdx].roleTag = stripRoleIcon(custom.trim());
                 renderSmartSchedule();
             }
         }
@@ -8504,12 +8731,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const countBadge = `<span style="font-size: 0.74rem; color: #64748b; font-weight: 700;">已排 ${c.stat.count} 團</span>`;
 
+            const normJob = normalizeJobName(c.job);
             html += `
-                <div class="smart-picker-candidate-card" onclick="window.pickMemberIntoSmartSlot('${encodeURIComponent(c.name)}', '${encodeURIComponent(c.job)}', ${c.level || 120})">
+                <div class="smart-picker-candidate-card" onclick="window.pickMemberIntoSmartSlot('${encodeURIComponent(c.name)}', '${encodeURIComponent(normJob)}', ${c.level || 120})">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: baseline; gap: 0.5rem;">
                             <span style="font-size: 0.96rem; font-weight: 800; color: #0f172a;">${escapeHtml(c.name)}</span>
-                            <span style="font-size: 0.84rem; font-weight: 800; color: ${jobColor};">${escapeHtml(c.job)}</span>
+                            <span style="font-size: 0.84rem; font-weight: 800; color: ${jobColor};">${escapeHtml(normJob)}</span>
                             <span style="font-size: 0.78rem; font-weight: 700; color: #64748b;">Lv.${c.level}</span>
                         </div>
                         <div style="display: flex; gap: 0.35rem; align-items: center;">
@@ -8574,7 +8802,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const squadName = squads.length > 1 ? (sqIdx === 0 ? 'A隊' : 'B隊') : '隊伍';
                         text += `\n📅 ${slotKey}【${squadBoss}】${squadName} (${filled.length}/6人)：\n`;
                         filled.forEach((c, i) => {
-                            text += `  ${i + 1}. ${c.name} (${c.job} Lv.${c.level}) [${c.roleTag || '打手'}]\n`;
+                            text += `  ${i + 1}. ${c.name} (${normalizeJobName(c.job)} Lv.${c.level}) [${stripRoleIcon(c.roleTag) || '打手'}]\n`;
                         });
                     }
                 });
@@ -8653,12 +8881,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 const slotRolesMap = {};
                 const finalMembers = team.members.map((m, idx) => {
                     const isThisCreator = Boolean(m.name && creatorName && m.name.toLowerCase() === creatorName.toLowerCase());
-                    const roleTag = m.roleTag || getSmartRoleTagForJob(m.job);
+                    const roleTag = stripRoleIcon(m.roleTag || getSmartRoleTagForJob(normalizeJobName(m.job)));
                     slotRolesMap[idx] = roleTag;
                     return {
                         slotIndex: idx,
                         name: m.name,
-                        job: m.job || '',
+                        job: normalizeJobName(m.job || ''),
                         level: m.level || 120,
                         roleTag: roleTag,
                         clientId: isThisCreator ? myClientId : 'assigned',
@@ -8699,7 +8927,18 @@ document.addEventListener('DOMContentLoaded', () => {
     window.renderSmartSchedule = renderSmartSchedule;
     window.setupSmartSchedule = setupSmartSchedule;
 
-    // --- Tab 3: Changelog (Only Lumi can post/delete) ---
+    // --- Tab: Changelog (Accordion / 手風琴折疊模式) ---
+    let activeChangelogTs = null;
+
+    window.toggleChangelog = function(ts) {
+        if (activeChangelogTs === ts) {
+            activeChangelogTs = null;
+        } else {
+            activeChangelogTs = ts;
+        }
+        renderChangelogs();
+    };
+
     function renderChangelogs() {
         const container = document.getElementById('changelog-container');
         if (!container) return;
@@ -8715,28 +8954,42 @@ document.addEventListener('DOMContentLoaded', () => {
         const sorted = [...changelogs].sort((a, b) => (b.timestamp || b.id || 0) - (a.timestamp || a.id || 0));
 
         sorted.forEach(log => {
-            const card = document.createElement('div');
-            card.style.cssText = 'background: #ffffff !important; padding: 1.5rem !important; border-radius: 12px !important; border: 1px solid rgba(0, 0, 0, 0.1) !important; border-left: 6px solid var(--primary-color) !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15) !important; word-break: break-word !important; margin-bottom: 1rem !important;';
-
             const ts = log.timestamp || log.id || Date.now();
+            const isOpen = (activeChangelogTs === ts);
+
+            const card = document.createElement('div');
+            card.className = `changelog-accordion-card ${isOpen ? 'open' : ''}`;
+            card.style.cssText = 'background: #ffffff !important; border-radius: 12px !important; border: 1.5px solid rgba(0, 0, 0, 0.08) !important; border-left: 6px solid var(--primary-color) !important; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.06) !important; word-break: break-word !important; margin-bottom: 0.8rem !important; overflow: hidden; transition: all 0.2s ease;';
+
             const dateObj = new Date(ts);
             const dateStr = log.date || `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2,'0')}/${dateObj.getDate().toString().padStart(2,'0')}`;
 
             // Delete button ONLY for Lumi
             const deleteBtnHtml = isLumi() ? `
-                <button onclick="deleteChangelog(${ts})" style="background:transparent; border:1px solid var(--danger-color); color:var(--danger-color); border-radius:6px; padding:0.25rem 0.6rem; font-size:0.8rem; cursor:pointer; font-weight:bold;">🗑️ 刪除日誌</button>
+                <button onclick="event.stopPropagation(); deleteChangelog(${ts})" style="background:transparent; border:1px solid var(--danger-color); color:var(--danger-color); border-radius:6px; padding:0.25rem 0.6rem; font-size:0.8rem; cursor:pointer; font-weight:bold;">🗑️ 刪除日誌</button>
             ` : '';
 
+            const arrowIcon = isOpen 
+                ? '<span style="font-size: 0.85rem; color: var(--primary-color); display: inline-block;">▼</span>' 
+                : '<span style="font-size: 0.85rem; color: #94a3b8; display: inline-block;">▶</span>';
+
             card.innerHTML = `
-                <div style="display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 0.6rem; flex-wrap: wrap; gap: 0.5rem;">
-                    <h3 style="margin: 0; color: #0f172a !important; font-size: 1.25rem !important; font-weight: 700 !important;">${escapeHtml(log.title)}</h3>
-                    <span style="color: #64748b !important; font-size: 0.9rem !important; font-weight: 600 !important;">${dateStr}</span>
+                <div class="changelog-accordion-header" onclick="window.toggleChangelog(${ts})" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 1.25rem; cursor: pointer; user-select: none; background: ${isOpen ? '#f8fafc' : '#ffffff'}; transition: background 0.15s ease;">
+                    <div style="display: flex; align-items: center; gap: 0.6rem; flex: 1; min-width: 0;">
+                        ${arrowIcon}
+                        <h3 style="margin: 0; color: #0f172a !important; font-size: 1.15rem !important; font-weight: 700 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(log.title)}</h3>
+                    </div>
+                    <span style="color: #64748b !important; font-size: 0.88rem !important; font-weight: 600 !important; margin-left: 0.75rem; white-space: nowrap;">${dateStr}</span>
                 </div>
-                <div style="color: #334155 !important; font-size: 1rem !important; line-height: 1.7 !important; white-space: pre-wrap !important; font-weight: 500 !important; margin-top: 0.5rem !important;">${escapeHtml(log.content)}</div>
-                <div style="margin-top: 1rem !important; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 0.6rem;">
-                    <span style="font-size: 0.85rem !important; color: #64748b !important; font-weight: 600 !important;">更新者: ${escapeHtml(log.author || '系統')}</span>
-                    ${deleteBtnHtml}
-                </div>
+                ${isOpen ? `
+                    <div class="changelog-accordion-body" style="padding: 1.1rem 1.35rem 1.35rem 1.35rem; border-top: 1px solid rgba(0,0,0,0.06); background: #ffffff;">
+                        <div style="color: #334155 !important; font-size: 0.98rem !important; line-height: 1.7 !important; white-space: pre-wrap !important; font-weight: 500 !important;">${escapeHtml(log.content)}</div>
+                        <div style="margin-top: 1rem !important; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 0.6rem;">
+                            <span style="font-size: 0.85rem !important; color: #64748b !important; font-weight: 600 !important;">更新者: ${escapeHtml(log.author || '系統')}</span>
+                            ${deleteBtnHtml}
+                        </div>
+                    </div>
+                ` : ''}
             `;
             container.appendChild(card);
         });
@@ -8749,6 +9002,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (confirm('確定要刪除這筆更新日誌嗎？此動作無法復原。')) {
             changelogs = changelogs.filter(c => (c.timestamp || c.id) !== ts);
+            if (activeChangelogTs === ts) activeChangelogTs = null;
             db.ref('changelog').set(changelogs);
             renderChangelogs();
             alert('日誌已成功刪除！');

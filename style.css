@@ -1931,6 +1931,56 @@ body::after {
     box-shadow: 0 1px 4px rgba(245, 158, 11, 0.2);
 }
 
+/* Prefill Hint Card (做法 2：自動偵測歷史填寫紀錄與一鍵帶入) */
+.survey-prefill-hint {
+    margin: 0.15rem 0 0.35rem 0;
+}
+.survey-prefill-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.65rem;
+    background: #eff6ff;
+    border: 1.5px solid #93c5fd;
+    border-radius: 8px;
+    padding: 0.3rem 0.75rem;
+    font-size: 0.82rem;
+    color: #1e3a8a;
+    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.12);
+    animation: fadeIn 0.2s ease-in-out;
+    flex-wrap: wrap;
+}
+.survey-prefill-card.is-existing {
+    background: #f0fdf4;
+    border-color: #86efac;
+    color: #166534;
+}
+.survey-prefill-card.is-success {
+    background: #fdf4ff;
+    border-color: #d8b4fe;
+    color: #6b21a8;
+}
+.btn-prefill-action {
+    background: linear-gradient(135deg, #2563eb, #1d4ed8);
+    color: #ffffff;
+    font-weight: 800;
+    font-size: 0.78rem;
+    padding: 0.22rem 0.65rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+.btn-prefill-action:hover {
+    background: linear-gradient(135deg, #1d4ed8, #1e40af);
+    transform: translateY(-1px);
+    box-shadow: 0 3px 8px rgba(37, 99, 235, 0.35);
+}
+
 /* Row 2: Slots Grid - 9 slots in a neat row */
 .survey-h-row-slots {
     flex-direction: column;
