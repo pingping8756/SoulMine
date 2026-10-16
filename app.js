@@ -2696,23 +2696,21 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        // 若為編輯模式，且隊伍席位已有特定角色（可能在之前已入座），一併納入可選清單以便顯示打勾狀態與退選
-        if (preDraftState.editingRaidId) {
-            preDraftState.slots.forEach(s => {
-                if (s && s.name && !allAvailableCards.some(c => c.id.toLowerCase() === s.name.toLowerCase() && c.job === s.job)) {
-                    allAvailableCards.push({
-                        id: s.name,
-                        job: s.job || '冒險家',
-                        level: s.level || 120,
-                        category: getCategoryByJob(s.job),
-                        memberName: s.name,
-                        scroll: '否',
-                        isScrollYes: false,
-                        notes: ''
-                    });
-                }
-            });
-        }
+        // 無論是時段預排、編輯看板出團或編輯已確認隊伍，席位中已有角色均納入可選清單，顯示打勾入座狀態
+        preDraftState.slots.forEach(s => {
+            if (s && s.name && !allAvailableCards.some(c => (c.id || '').toLowerCase() === s.name.toLowerCase() && c.job === s.job)) {
+                allAvailableCards.push({
+                    id: s.name,
+                    job: s.job || '打手',
+                    level: s.level || 120,
+                    category: getCategoryByJob(s.job),
+                    memberName: s.name,
+                    scroll: '吃券',
+                    isScrollYes: true,
+                    notes: ''
+                });
+            }
+        });
 
         if (allAvailableCards.length === 0) {
             container.innerHTML = `
@@ -2918,6 +2916,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (closeX) closeX.onclick = closeModal;
         if (cancelBtn) cancelBtn.onclick = closeModal;
+
+        // 手動新增角色卡展開切換與加入席位
+        const toggleCustomBtn = document.getElementById('btn-toggle-predraft-custom');
+        const customBox = document.getElementById('predraft-custom-box');
+        if (toggleCustomBtn && customBox) {
+            toggleCustomBtn.onclick = () => {
+                const isHidden = (customBox.style.display === 'none' || !customBox.style.display);
+                customBox.style.display = isHidden ? 'block' : 'none';
+                if (isHidden) {
+                    const nameInput = document.getElementById('predraft-custom-name');
+                    if (nameInput) nameInput.focus();
+                }
+            };
+        }
+
+        const btnAddCustom = document.getElementById('btn-add-predraft-custom-char');
+        if (btnAddCustom) {
+            btnAddCustom.onclick = () => {
+                const nameInput = document.getElementById('predraft-custom-name');
+                const jobSelect = document.getElementById('predraft-custom-job');
+                const levelInput = document.getElementById('predraft-custom-level');
+                const cName = nameInput ? nameInput.value.trim() : '';
+                const cJob = jobSelect ? jobSelect.value : '火';
+                const cLevel = levelInput ? (parseInt(levelInput.value, 10) || 120) : 120;
+
+                if (!cName) {
+                    alert('請輸入角色遊戲ID或名稱！');
+                    if (nameInput) nameInput.focus();
+                    return;
+                }
+
+                const isDk = isDragonKingBoss(preDraftState.boss);
+                const maxSlots = isDk ? 12 : 6;
+                const emptyIdx = preDraftState.slots.findIndex((s, i) => i < maxSlots && (!s || !s.name));
+                if (emptyIdx === -1) {
+                    alert(`⚠️ 目前席位已滿 (${maxSlots}人)！若要替換請先退選其他角色。`);
+                    return;
+                }
+
+                const normJob = normalizeJobName(cJob);
+                const autoRole = stripRoleIcon(getSmartRoleTagForJob(normJob)) || '打手';
+                const existingRole = (preDraftState.slots[emptyIdx] && preDraftState.slots[emptyIdx].roleTag) || autoRole;
+
+                preDraftState.slots[emptyIdx] = {
+                    slotIndex: emptyIdx,
+                    name: cName,
+                    job: normJob,
+                    level: cLevel,
+                    roleTag: existingRole
+                };
+
+                if (typeof saveCustomCharacter === 'function') {
+                    saveCustomCharacter({
+                        id: cName,
+                        job: normJob,
+                        level: cLevel,
+                        category: getCategoryByJob(normJob),
+                        isCustom: true
+                    });
+                }
+
+                if (nameInput) nameInput.value = '';
+                if (customBox) customBox.style.display = 'none';
+
+                renderPreDraftSlots();
+                renderPreDraftAvailableCharacters();
+            };
+        }
+
         if (clearSlotsBtn) {
             clearSlotsBtn.onclick = () => {
                 const isDragonKing = isDragonKingBoss(preDraftState.boss);
@@ -5702,6 +5769,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 teams.forEach(team => {
+                    const actualTeamIdx = confirmedTeams.indexOf(team);
                     const members = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
                     const isDk = isDragonKingBoss(team.boss);
 
@@ -5711,7 +5779,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         return;
                     }
 
-                    const m = members.find((item, idx) => (item.slotIndex !== undefined ? item.slotIndex : idx) === slotIdx) || members[slotIdx];
+                    // 檢查成員是否有指定 slotIndex，若有則依據 slotIndex 嚴格對應席位；若未排入則維持空位，絕不拿其他席位成員重複填補
+                    const hasExplicitSlotIndex = members.some(item => item && item.slotIndex !== undefined && item.slotIndex !== null);
+                    let m = null;
+                    if (hasExplicitSlotIndex) {
+                        m = members.find(item => item && item.slotIndex === slotIdx);
+                    } else {
+                        m = members[slotIdx];
+                    }
                     const squadHeader = (isDk && slotIdx === 0) ? '<div class="squad-divider">第一隊</div>' : ((isDk && slotIdx === 6) ? '<div class="squad-divider">第二隊</div>' : '');
 
                     if (!m || !m.name) {
@@ -5721,10 +5796,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const roleBadge = cleanReservedRole ? `<span class="member-role-badge ${roleInfo.cssClass}">${escapeHtml(cleanReservedRole)}</span>` : '';
 
                         rowCells += `
-                            <td class="col-slot-cell is-empty-slot" style="text-align: center;">
+                            <td class="col-slot-cell is-empty-slot" style="text-align: center; cursor: pointer;" onclick="if(typeof window.editConfirmedTeam==='function')window.editConfirmedTeam(confirmedTeams[${actualTeamIdx}])" title="席位空缺（點擊進入編輯新增成員）">
                                 ${squadHeader}
                                 <div class="slot-inner" style="justify-content: center;">
-                                    <span class="slot-empty-text">-</span>
+                                    <span class="slot-empty-text" style="color: #94a3b8; font-weight: 700;">-</span>
                                     ${roleBadge}
                                 </div>
                             </td>
