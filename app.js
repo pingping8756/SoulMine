@@ -5651,7 +5651,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bossNick = getBossNickname(boss);
                 const gamesStr = team.gamesCount ? ` ${team.gamesCount}場` : '';
                 const timeStr = team.timeText ? (team.timeText.match(/\d{1,2}:\d{2}/) ? team.timeText.match(/\d{1,2}:\d{2}/)[0] : '') : '';
-                const noteHtml = team.note ? `<div class="report-team-note" title="${escapeHtml(team.note)}">📝 ${escapeHtml(team.note)}</div>` : '';
+
+                // 檢查備註：若為自動生成的全週排班備註則不顯示
+                const rawNote = (team.note || '').trim();
+                const isAutoSchedNote = rawNote.includes('全週排班') || rawNote.includes('自動發布隊伍');
+                const displayNote = isAutoSchedNote ? '' : rawNote;
+
+                const fullTooltip = `${escapeHtml(boss)}${gamesStr} ${timeStr}${displayNote ? `\n📝 備註：${escapeHtml(displayNote)}` : ''}`;
 
                 // Channel value (無鎖定按鈕，有號碼就顯示)
                 const currentCh = team.finalChannel || (team.rolledChannels && team.rolledChannels[0]) || (team.channels && team.channels !== '未指定' ? parseInt(team.channels) : '') || (Math.floor(Math.random() * 2000) + 1);
@@ -5664,18 +5670,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 return `
-                    <th class="col-team-header" title="${escapeHtml(boss)}${gamesStr} ${timeStr}">
-                        <div style="display: flex; align-items: center; justify-content: center; gap: 0.3rem; white-space: nowrap; line-height: 1.25;">
+                    <th class="col-team-header" title="${fullTooltip}" style="vertical-align: top; padding: 0.35rem 2px;">
+                        <div style="display: flex; align-items: center; justify-content: center; gap: 0.25rem; white-space: nowrap; line-height: 1.25;">
                             <span class="report-team-title" style="font-weight: 800; font-size: 0.82rem; color: #1e3a8a; white-space: nowrap;">
-                                ${bossNick}${gamesStr}
+                                ${bossNick}
                             </span>
-                            ${timeStr ? `<span style="font-weight: 800; font-size: 0.78rem; color: #ea580c; background: #fff7ed; padding: 1px 5px; border-radius: 4px; border: 1px solid #fed7aa; white-space: nowrap; flex-shrink: 0; line-height: 1.2;">${timeStr}</span>` : ''}
+                            ${timeStr ? `<span style="font-weight: 800; font-size: 0.78rem; color: #ea580c; background: #fff7ed; padding: 1px 4px; border-radius: 4px; border: 1px solid #fed7aa; white-space: nowrap; flex-shrink: 0; line-height: 1.2;">${timeStr}</span>` : ''}
                         </div>
-                        <div class="report-channel-box" style="margin-top: 0.32rem; display: flex; align-items: center; justify-content: center; gap: 0.28rem;">
-                            <input type="number" min="1" max="2000" class="report-channel-input" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" style="width: 60px; padding: 2px 4px; font-size: 0.85rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 800; color: #1e293b; background: #ffffff;">
-                            <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" title="隨機骰頻道" style="padding: 1px 5px; font-size: 0.88rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2;">🎲</button>
+                        <div class="report-channel-box" style="margin-top: 0.32rem; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
+                            <input type="number" min="1" max="2000" class="report-channel-input" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" style="width: 50px; padding: 2px 2px; font-size: 0.85rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 800; color: #1e293b; background: #ffffff;">
+                            <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" title="隨機骰頻道" style="padding: 1px 4px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2;">🎲</button>
                         </div>
-                        ${noteHtml}
+                        ${displayNote ? `<div class="report-team-note" title="📝 備註：${escapeHtml(displayNote)}" style="cursor: help;">📝 ${escapeHtml(displayNote)}</div>` : ''}
                     </th>
                 `;
             }).join('');
@@ -5771,38 +5777,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 if (isHistory) {
                     return `
-                        <td style="text-align:center; padding:0.45rem 0.2rem; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
-                            <div style="font-weight: 800; font-size: 0.82rem; color: #64748b; margin-bottom: 0.35rem; white-space: nowrap;">
+                        <td style="text-align:center; padding: 0.4rem 2px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
+                            <div style="font-weight: 800; font-size: 0.8rem; color: #64748b; margin-bottom: 0.3rem; white-space: nowrap;">
                                 <span>👥 ${members.length} / ${maxCap} 人</span>
                             </div>
                             <!-- 過期隊伍：不需要三個按鈕，只要掉寶紀錄 -->
                             <div class="report-table-drop-section" style="text-align: left; margin-top: 0.25rem;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                     <span style="font-size: 0.72rem; font-weight: 800; color: #b45309;">掉寶紀錄</span>
-                                    <button type="button" class="btn-table-save-drop" data-team-index="${actualTeamIdx}" style="font-size: 0.7rem; padding: 1px 5px; background: #16a34a; color: #ffffff; border: none; border-radius: 3px; cursor: pointer; font-weight: 700;">儲存</button>
+                                    <button type="button" class="btn-table-save-drop" data-team-index="${actualTeamIdx}" style="font-size: 0.7rem; padding: 1px 4px; background: #16a34a; color: #ffffff; border: none; border-radius: 3px; cursor: pointer; font-weight: 700;">儲存</button>
                                 </div>
-                                <textarea class="report-table-drop-input" data-team-index="${actualTeamIdx}" placeholder="輸入掉寶紀錄..." style="width: 100%; height: 38px; font-size: 0.72rem; padding: 2px 4px; border: 1px solid #cbd5e1; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #ffffff; color: #1e293b; font-family: inherit;">${escapeHtml(team.drops || '')}</textarea>
+                                <textarea class="report-table-drop-input" data-team-index="${actualTeamIdx}" placeholder="輸入掉寶紀錄..." style="width: 100%; height: 38px; font-size: 0.72rem; padding: 2px 3px; border: 1px solid #cbd5e1; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #ffffff; color: #1e293b; font-family: inherit;">${escapeHtml(team.drops || '')}</textarea>
                             </div>
                         </td>
                     `;
                 }
 
                 return `
-                    <td style="text-align:center; padding:0.45rem 0.2rem; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
-                        <div style="font-weight: 800; font-size: 0.82rem; color: #2563eb; margin-bottom: 0.35rem; white-space: nowrap;">
+                    <td style="text-align:center; padding: 0.4rem 2px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
+                        <div style="font-weight: 800; font-size: 0.8rem; color: #2563eb; margin-bottom: 0.3rem; white-space: nowrap;">
                             <span>👥 ${members.length} / ${maxCap} 人</span>
                         </div>
-                        <!-- 複製、編輯、刪除 三個按鈕同一行，無 icon -->
-                        <div style="display: flex; justify-content: center; align-items: center; gap: 3px; white-space: nowrap;">
-                            <button type="button" class="btn-table-copy-team" data-team-index="${actualTeamIdx}" title="複製原班人馬建立新出團" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #2563eb; color: #ffffff; border: none; font-weight: 800; cursor: pointer; white-space: nowrap;">
-                                複製
-                            </button>
-                            <button type="button" class="btn-table-edit-team" data-team-index="${actualTeamIdx}" title="編輯調整成員站位與戰術定位" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #ffffff; color: #2563eb; border: 1px solid #3b82f6; font-weight: 800; cursor: pointer; white-space: nowrap;">
-                                編輯
-                            </button>
-                            <button type="button" class="btn-table-delete-team" data-team-index="${actualTeamIdx}" title="刪除出團紀錄" style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: #ffffff; color: #dc2626; border: 1px solid #f87171; font-weight: 800; cursor: pointer; white-space: nowrap;">
-                                刪除
-                            </button>
+                        <!-- 複製、編輯、刪除 三個按鈕同一行，全寬自適應均分無浪費空間 -->
+                        <div style="display: flex; justify-content: center; align-items: center; gap: 2px; width: 100%; box-sizing: border-box;">
+                            <button type="button" class="btn-table-copy-team" data-team-index="${actualTeamIdx}" title="複製原班人馬建立新出團" style="flex: 1; min-width: 0; font-size: 0.68rem; padding: 2px 1px; border-radius: 3px; background: #2563eb; color: #ffffff; border: none; font-weight: 800; cursor: pointer; text-align: center; white-space: nowrap;">複製</button>
+                            <button type="button" class="btn-table-edit-team" data-team-index="${actualTeamIdx}" title="編輯調整成員站位與戰術定位" style="flex: 1; min-width: 0; font-size: 0.68rem; padding: 2px 1px; border-radius: 3px; background: #ffffff; color: #2563eb; border: 1px solid #3b82f6; font-weight: 800; cursor: pointer; text-align: center; white-space: nowrap;">編輯</button>
+                            <button type="button" class="btn-table-delete-team" data-team-index="${actualTeamIdx}" title="刪除出團紀錄" style="flex: 1; min-width: 0; font-size: 0.68rem; padding: 2px 1px; border-radius: 3px; background: #ffffff; color: #dc2626; border: 1px solid #f87171; font-weight: 800; cursor: pointer; text-align: center; white-space: nowrap;">刪除</button>
                         </div>
                     </td>
                 `;
@@ -5810,7 +5810,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
 
         container.innerHTML = `
-            <table class="confirmed-report-table">
+            <table class="confirmed-report-table" style="min-width: ${Math.max(880, totalColumns * 92)}px;">
                 ${colgroupHtml}
                 <thead>
                     <tr class="report-header-dates">
@@ -8912,7 +8912,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     scheduledTimestamp: !isNaN(schedDate.getTime()) ? schedDate.getTime() : Date.now(),
                     creator: creatorName,
                     creatorClientId: myClientId,
-                    note: `【全週排班】自動發布隊伍${team.squadLetter}`,
+                    note: '',
                     slotRoles: slotRolesMap,
                     isConfirmed: false,
                     members: finalMembers,
