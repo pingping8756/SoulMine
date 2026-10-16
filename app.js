@@ -999,6 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupRosterManagement();
             setupSmartSchedule();
             setupChangelogForm();
+            setupGlobalHeartWidget();
             updateUI();
         } catch (e) {
             console.error("FATAL ERROR IN INITAPP:", e);
@@ -9120,6 +9121,196 @@ document.addEventListener('DOMContentLoaded', () => {
             renderChangelogs();
             alert('🎉 更新日誌已成功發佈！');
         });
+    }
+
+    // ========================================================
+    // Global Floating Heart Interactive Widget (全站懸浮愛心互動)
+    // ========================================================
+    const HEART_EASTER_EGGS = [
+        // --- 暖心心靈雞湯 ---
+        { type: 'soup', icon: '✨', title: '暖心雞湯', text: '今天打王一定順利出大寶、人人有箱子！' },
+        { type: 'soup', icon: '☕', title: '暖心雞湯', text: '辛苦了！謝謝你為公會出團出一份力～' },
+        { type: 'soup', icon: '🍀', title: '幸運祝福', text: '今天也是閃閃發光的一天，衝卷必過 100%！' },
+        { type: 'soup', icon: '💪', title: '熱血應援', text: '深呼吸～你是隊伍裡不可或缺的大腿！' },
+        { type: 'soup', icon: '👻', title: '公會陪伴', text: '生活再忙，也別忘了跟公會夥伴一起打王耍廢！' },
+        { type: 'soup', icon: '🍵', title: '溫馨提醒', text: '打王累了嗎？喝口水、伸個懶腰再出發吧！' },
+        { type: 'soup', icon: '❤️', title: '暖心雞湯', text: '不論今天戰況如何，有你在的公會就是最棒的公會！' },
+        { type: 'soup', icon: '🔥', title: '加油打氣', text: '失敗沒關係，下週重置又是好漢一條！' },
+        { type: 'soup', icon: '🛡️', title: '戰術鼓舞', text: '只要心態不崩，哪怕殘血也能逆風翻盤！' },
+        { type: 'soup', icon: '🌟', title: '公會陪伴', text: '在 SoulMine，沒有人是一個人孤單打王的！' },
+        { type: 'soup', icon: '🎁', title: '掉寶祈願', text: '願你今天所有的努力，都化作掉寶滿地的光芒！' },
+        { type: 'soup', icon: '🔋', title: '能量充能', text: '今日幸運值已充能 100%，待會摸箱必定閃金光！' },
+        { type: 'soup', icon: '🌤️', title: '好心情', text: '出團放輕鬆，遊戲開心最重要～大家一起有說有笑最好玩！' },
+        { type: 'soup', icon: '🤝', title: '團隊精神', text: '完美的配合來自彼此的信任，你們是最棒的團隊！' },
+        { type: 'soup', icon: '🌸', title: '溫柔祝福', text: '今天也要對自己好一點，打完王早點休息喔！' },
+
+        // --- 搞笑笑話與迷因 ---
+        { type: 'joke', icon: '⏰', title: '公會笑話', text: '為什麼拉圖斯總是那麼準時？因為它肚子裡有時鐘啊！' },
+        { type: 'joke', icon: '🤣', title: '衝卷迷因', text: '衝 10% 卷沒過是正常的；要是過了，你今晚睡得著嗎？' },
+        { type: 'joke', icon: '😱', title: '主教心聲', text: '主教：「這波我清球！...球呢？球在敲我的頭。」' },
+        { type: 'joke', icon: '🪦', title: '打王日常', text: '打王最遙遠的距離：不是王血量剩 1%，而是墓碑掉下來時王死了。' },
+        { type: 'joke', icon: '❄️', title: '冷笑話', text: '什麼職業最不怕冷？冰雷，因為他早就被凍習慣了。' },
+        { type: 'joke', icon: '🎲', title: '玄學傳說', text: '聽說點滿 100 下愛心，下次打困拉掉寶率會提升 0.00001% 喔！(純屬虛構)' },
+        { type: 'joke', icon: '🦉', title: '熬夜冠軍', text: '今天不熬夜打王，只熬夜等隊友回訊息。' },
+        { type: 'joke', icon: '💥', title: '翻車實錄', text: '隊長：「進場聽指揮！」... 10秒後：「剛剛到底是誰按到普攻進場的？！」' },
+        { type: 'joke', icon: '🍗', title: '大腿名言', text: '如果有一天我變強了，那一定是公會大腿借我的力量。' },
+        { type: 'joke', icon: '🐱', title: '皮卡啾的秘密', text: '你知道皮卡啾為什麼這麼圓嗎？因為天天被公會群毆揍成球。' },
+        { type: 'joke', icon: '📜', title: '衝卷哲學', text: '衝卷千萬別猶豫，猶豫就會敗北，果斷就會...白白浪費一張卷。' },
+        { type: 'joke', icon: '🧼', title: '摸箱儀式', text: '摸箱前記得去洗手，不然摸出來的都是祝福卷軸...的碎片。' },
+        { type: 'joke', icon: '🐲', title: '混龍體悟', text: '人生就像打混龍，你永遠不知道下一秒左頭會不會突然魅惑你。' },
+        { type: 'joke', icon: '🔌', title: '斷線藉口', text: '別問我剛剛為什麼突然站著不動，問就是伺服器想念我家桌面了。' },
+        { type: 'joke', icon: '🕶️', title: '打手自我催眠', text: '只要我不打開輸出統計表，我就永遠是全隊第一打手！' },
+        { type: 'joke', icon: '🌪️', title: '職業問答', text: '為什麼英雄打王都不穿鞋？因為他們都靠「狂刃風暴」用飛的！' },
+        { type: 'joke', icon: '🍲', title: '吃貨打王', text: '打王前：「檢查水、眼、火、速！」打王後：「宵夜要吃鹹酥雞還是泡麵？」' },
+        { type: 'joke', icon: '🧙‍♂️', title: '法師哲學', text: '什麼是真正的法師？魔心防禦開著、藍水灌著、地板躺著。' },
+        { type: 'joke', icon: '🤫', title: '秘密行動', text: '你以為我在認真走位？其實我是在手忙腳亂找補血鍵！' }
+    ];
+
+    function setupGlobalHeartWidget() {
+        const widgetContainer = document.getElementById('global-heart-widget');
+        const heartBtn = document.getElementById('btn-global-heart');
+        const counterEl = document.getElementById('global-heart-counter');
+        const speechBubble = document.getElementById('heart-speech-bubble');
+        const bubbleIcon = document.getElementById('bubble-icon');
+        const bubbleTitle = document.getElementById('bubble-title');
+        const bubbleText = document.getElementById('bubble-text');
+        const bubbleCloseBtn = document.getElementById('btn-close-heart-bubble');
+
+        if (!heartBtn || !counterEl) return;
+
+        let localTotalLikes = 0;
+        let pendingBatchLikes = 0;
+        let syncBatchTimer = null;
+        let currentComboClicks = 0;
+        let nextEggThreshold = Math.floor(Math.random() * 6) + 5; // 5 ~ 10 次隨機觸發
+        let bubbleHideTimer = null;
+        let lastEggIndex = -1;
+
+        // 監聽 Firebase 實時同步
+        if (typeof db !== 'undefined') {
+            db.ref('appStats/likes').on('value', snapshot => {
+                const val = snapshot.val();
+                const remoteNum = (typeof val === 'number') ? val : (parseInt(val, 10) || 0);
+                if (pendingBatchLikes === 0) {
+                    localTotalLikes = remoteNum;
+                    counterEl.textContent = Number(localTotalLikes).toLocaleString();
+                } else {
+                    localTotalLikes = Math.max(localTotalLikes, remoteNum + pendingBatchLikes);
+                    counterEl.textContent = Number(localTotalLikes).toLocaleString();
+                }
+            });
+        }
+
+        // 關閉氣泡按鈕
+        if (bubbleCloseBtn && speechBubble) {
+            bubbleCloseBtn.onclick = (e) => {
+                e.stopPropagation();
+                if (bubbleHideTimer) clearTimeout(bubbleHideTimer);
+                speechBubble.style.display = 'none';
+            };
+        }
+
+        // 觸發彩蛋氣泡 (心靈雞湯 + 笑話)
+        const triggerEasterEgg = () => {
+            if (!speechBubble || !bubbleText) return;
+
+            let randIdx;
+            do {
+                randIdx = Math.floor(Math.random() * HEART_EASTER_EGGS.length);
+            } while (randIdx === lastEggIndex && HEART_EASTER_EGGS.length > 1);
+            lastEggIndex = randIdx;
+
+            const egg = HEART_EASTER_EGGS[randIdx];
+            bubbleText.textContent = `${egg.icon ? egg.icon + ' ' : ''}${egg.text}`;
+
+            // 重置彈出動畫
+            speechBubble.style.display = 'block';
+            speechBubble.style.animation = 'none';
+            // Trigger reflow
+            void speechBubble.offsetWidth;
+            speechBubble.style.animation = 'bubblePopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+
+            if (bubbleHideTimer) clearTimeout(bubbleHideTimer);
+            bubbleHideTimer = setTimeout(() => {
+                speechBubble.style.display = 'none';
+            }, 4500);
+        };
+
+        // 飄出 功德+1 粒子特效
+        const spawnPlusOneParticle = (btnRect) => {
+            const particle = document.createElement('div');
+            particle.className = 'heart-float-particle';
+            const randomOffsetX = Math.floor(Math.random() * 26) - 13;
+            particle.style.setProperty('--offset-x', `${randomOffsetX}px`);
+
+            // 隨機出現「+1」或「功德+1」
+            const floatingOptions = [
+                '+1 ❤️',
+                '+1',
+                '+1 💕',
+                '功德+1 ❤️',
+                '功德+1 🪵',
+                '功德+1 ✨',
+                '功德+1'
+            ];
+            particle.textContent = floatingOptions[Math.floor(Math.random() * floatingOptions.length)];
+
+            particle.style.right = `${12 + Math.floor(Math.random() * 20)}px`;
+            particle.style.bottom = `${btnRect.height + 6}px`;
+
+            widgetContainer.appendChild(particle);
+
+            setTimeout(() => {
+                if (particle.parentNode) {
+                    particle.parentNode.removeChild(particle);
+                }
+            }, 800);
+        };
+
+        // 點擊事件
+        heartBtn.onclick = (e) => {
+            e.preventDefault();
+
+            // 1. 本地即時增加數字
+            localTotalLikes++;
+            pendingBatchLikes++;
+            counterEl.textContent = Number(localTotalLikes).toLocaleString();
+
+            // 2. Q 彈跳動動畫
+            heartBtn.classList.remove('bump');
+            void heartBtn.offsetWidth;
+            heartBtn.classList.add('bump');
+
+            // 3. 飄散 +1 特效
+            const rect = heartBtn.getBoundingClientRect();
+            spawnPlusOneParticle(rect);
+
+            // 4. 判斷連擊是否達到隨機彩蛋門檻 (5 ~ 10 次)
+            currentComboClicks++;
+            if (currentComboClicks >= nextEggThreshold) {
+                triggerEasterEgg();
+                currentComboClicks = 0;
+                nextEggThreshold = Math.floor(Math.random() * 6) + 5; // 下一次隨機 5~10 下
+            }
+
+            // 5. 批次節流上傳 Firebase (避免狂按造成頻寬浪費，同時保證累計不遺失)
+            const flushLikesToFirebase = () => {
+                if (pendingBatchLikes > 0 && typeof db !== 'undefined') {
+                    const toSend = pendingBatchLikes;
+                    pendingBatchLikes = 0;
+                    db.ref('appStats/likes').transaction(curr => {
+                        const currentVal = (typeof curr === 'number' && !isNaN(curr)) ? curr : 0;
+                        return currentVal + toSend;
+                    });
+                }
+            };
+
+            if (syncBatchTimer) clearTimeout(syncBatchTimer);
+            syncBatchTimer = setTimeout(flushLikesToFirebase, 800);
+
+            // 當使用者即將關閉或重新整理分頁時，立即將尚未送出的點擊送出
+            window.addEventListener('beforeunload', flushLikesToFirebase);
+        };
     }
 
     // --- Run App Initialization safely after all definitions ---

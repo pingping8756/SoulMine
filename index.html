@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=221">
+    <link rel="stylesheet" href="style.css?v=225">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -956,10 +956,27 @@
             </section>
         </main>
     </div>
+
+    <!-- Global Floating Heart Interactive Widget -->
+    <div id="global-heart-widget" class="global-heart-container">
+        <!-- Speech Bubble (Easter Egg Quotes / Jokes) -->
+        <div id="heart-speech-bubble" class="heart-speech-bubble" style="display: none;">
+            <button type="button" id="btn-close-heart-bubble" class="bubble-close-btn" style="position: absolute; top: 4px; right: 7px;">&times;</button>
+            <div id="bubble-text" class="bubble-body" style="padding-right: 12px;">
+                今天打王一定順利出大寶、人人有箱子！
+            </div>
+        </div>
+
+        <!-- Heart Button -->
+        <button type="button" id="btn-global-heart" class="global-heart-btn">
+            <span class="heart-icon-anim">❤️</span>
+            <span id="global-heart-counter" class="heart-counter-text">0</span>
+        </button>
+    </div>
     
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=221" defer></script>
+    <script src="app.js?v=227" defer></script>
 </body>
 </html>

@@ -4017,3 +4017,187 @@ body::after {
     transform: translateY(-1px);
     box-shadow: 0 3px 8px rgba(37, 99, 235, 0.15);
 }
+
+/* ========================================================
+   Global Floating Heart Widget (全站懸浮愛心互動組件)
+   ======================================================== */
+.global-heart-container {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+.global-heart-btn {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: #ffffff;
+    border: 2px solid #fda4af;
+    border-radius: 9999px;
+    padding: 7px 14px 7px 11px;
+    box-shadow: 0 8px 24px rgba(244, 63, 94, 0.22);
+    cursor: pointer;
+    outline: none;
+    transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease;
+    position: relative;
+}
+
+.global-heart-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    border-color: #f43f5e;
+    box-shadow: 0 12px 28px rgba(244, 63, 94, 0.32);
+}
+
+.global-heart-btn:active {
+    transform: scale(0.92);
+}
+
+.global-heart-btn.bump {
+    animation: heartBtnBump 0.25s ease-out;
+}
+
+@keyframes heartBtnBump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.22); }
+    100% { transform: scale(1); }
+}
+
+.heart-icon-anim {
+    font-size: 1.25rem;
+    line-height: 1;
+    display: inline-block;
+    filter: drop-shadow(0 2px 4px rgba(244, 63, 94, 0.3));
+    transition: transform 0.15s ease;
+}
+
+.global-heart-btn:hover .heart-icon-anim {
+    transform: scale(1.15);
+}
+
+.heart-counter-text {
+    font-size: 0.92rem;
+    font-weight: 900;
+    color: #e11d48;
+    letter-spacing: 0.3px;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Floating +1 Particle */
+.heart-float-particle {
+    position: absolute;
+    pointer-events: none;
+    font-weight: 900;
+    font-size: 0.95rem;
+    color: #f43f5e;
+    text-shadow: 0 2px 6px rgba(255, 255, 255, 0.9), 0 0 10px rgba(244, 63, 94, 0.4);
+    animation: heartFloatAnim 0.75s ease-out forwards;
+    white-space: nowrap;
+    z-index: 10000;
+}
+
+@keyframes heartFloatAnim {
+    0% {
+        opacity: 1;
+        transform: translate(0, 0) scale(0.85);
+    }
+    50% {
+        opacity: 0.95;
+        transform: translate(var(--offset-x, 0px), -32px) scale(1.2);
+    }
+    100% {
+        opacity: 0;
+        transform: translate(var(--offset-x, 0px), -65px) scale(1.35);
+    }
+}
+
+/* Speech Bubble (Easter Egg) */
+.heart-speech-bubble {
+    position: absolute;
+    bottom: calc(100% + 14px);
+    right: 0;
+    width: 260px;
+    background: #ffffff;
+    border: 2px solid #fecdd3;
+    border-radius: 14px;
+    box-shadow: 0 12px 36px rgba(225, 29, 72, 0.18), 0 2px 8px rgba(0, 0, 0, 0.05);
+    padding: 0.65rem 0.85rem;
+    box-sizing: border-box;
+    animation: bubblePopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transform-origin: bottom right;
+}
+
+.heart-speech-bubble::after {
+    content: '';
+    position: absolute;
+    bottom: -8px;
+    right: 22px;
+    width: 12px;
+    height: 12px;
+    background: #ffffff;
+    border-right: 2px solid #fecdd3;
+    border-bottom: 2px solid #fecdd3;
+    transform: rotate(45deg);
+}
+
+@keyframes bubblePopIn {
+    0% {
+        opacity: 0;
+        transform: scale(0.6) translateY(15px);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.bubble-header {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.8rem;
+    color: #e11d48;
+    margin-bottom: 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px dashed #ffe4e6;
+}
+
+.bubble-header strong {
+    flex: 1;
+    font-weight: 800;
+}
+
+.bubble-close-btn {
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    padding: 0 2px;
+}
+.bubble-close-btn:hover {
+    color: #e11d48;
+}
+
+.bubble-body {
+    font-size: 0.84rem;
+    color: #334155;
+    line-height: 1.45;
+    font-weight: 700;
+}
+
+@media (max-width: 640px) {
+    .global-heart-container {
+        right: 14px;
+        bottom: 14px;
+    }
+    .heart-speech-bubble {
+        width: 230px;
+    }
+}
