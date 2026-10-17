@@ -4522,7 +4522,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 gamesCount: raid.gamesCount || 7,
                 note: raid.note || '',
                 slotRoles: raid.slotRoles || {},
-                rolledChannels: [Math.floor(Math.random() * 2000) + 1],
+                rolledChannels: [Math.floor(Math.random() * 800) + 1],
                 finalChannel: null,
                 creator: effectiveCreator,
                 createdAt: raid.createdAt || Date.now(),
@@ -5728,7 +5728,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fullTooltip = `${escapeHtml(boss)}${gamesStr} ${timeStr}${displayNote ? `\n📝 備註：${escapeHtml(displayNote)}` : ''}`;
 
                 // Channel value (無鎖定按鈕，有號碼就顯示)
-                const currentCh = team.finalChannel || (team.rolledChannels && team.rolledChannels[0]) || (team.channels && team.channels !== '未指定' ? parseInt(team.channels) : '') || (Math.floor(Math.random() * 2000) + 1);
+                const currentCh = team.finalChannel || (team.rolledChannels && team.rolledChannels[0]) || (team.channels && team.channels !== '未指定' ? parseInt(team.channels) : '') || (Math.floor(Math.random() * 800) + 1);
                 if (!team.finalChannel) {
                     team.finalChannel = currentCh;
                     team.channels = String(currentCh);
@@ -5746,7 +5746,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${timeStr ? `<span style="font-weight: 800; font-size: 0.78rem; color: #ea580c; background: #fff7ed; padding: 1px 4px; border-radius: 4px; border: 1px solid #fed7aa; white-space: nowrap; flex-shrink: 0; line-height: 1.2;">${timeStr}</span>` : ''}
                         </div>
                         <div class="report-channel-box" style="margin-top: 0.32rem; display: flex; align-items: center; justify-content: center; gap: 0.25rem;">
-                            <input type="number" min="1" max="2000" class="report-channel-input" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" style="width: 50px; padding: 2px 2px; font-size: 0.85rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 800; color: #1e293b; background: #ffffff;">
+                            <input type="number" min="1" max="800" class="report-channel-input" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" style="width: 50px; padding: 2px 2px; font-size: 0.85rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 800; color: #1e293b; background: #ffffff;">
                             <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" title="隨機骰頻道" style="padding: 1px 4px; font-size: 0.85rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2;">🎲</button>
                         </div>
                         ${displayNote ? `<div class="report-team-note" title="📝 備註：${escapeHtml(displayNote)}" style="cursor: help;">📝 ${escapeHtml(displayNote)}</div>` : ''}
@@ -5922,7 +5922,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let interval = 40;
                 let elapsed = 0;
                 const timer = setInterval(() => {
-                    const randCh = Math.floor(Math.random() * 2000) + 1;
+                    const randCh = Math.floor(Math.random() * 800) + 1;
                     inputEl.value = randCh;
                     elapsed += interval;
                     if (elapsed >= duration) {
@@ -5946,7 +5946,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const team = confirmedTeams[idx];
                 if (!team) return;
                 const val = parseInt(e.target.value);
-                if (val && val >= 1 && val <= 2000) {
+                if (val && val >= 1 && val <= 800) {
                     team.finalChannel = val;
                     team.channels = String(val);
                     team.rolledChannels = [val];
@@ -6300,7 +6300,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     };
                     card.appendChild(dropSection);
                 } else {
-                    // Channel selection for active teams (1 ~ 2000)
+                    // Channel selection for active teams (1 ~ 800)
                     const channelSection = document.createElement('div');
                     channelSection.style.marginTop = '1.5rem';
                     channelSection.style.padding = '1rem';
@@ -6324,15 +6324,15 @@ document.addEventListener('DOMContentLoaded', () => {
                             };
                         } else {
                             if (!team.rolledChannels || !Array.isArray(team.rolledChannels)) {
-                                team.rolledChannels = [Math.floor(Math.random() * 2000) + 1];
+                                team.rolledChannels = [Math.floor(Math.random() * 800) + 1];
                                 setTimeout(() => saveDB(), 0);
                             }
-                            const singleChannel = team.rolledChannels[0] || (Math.floor(Math.random() * 2000) + 1);
+                            const singleChannel = team.rolledChannels[0] || (Math.floor(Math.random() * 800) + 1);
 
                             channelSection.innerHTML = `
                                 <div style="margin-bottom: 0.8rem; font-weight: 600; font-size: 0.9rem; color: var(--text-main);">頻道選擇</div>
                                 <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                    <input type="number" min="1" max="2000" class="channel-input" value="${singleChannel}" style="width: 85px; padding: 0.4rem; font-size: 1rem; border: 1px solid var(--card-border); border-radius: 4px; text-align: center; color: #4a4559; background: #fff;">
+                                    <input type="number" min="1" max="800" class="channel-input" value="${singleChannel}" style="width: 85px; padding: 0.4rem; font-size: 1rem; border: 1px solid var(--card-border); border-radius: 4px; text-align: center; color: #4a4559; background: #fff;">
                                     <button class="btn-secondary reroll-btn" style="padding: 0.4rem 0.8rem; font-size: 1rem;" title="隨機骰頻道">🎲</button>
                                     <button class="btn-primary select-btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">鎖定</button>
                                 </div>
@@ -6347,7 +6347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 let interval = 50;
                                 let elapsed = 0;
                                 const timer = setInterval(() => {
-                                    inputEl.value = Math.floor(Math.random() * 2000) + 1;
+                                    inputEl.value = Math.floor(Math.random() * 800) + 1;
                                     elapsed += interval;
                                     if (elapsed >= duration) {
                                         clearInterval(timer);
@@ -6361,8 +6361,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             channelSection.querySelector('.select-btn').onclick = () => {
                                 const inputEl = channelSection.querySelector('.channel-input');
                                 const val = parseInt(inputEl.value);
-                                if (!val || val < 1 || val > 2000) {
-                                    alert('請輸入 1~2000 的有效頻道號碼！');
+                                if (!val || val < 1 || val > 800) {
+                                    alert('請輸入 1~800 的有效頻道號碼！');
                                     return;
                                 }
                                 team.finalChannel = val;

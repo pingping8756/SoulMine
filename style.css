@@ -940,14 +940,20 @@ body::after {
 
 /* iOS & Mobile Enhancements */
 @media (max-width: 768px) {
-    select, input[type="text"], input[type="number"], input[type="password"] {
+    select, input[type="text"], input[type="number"], input[type="password"], textarea {
         font-size: 16px !important; /* Prevents auto-zoom on iOS Safari */
+        max-width: 100% !important;
+        box-sizing: border-box !important;
+    }
+    .app-container {
+        padding: 0.75rem 0.6rem !important;
     }
     .modal-content {
-        max-width: 92vw !important;
-        max-height: 88vh !important;
+        max-width: 95vw !important;
+        max-height: 90vh !important;
         overflow-y: auto !important;
-        padding: 1.2rem !important;
+        padding: 1rem !important;
+        box-sizing: border-box !important;
     }
     .two-col-grid {
         grid-template-columns: 1fr !important;
@@ -1705,6 +1711,13 @@ body::after {
     width: 100%;
     max-width: 1120px;
     margin: 0 auto;
+    box-sizing: border-box;
+}
+@media (max-width: 680px) {
+    .survey-horizontal-card {
+        padding: 0.65rem 0.65rem !important;
+        border-radius: 10px !important;
+    }
 }
 
 .survey-h-header {
@@ -1720,6 +1733,7 @@ body::after {
 @media (max-width: 860px) {
     .survey-h-header {
         flex-wrap: wrap;
+        gap: 0.5rem;
     }
 }
 .survey-h-title-wrap {
@@ -1728,6 +1742,14 @@ body::after {
     gap: 0.75rem;
     flex-wrap: nowrap;
     min-width: 0;
+}
+@media (max-width: 680px) {
+    .survey-h-title-wrap {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+        width: 100%;
+    }
 }
 .survey-h-title {
     margin: 0;
@@ -1741,6 +1763,11 @@ body::after {
     white-space: nowrap;
     flex-shrink: 0;
 }
+@media (max-width: 480px) {
+    .survey-h-title {
+        font-size: 1.1rem;
+    }
+}
 .survey-week-inline-selector {
     display: inline-flex;
     align-items: center;
@@ -1752,6 +1779,14 @@ body::after {
     flex-wrap: nowrap;
     white-space: nowrap;
     flex-shrink: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+}
+@media (max-width: 680px) {
+    .survey-week-inline-selector {
+        width: 100%;
+        box-sizing: border-box;
+    }
 }
 .survey-week-inline-label {
     font-size: 0.85rem;
@@ -1771,6 +1806,16 @@ body::after {
     color: #0f172a;
     cursor: pointer;
     min-width: 190px;
+    max-width: 100%;
+    box-sizing: border-box;
+    text-overflow: ellipsis;
+}
+@media (max-width: 680px) {
+    .survey-week-inline-select {
+        flex: 1;
+        min-width: 0;
+        width: 100%;
+    }
 }
 .survey-week-holiday-inline-hint {
     font-size: 0.8rem;
@@ -1790,6 +1835,17 @@ body::after {
     gap: 0.5rem;
     flex-wrap: nowrap;
     flex-shrink: 0;
+}
+@media (max-width: 680px) {
+    .survey-h-top-actions {
+        width: 100%;
+        justify-content: flex-end;
+    }
+    .survey-h-top-actions .btn-open-detail {
+        flex: 1;
+        justify-content: center;
+        text-align: center;
+    }
 }
 .btn-open-detail {
     background: linear-gradient(135deg, #2563eb, #1d4ed8);
@@ -1888,6 +1944,21 @@ body::after {
 .survey-h-col-scroll {
     flex: 1;
     min-width: 250px;
+}
+@media (max-width: 768px) {
+    .survey-h-col-name,
+    .survey-h-col-scroll {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    .survey-h-col-inline {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.35rem !important;
+    }
+    .survey-h-scroll-radios {
+        width: 100% !important;
+    }
 }
 
 .survey-h-scroll-radios {
@@ -2018,12 +2089,6 @@ body::after {
         min-width: 650px !important;
     }
 }
-        padding-bottom: 0.5rem;
-    }
-    .survey-h-slots-row {
-        min-width: 680px !important;
-    }
-}
 
 .survey-slot-chip.weekend {
     border-color: #fed7aa;
@@ -2041,6 +2106,26 @@ body::after {
     display: flex;
     gap: 0.65rem;
     align-items: stretch;
+}
+@media (max-width: 768px) {
+    .survey-h-row-bottom {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.75rem !important;
+    }
+    .survey-h-col-notes {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    .survey-h-actions {
+        width: 100% !important;
+    }
+    .btn-survey-reset {
+        flex: 1;
+    }
+    .btn-survey-submit {
+        flex: 2;
+    }
 }
 .btn-survey-reset {
     padding: 0.42rem 0.95rem;
