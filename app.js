@@ -211,8 +211,9 @@ function getHighContrastJobColor(job) {
 // --- Character Roster (Ordered by 力職 ➔ 敏職 ➔ 法職) ---
 const CURRENT_ROSTER_VERSION = 6;
 const DEFAULT_CHARACTER_ROSTER = [
-    // --- 力職 (10位: 火 ➔ 聖 ➔ 英) ---
+    // --- 力職 (11位: 火 ➔ 聖 ➔ 英) ---
     { id: "Eric", job: "火", level: 180, category: "力職" },
+    { id: "Steve", job: "火", level: 177, category: "力職" },
     { id: "大鎖", job: "火", level: 165, category: "力職" },
     { id: "Ohni", job: "火", level: 163, category: "力職" },
     { id: "長吉毛毛娃", job: "火", level: 158, category: "力職" },
@@ -223,10 +224,11 @@ const DEFAULT_CHARACTER_ROSTER = [
     { id: "Eric", job: "英", level: 168, category: "力職" },
     { id: "毛毛蟲", job: "英", level: 152, category: "力職" },
 
-    // --- 敏職 (17位: 弩/弓 ➔ 刀/鏢 ➔ 槍/拳) ---
+    // --- 敏職 (19位: 弩/弓 ➔ 刀/鏢 ➔ 槍/拳) ---
     { id: "IE", job: "弩", level: 175, category: "敏職" },
-    { id: "小茵", job: "弓", level: 174, category: "敏職" },
     { id: "毛毛蟲", job: "弩", level: 168, category: "敏職" },
+    { id: "Steve", job: "弩", level: 166, category: "敏職" },
+    { id: "小茵", job: "弓", level: 174, category: "敏職" },
     { id: "小皮", job: "弓", level: 160, category: "敏職" },
     { id: "阿甘", job: "弓", level: 153, category: "敏職" },
     { id: "Lumi", job: "弓", level: 138, category: "敏職" },
@@ -235,15 +237,17 @@ const DEFAULT_CHARACTER_ROSTER = [
     { id: "derder", job: "刀", level: 151, category: "敏職" },
     { id: "阿偉", job: "刀", level: 149, category: "敏職" },
     { id: "阿甘", job: "鏢", level: 174, category: "敏職" },
+    { id: "Steve", job: "鏢", level: 166, category: "敏職" },
     { id: "Eric", job: "鏢", level: 163, category: "敏職" },
     { id: "Bagel", job: "鏢", level: 121, category: "敏職" },
     { id: "derder", job: "鏢", level: 118, category: "敏職" },
-    { id: "WonderW", job: "槍", level: 170, category: "敏職" },
+    { id: "汪德", job: "槍", level: 170, category: "敏職" },
     { id: "阿仁", job: "拳", level: 167, category: "敏職" },
     { id: "小皮", job: "拳", level: 140, category: "敏職" },
 
-    // --- 法職 (12位: 毒 ➔ 冰 ➔ 主) ---
+    // --- 法職 (14位: 毒 ➔ 冰 ➔ 主) ---
     { id: "Bagel", job: "毒", level: 174, category: "法職" },
+    { id: "Steve", job: "毒", level: 148, category: "法職" },
     { id: "Eric", job: "冰", level: 169, category: "法職" },
     { id: "CC", job: "冰", level: 164, category: "法職" },
     { id: "小龜", job: "主", level: 174, category: "法職" },
@@ -251,6 +255,7 @@ const DEFAULT_CHARACTER_ROSTER = [
     { id: "Ohni", job: "主", level: 162, category: "法職" },
     { id: "Lumi", job: "主", level: 155, category: "法職" },
     { id: "Bagel", job: "主", level: 137, category: "法職" },
+    { id: "Steve", job: "主", level: 132, category: "法職" },
     { id: "Eric", job: "主", level: 132, category: "法職" },
     { id: "毛毛蟲", job: "主", level: 132, category: "法職" },
     { id: "小茵", job: "主", level: 131, category: "法職" },
@@ -260,6 +265,7 @@ let CHARACTER_ROSTER = DEFAULT_CHARACTER_ROSTER.map(c => ({ ...c }));
 
 // --- Member Character Alias / Binding Configuration (問卷填寫名稱 ➔ 綁定角色 ID) ---
 let MEMBER_NAME_ALIASES = {
+    'Steve': ['Steve'],
     'WonderW': ['WonderW', '汪德'],
     '汪德': ['WonderW', '汪德'],
     'Bagel': ['Bagel', 'Bagle', 'BagelPray'],
@@ -293,9 +299,11 @@ function getMemberBoundRoster(surveyMemberName) {
 
     // 建立所有相關別名的小寫集合（不分大小寫比對）
     const aliasSet = new Set([rawLower]);
-    for (const [key, list] of Object.entries(MEMBER_NAME_ALIASES)) {
-        const keyLower = key.toLowerCase();
-        const listLower = list.map(a => a.toLowerCase());
+    for (const [key, list] of Object.entries(MEMBER_NAME_ALIASES || {})) {
+        if (!key) continue;
+        const keyLower = String(key).toLowerCase();
+        const arr = Array.isArray(list) ? list : (typeof list === 'string' ? [list] : []);
+        const listLower = arr.map(a => String(a || '').toLowerCase());
         if (keyLower === rawLower || listLower.includes(rawLower)) {
             aliasSet.add(keyLower);
             listLower.forEach(a => aliasSet.add(a));
@@ -375,7 +383,6 @@ function initCustomCharacters() {
             localStorage.removeItem('soulmine_custom_roster_cache');
             localStorage.removeItem('soulmine_custom_roster');
             localStorage.setItem('soulmine_custom_roster_ver', String(CURRENT_ROSTER_VERSION));
-            syncRosterToFirebase();
             return;
         }
 
@@ -806,14 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
         changelogs = Array.isArray(rawChangelogs) ? rawChangelogs.filter(c => c !== null && c !== undefined) : Object.values(rawChangelogs);
         
         // Sync custom/updated character roster & member aliases from Firebase
-        if (!data.roster_version || data.roster_version < CURRENT_ROSTER_VERSION) {
-            db.ref('custom_roster').set(CHARACTER_ROSTER);
-            db.ref('member_aliases').set(MEMBER_NAME_ALIASES);
-            db.ref('roster_version').set(CURRENT_ROSTER_VERSION);
-            localStorage.setItem('soulmine_custom_roster_cache', JSON.stringify(CHARACTER_ROSTER));
-            localStorage.setItem('soulmine_member_aliases_cache', JSON.stringify(MEMBER_NAME_ALIASES));
-            localStorage.setItem('soulmine_custom_roster_ver', String(CURRENT_ROSTER_VERSION));
-        } else if (data.custom_roster) {
+        if (data.custom_roster) {
             const rawRoster = Array.isArray(data.custom_roster) ? data.custom_roster : Object.values(data.custom_roster);
             if (rawRoster && rawRoster.length > 0) {
                 const mapped = rawRoster.map(c => ({
@@ -7030,7 +7030,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const forceCount = CHARACTER_ROSTER.filter(c => (c.category || (typeof getCategoryByJob === 'function' ? getCategoryByJob(c.job) : '')) === '力職').length;
             const dexCount = CHARACTER_ROSTER.filter(c => (c.category || (typeof getCategoryByJob === 'function' ? getCategoryByJob(c.job) : '')) === '敏職').length;
             const intCount = CHARACTER_ROSTER.filter(c => (c.category || (typeof getCategoryByJob === 'function' ? getCategoryByJob(c.job) : '')) === '法職').length;
-            countText.innerHTML = `共 <strong>${CHARACTER_ROSTER.length}</strong> 位角色 (力職 ${forceCount}、敏職 ${dexCount}、法職 ${intCount}) | 目前篩選出 <strong>${filtered.length}</strong> 位`;
+            const memberCount = new Set(CHARACTER_ROSTER.map(c => c.id)).size;
+            countText.innerHTML = `共 <strong>${memberCount}</strong> 位成員 (合計 <strong>${CHARACTER_ROSTER.length}</strong> 隻角色：力 ${forceCount}、敏 ${dexCount}、法 ${intCount}) | 目前篩選出 <strong>${filtered.length}</strong> 隻`;
         }
 
         if (filtered.length === 0) {
@@ -7043,26 +7044,60 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let html = '';
-        filtered.forEach(c => {
-            const jobColor = typeof getHighContrastJobColor === 'function' ? getHighContrastJobColor(c.job) : '#334155';
-            const category = c.category || (typeof getCategoryByJob === 'function' ? getCategoryByJob(c.job) : '力職');
-            const catBadgeColor = category === '力職' ? 'background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;' :
-                                  (category === '敏職' ? 'background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;' :
-                                  'background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff;');
+        // 依照角色遊戲ID（名字相同排在一起）排序，同名字則依等級高至低排
+        const sortedFiltered = [...filtered].sort((a, b) => {
+            const nameA = String(a.id || '').trim();
+            const nameB = String(b.id || '').trim();
+            const cmp = nameA.localeCompare(nameB, 'zh-Hant', { sensitivity: 'base', numeric: true });
+            if (cmp !== 0) return cmp;
+            return (b.level || 0) - (a.level || 0);
+        });
 
-            const normJob = normalizeJobName(c.job || '');
-            html += `
-                <div class="roster-mg-row">
-                    <div class="roster-mg-col-left">
-                        <span class="roster-mg-id">${escapeHtml(c.id)}</span>
-                        <span class="roster-mg-job-badge" style="color: ${jobColor}; font-weight: 800;">${escapeHtml(normJob)}</span>
-                        <span class="roster-mg-level-badge">Lv.${c.level || 120}</span>
-                        <span style="font-size: 0.72rem; padding: 0.1rem 0.45rem; border-radius: 4px; font-weight: 700; ${catBadgeColor}">${category}</span>
+        // 依名字分組：同一個名字一行，內部平鋪所有角色卡
+        const memberGroups = [];
+        const groupMap = new Map();
+        sortedFiltered.forEach(c => {
+            const name = String(c.id || '').trim();
+            if (!groupMap.has(name)) {
+                const groupObj = { id: name, chars: [] };
+                groupMap.set(name, groupObj);
+                memberGroups.push(groupObj);
+            }
+            groupMap.get(name).chars.push(c);
+        });
+
+        let html = '';
+        memberGroups.forEach(grp => {
+            let chipsHtml = '';
+            grp.chars.forEach(c => {
+                const normJob = normalizeJobName(c.job || '');
+                const jobColor = typeof getHighContrastJobColor === 'function' ? getHighContrastJobColor(c.job) : '#334155';
+                const category = c.category || (typeof getCategoryByJob === 'function' ? getCategoryByJob(c.job) : '力職');
+                const catBadgeColor = category === '力職' ? 'background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;' :
+                                      (category === '敏職' ? 'background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;' :
+                                      'background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff;');
+
+                chipsHtml += `
+                    <div class="roster-mg-char-chip">
+                        <span class="roster-mg-job-badge" style="color: ${jobColor}; font-weight: 800; font-size: 0.85rem; padding: 0.1rem 0.35rem;">${escapeHtml(normJob)}</span>
+                        <span class="roster-mg-level-badge" style="font-size: 0.8rem; font-weight: 700;">Lv.${c.level || 120}</span>
+                        <span style="font-size: 0.68rem; padding: 0.05rem 0.3rem; border-radius: 4px; font-weight: 700; ${catBadgeColor}">${category}</span>
+                        <div class="roster-mg-chip-actions">
+                            <button type="button" class="roster-mg-chip-btn-edit" onclick="window.startEditRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level || 120})" title="編輯 ${escapeHtml(c.id)} (${normJob})">✏️</button>
+                            <button type="button" class="roster-mg-chip-btn-del" onclick="window.confirmDeleteRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}')" title="刪除 ${escapeHtml(c.id)} (${normJob})">🗑️</button>
+                        </div>
                     </div>
-                    <div class="roster-mg-actions">
-                        <button type="button" class="roster-mg-btn-edit" onclick="window.startEditRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level || 120})">✏️ 編輯</button>
-                        <button type="button" class="roster-mg-btn-del" onclick="window.confirmDeleteRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}')">🗑️ 刪除</button>
+                `;
+            });
+
+            html += `
+                <div class="roster-mg-member-row">
+                    <div class="roster-mg-member-name">
+                        <span class="roster-mg-id" style="font-weight: 900; font-size: 0.95rem; color: #0f172a;">${escapeHtml(grp.id)}</span>
+                        <span class="roster-mg-member-count">(${grp.chars.length})</span>
+                    </div>
+                    <div class="roster-mg-chips-container">
+                        ${chipsHtml}
                     </div>
                 </div>
             `;
