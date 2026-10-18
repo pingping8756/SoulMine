@@ -1942,12 +1942,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }).join('');
 
-        // 動態計算可見日期欄位寬度
+        // 動態計算可見日期欄位寬度（每欄保證至少 88px，避免手機上欄寬崩塌）
         const visibleDaysCount = weekDays.filter((_, i) => !(dayStatus[i].isDayExpired && shouldHideExpired)).length;
-        const colDayWidth = `calc((100% - 183px) / ${visibleDaysCount > 0 ? visibleDaysCount : 1})`;
         const colgroupDaysHtml = weekDays.map((_, i) => {
             if (dayStatus[i].isDayExpired && shouldHideExpired) return '';
-            return `<col class="colgroup-day" style="width: ${colDayWidth};">`;
+            return `<col class="colgroup-day" style="width: 88px; min-width: 88px;">`;
         }).join('');
 
         const allExpiredBanner = allDaysExpired ? `
@@ -5860,7 +5859,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <!-- 過期隊伍：不需要三個按鈕，只要掉寶紀錄 -->
                             <div class="report-table-drop-section" style="text-align: left; margin-top: 0.25rem;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
-                                    <span style="font-size: 0.72rem; font-weight: 800; color: #b45309;">掉寶紀錄</span>
+                                    <span class="report-table-drop-title" style="font-size: 0.72rem; font-weight: 800; color: #b45309;">掉寶紀錄</span>
                                     <button type="button" class="btn-table-save-drop" data-team-index="${actualTeamIdx}" style="font-size: 0.7rem; padding: 1px 4px; background: #16a34a; color: #ffffff; border: none; border-radius: 3px; cursor: pointer; font-weight: 700;">儲存</button>
                                 </div>
                                 <textarea class="report-table-drop-input" data-team-index="${actualTeamIdx}" placeholder="輸入掉寶紀錄..." style="width: 100%; height: 38px; font-size: 0.72rem; padding: 2px 3px; border: 1px solid #cbd5e1; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #ffffff; color: #1e293b; font-family: inherit;">${escapeHtml(team.drops || '')}</textarea>
@@ -6493,13 +6492,16 @@ document.addEventListener('DOMContentLoaded', () => {
         // 1. Header Admin Auth button
         if (btn) {
             if (isAdmin()) {
-                btn.innerHTML = `👑 管理員 ${currentAdmin} (點此登出)`;
+                const adminName = currentAdmin;
+                btn.innerHTML = adminName ? `👑 管理員 ${escapeHtml(adminName)}` : '👑 管理員';
+                btn.title = `👑 管理員 ${adminName || ''} (點此登出)`;
                 btn.style.borderColor = 'var(--success-color)';
                 btn.style.color = 'var(--success-color)';
                 btn.style.background = 'rgba(74, 222, 128, 0.15)';
                 btn.style.fontWeight = 'bold';
             } else {
-                btn.innerHTML = '🔑 管理員登入';
+                btn.innerHTML = '👑 管理員(登入)';
+                btn.title = '點擊進行管理員登入';
                 btn.style.borderColor = 'var(--card-border)';
                 btn.style.color = 'var(--text-muted)';
                 btn.style.background = 'rgba(255,255,255,0.06)';
@@ -6546,7 +6548,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
             } else if (!isAdmin()) {
-                userBtn.innerHTML = `👤 建立隊伍登入`;
+                userBtn.innerHTML = `登入`;
                 userBtn.title = '點擊登入或建立帳號以發起出團隊伍';
                 userBtn.style.borderColor = '#3b82f6';
                 userBtn.style.background = '#eff6ff';
@@ -6557,11 +6559,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 };
             } else {
-                userBtn.innerHTML = `👤 建立隊伍登入 (已具管理權限)`;
+                userBtn.innerHTML = `登入`;
                 userBtn.title = '目前已具備管理員建隊權限，亦可點此登入或切換專屬隊長帳號';
-                userBtn.style.borderColor = '#22c55e';
-                userBtn.style.background = '#f0fdf4';
-                userBtn.style.color = '#15803d';
+                userBtn.style.borderColor = '#3b82f6';
+                userBtn.style.background = '#eff6ff';
+                userBtn.style.color = '#2563eb';
                 userBtn.onclick = () => {
                     if (typeof openGeneralLoginModal === 'function') {
                         openGeneralLoginModal();
