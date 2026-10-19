@@ -1033,6 +1033,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return localStorage.getItem('soulmine_survey_user_name') || getSavedCreator() || (getSavedChar() && getSavedChar().name) || '';
     }
 
+    const TARGET_BOSS_OPTIONS = [
+        '樹王',
+        '龍王（和大拿他們一起湊）',
+        '困拉',
+        '跟活動',
+        '炎魔',
+        '普拉',
+        '補位，哪裡缺打哪裡'
+    ];
+
     function setupSurveyForm() {
         const form = document.getElementById('raid-survey-form');
         const nameInput = document.getElementById('survey-user-name');
@@ -1040,6 +1050,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const weekSelect = document.getElementById('survey-week-select');
         const holidayHint = document.getElementById('survey-week-holiday-hint');
         const slotsContainer = document.getElementById('survey-slots-container');
+
+        // Setup Target Boss Checkbox Listeners & Count
+        function updateBossSelectedCount() {
+            const checkedCbs = document.querySelectorAll('input[name="survey-target-boss"]:checked');
+            const countBadge = document.getElementById('survey-boss-selected-count');
+            if (countBadge) {
+                if (checkedCbs.length > 0) {
+                    countBadge.style.display = 'inline-block';
+                    countBadge.textContent = `已選 ${checkedCbs.length} 項`;
+                } else {
+                    countBadge.style.display = 'none';
+                }
+            }
+        }
+        function initSurveyBossCheckboxes() {
+            const chips = document.querySelectorAll('.boss-option-chip');
+            chips.forEach(chip => {
+                const cb = chip.querySelector('input[type="checkbox"]');
+                if (cb) {
+                    cb.addEventListener('change', () => {
+                        chip.classList.toggle('checked', cb.checked);
+                        updateBossSelectedCount();
+                    });
+                }
+            });
+            updateBossSelectedCount();
+        }
+        initSurveyBossCheckboxes();
 
         // Populate Week Options (4~5 Tuesday-start cycles)
         const weekOptions = getSurveyWeekOptions();
@@ -1186,6 +1224,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
+                // 載入下週想打目標
+                const userBosses = existing.targetBosses || [];
+                document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
+                    const shouldCheck = userBosses.includes(cb.value);
+                    cb.checked = shouldCheck;
+                    const chip = cb.closest('.boss-option-chip');
+                    if (chip) chip.classList.toggle('checked', shouldCheck);
+                });
+                updateBossSelectedCount();
+
                 if (hintContainer) {
                     hintContainer.style.display = 'block';
                     hintContainer.innerHTML = `
@@ -1252,7 +1300,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 notesInput.value = pastResp.notes;
             }
 
-            // 3. 將前次時段對應至本週的星期與時段 (二/三/四/五/六/日/一 + 午/晚)
+            // 3. 同步下週想打目標
+            if (Array.isArray(pastResp.targetBosses) && pastResp.targetBosses.length > 0) {
+                document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
+                    const shouldCheck = pastResp.targetBosses.includes(cb.value);
+                    cb.checked = shouldCheck;
+                    const chip = cb.closest('.boss-option-chip');
+                    if (chip) chip.classList.toggle('checked', shouldCheck);
+                });
+                updateBossSelectedCount();
+            }
+
+            // 4. 將前次時段對應至本週的星期與時段 (二/三/四/五/六/日/一 + 午/晚)
             const dayNames = ["二", "三", "四", "五", "六", "日", "一"];
             const pastPatternSet = new Set();
 
@@ -1342,6 +1401,14 @@ document.addEventListener('DOMContentLoaded', () => {
             scrollRadios.forEach(r => {
                 r.checked = false;
             });
+
+            // 清空下週想打目標
+            document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
+                cb.checked = false;
+                const chip = cb.closest('.boss-option-chip');
+                if (chip) chip.classList.remove('checked');
+            });
+            updateBossSelectedCount();
         }
         window.resetSurveyForm = resetSurveyForm;
 
@@ -1374,6 +1441,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                // 收集下週想打目標 (多選)
+                const selectedBosses = [];
+                document.querySelectorAll('input[name="survey-target-boss"]:checked').forEach(cb => {
+                    selectedBosses.push(cb.value);
+                });
+
                 const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]:checked');
                 if (scrollRadios.length === 0) {
                     alert("請選擇「是否願意吃突襲券」（是／否）！");
@@ -1402,6 +1475,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     weekId: targetWeekId,
                     weekLabel: activeOpt.label,
                     slots: selectedSlots,
+                    targetBosses: selectedBosses,
                     scroll: scrollPref,
                     notes: notes,
                     updatedAt: Date.now()
@@ -1522,11 +1596,37 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // Toggle Boss Chart Popover (打王意願簡圖)
+        const btnToggleBossChart = document.getElementById('btn-toggle-boss-chart');
+        const popoverBossChart = document.getElementById('survey-boss-chart-popover');
+        const btnCloseBossChartPopover = document.getElementById('btn-close-boss-chart-popover');
+        if (btnToggleBossChart && popoverBossChart) {
+            btnToggleBossChart.onclick = (e) => {
+                e.stopPropagation();
+                const isVis = popoverBossChart.style.display === 'block';
+                popoverBossChart.style.display = isVis ? 'none' : 'block';
+            };
+        }
+        if (btnCloseBossChartPopover && popoverBossChart) {
+            btnCloseBossChartPopover.onclick = (e) => {
+                e.stopPropagation();
+                popoverBossChart.style.display = 'none';
+            };
+        }
+        document.addEventListener('click', (e) => {
+            if (popoverBossChart && popoverBossChart.style.display === 'block') {
+                if (!popoverBossChart.contains(e.target) && e.target !== btnToggleBossChart && !btnToggleBossChart.contains(e.target)) {
+                    popoverBossChart.style.display = 'none';
+                }
+            }
+        });
+
         const surveyDetailModal = document.getElementById('survey-detail-modal');
         if (surveyDetailModal) {
             surveyDetailModal.addEventListener('click', (e) => {
                 if (e.target === surveyDetailModal) {
                     surveyDetailModal.style.display = 'none';
+                    if (popoverBossChart) popoverBossChart.style.display = 'none';
                 }
             });
         }
@@ -1638,6 +1738,24 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         }
 
+        // 載入下週想打目標
+        const userBosses = item.targetBosses || [];
+        document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
+            const shouldCheck = userBosses.includes(cb.value);
+            cb.checked = shouldCheck;
+            const chip = cb.closest('.boss-option-chip');
+            if (chip) chip.classList.toggle('checked', shouldCheck);
+        });
+        const countBadge = document.getElementById('survey-boss-selected-count');
+        if (countBadge) {
+            if (userBosses.length > 0) {
+                countBadge.style.display = 'inline-block';
+                countBadge.textContent = `已選 ${userBosses.length} 項`;
+            } else {
+                countBadge.style.display = 'none';
+            }
+        }
+
         // Close detail modal so user can view and edit the main horizontal form
         const modal = document.getElementById('survey-detail-modal');
         if (modal) modal.style.display = 'none';
@@ -1658,6 +1776,86 @@ document.addEventListener('DOMContentLoaded', () => {
         if (modalWeekSelect) modalWeekSelect.value = wId;
         renderSurveySummary();
     };
+
+    function renderBossSurveyChart(responses, weekLabel) {
+        const badge = document.getElementById('boss-chart-vote-badge');
+        const chartList = document.getElementById('survey-boss-chart-list');
+        const weekLabelEl = document.getElementById('boss-chart-header-week');
+        if (!chartList) return;
+
+        if (weekLabelEl) weekLabelEl.textContent = weekLabel ? `(${weekLabel})` : '';
+
+        const totalVoters = responses.length;
+        if (badge) {
+            badge.textContent = `${totalVoters}人`;
+        }
+
+        if (totalVoters === 0) {
+            chartList.innerHTML = `<div style="text-align:center; padding: 1.5rem 0.5rem; color: #94a3b8; font-size: 0.85rem; font-weight: 700;">📝 本週尚無成員填寫問卷</div>`;
+            return;
+        }
+
+        const bossColors = {
+            '樹王': '#16a34a',
+            '龍王（和大拿他們一起湊）': '#ea580c',
+            '困拉': '#9333ea',
+            '跟活動': '#0284c7',
+            '炎魔': '#dc2626',
+            '普拉': '#3b82f6',
+            '補位，哪裡缺打哪裡': '#d97706'
+        };
+
+        const stats = TARGET_BOSS_OPTIONS.map(opt => {
+            const voters = responses.filter(r => Array.isArray(r.targetBosses) && r.targetBosses.includes(opt)).map(r => r.name);
+            const count = voters.length;
+            const pct = totalVoters > 0 ? Math.round((count / totalVoters) * 100) : 0;
+            return {
+                name: opt,
+                count: count,
+                pct: pct,
+                voters: voters,
+                color: bossColors[opt] || '#3b82f6'
+            };
+        });
+
+        const maxCount = Math.max(...stats.map(s => s.count), 0);
+
+        chartList.innerHTML = stats.map(s => {
+            const isTop = s.count > 0 && s.count === maxCount;
+            const barWidth = totalVoters > 0 ? (s.count / totalVoters) * 100 : 0;
+            
+            const votersText = s.voters.length > 0 ? s.voters.join('、') : '尚無成員選擇';
+            
+            const tooltipVotersHtml = s.voters.length > 0
+                ? `<div style="font-weight: 800; color: #38bdf8; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between;">
+                       <span>👥 投票成員 (${s.count}人)：</span>
+                       <span style="font-size: 0.7rem; color: #94a3b8; font-weight: normal;">${s.pct}%</span>
+                   </div>
+                   <div class="boss-tooltip-voters-list">
+                       ${s.voters.map(v => `<span class="boss-tooltip-voter-tag">${escapeHtml(v)}</span>`).join('')}
+                   </div>`
+                : `<div style="color: #94a3b8; font-style: italic;">尚無成員選擇此項目</div>`;
+
+            return `
+                <div class="boss-chart-row ${isTop ? 'is-top' : ''}" title="👥 投票成員 (${s.count}人)：${escapeHtml(votersText)}">
+                    <div class="boss-bar-meta">
+                        <span class="boss-bar-title">${escapeHtml(s.name)}</span>
+                        <span class="boss-bar-counts">
+                            <strong style="color: ${s.color}; font-size: 0.92rem;">${s.count}</strong> 票
+                            <span class="boss-bar-pct">(${s.pct}%)</span>
+                        </span>
+                    </div>
+                    <div class="boss-bar-track">
+                        <div class="boss-bar-fill" style="width: ${barWidth}%; background: ${s.color};"></div>
+                    </div>
+                    <!-- 游標移過去才顯示的浮動名單卡片 -->
+                    <div class="boss-hover-tooltip">
+                        ${tooltipVotersHtml}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
 
     function renderSurveySummary() {
         const totalBadge = document.getElementById('survey-total-respondents');
@@ -1700,6 +1898,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (totalBadge) totalBadge.textContent = `已回覆 ${responses.length} 人`;
         const countPill = document.getElementById('survey-count-pill');
         if (countPill) countPill.textContent = `${responses.length}人填寫`;
+
+        const activeOpt = reportWeekOptions.find(o => o.weekId === activeWeekId);
+        const activeWeekLabel = activeOpt ? (activeOpt.shortLabel || activeOpt.label) : activeWeekId;
+        renderBossSurveyChart(responses, activeWeekLabel);
 
         // 計算各時段是否已過期 (標註已過期時段，但保持完整7天欄位顯示，不隱藏欄位)
         const nowTs = Date.now();
@@ -1835,6 +2037,14 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div class="tooltip-field">
                                 <strong>🎟️ 突襲券：</strong>
                                 <span style="color:${isScrollYes ? '#4ade80' : '#f87171'}; font-weight:800;">${isScrollYes ? '願意吃券' : '不吃券'}</span>
+                            </div>
+                            <div class="tooltip-field">
+                                <strong>🎯 下週想打：</strong>
+                                <div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:2px;">
+                                    ${(Array.isArray(r.targetBosses) && r.targetBosses.length > 0)
+                                        ? r.targetBosses.map(b => `<span class="tooltip-boss-pill">${escapeHtml(b)}</span>`).join('')
+                                        : '<span style="color:#94a3b8; font-size:0.75rem;">未填寫</span>'}
+                                </div>
                             </div>
                             <div class="tooltip-field">
                                 <strong>📝 備註說明：</strong>
@@ -8349,7 +8559,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     cellMarker = `
                         <div class="smart-avail-clickable-cell"
                              onclick="window.clickSmartAvailMember('${escapeHtml(r.name)}', '${escapeHtml(col.slotKey)}', ${col.squadIdx})"
-                             title="點擊選擇出戰角色，排入 ${col.squadLabel || '隊伍'}（${isScrollYes ? '可吃券' : '不吃券'}）">
+                             title="點擊選擇出戰角色，排入 ${col.squadLabel || '隊伍'}（${isScrollYes ? '可吃券' : '不吃券'}）${r.notes ? `\n📝 備註：${escapeHtml(r.notes)}` : ''}">
                             <span class="smart-avail-name-text ${isScrollYes ? 'smart-member-name-scroll' : 'smart-member-name-noscroll'}" style="color: ${nameColor} !important;">${escapeHtml(r.name)}</span>
                             <span class="smart-avail-add-icon">${icon}</span>
                         </div>
@@ -8365,11 +8575,55 @@ document.addEventListener('DOMContentLoaded', () => {
                 `;
             });
 
-            // 依需求：吃券名字是黑色，不吃券改紅色，就不用多那一個「券」字
+            // 綁定角色與備註浮動卡片 (跟明細那裡一樣)
+            const boundChars = getMemberBoundRoster(r.name);
+            let boundCharsHtml = '';
+            if (boundChars && boundChars.length > 0) {
+                boundCharsHtml = boundChars.map(c => `<span style="font-weight:700; color:#38bdf8;">${escapeHtml(c.id)} (${escapeHtml(normalizeJobName(c.job))} Lv.${c.level})</span>`).join('<br>');
+            } else {
+                boundCharsHtml = '<span style="color:#94a3b8;">未綁定（自訂）</span>';
+            }
+
+            const updatedTimeStr = typeof formatDateSimple === 'function' && r.updatedAt ? formatDateSimple(r.updatedAt) : '';
+            const cellTitle = `${escapeHtml(r.name)}（${isScrollYes ? '可吃券' : '不吃券'}）${r.notes ? `\n📝 備註：${escapeHtml(r.notes)}` : ''}`;
+
+            // 依需求：吃券名字是黑色，不吃券改紅色，滑鼠懸停顯示詳細備註與名冊浮動卡片 (跟明細那裡一樣)
             memberRowsHtml += `
                 <tr class="smart-matrix-avail-row">
-                    <td class="sticky-col" title="${escapeHtml(r.name)}（${isScrollYes ? '可吃券' : '不吃券'}）">
-                        <span class="${isScrollYes ? 'smart-member-name-scroll' : 'smart-member-name-noscroll'}" style="color: ${nameColor} !important;">${escapeHtml(r.name)}</span>
+                    <td class="sticky-col col-smart-member" title="${cellTitle}">
+                        <div class="matrix-member-cell">
+                            <span class="${isScrollYes ? 'smart-member-name-scroll' : 'smart-member-name-noscroll'}" style="color: ${nameColor} !important; font-weight: 800;">
+                                ${escapeHtml(r.name)}
+                            </span>
+                            
+                            <!-- Floating Tooltip Popover (跟明細那裡一樣) -->
+                            <div class="matrix-floating-tooltip">
+                                <div class="tooltip-title">
+                                    <span>👤 ${escapeHtml(r.name)}</span>
+                                    <span style="font-size:0.72rem; color:#94a3b8;">${updatedTimeStr}</span>
+                                </div>
+                                <div class="tooltip-field">
+                                    <strong>⚔️ 角色名冊：</strong>
+                                    <div style="font-size:0.78rem; line-height:1.4; margin-top:2px;">${boundCharsHtml}</div>
+                                </div>
+                                <div class="tooltip-field">
+                                    <strong>🎟️ 突襲券：</strong>
+                                    <span style="color:${isScrollYes ? '#4ade80' : '#f87171'}; font-weight:800;">${isScrollYes ? '願意吃券' : '不吃券'}</span>
+                                </div>
+                                <div class="tooltip-field">
+                                    <strong>🎯 下週想打：</strong>
+                                    <div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:2px;">
+                                        ${(Array.isArray(r.targetBosses) && r.targetBosses.length > 0)
+                                            ? r.targetBosses.map(b => `<span class="tooltip-boss-pill">${escapeHtml(b)}</span>`).join('')
+                                            : '<span style="color:#94a3b8; font-size:0.75rem;">未填寫</span>'}
+                                    </div>
+                                </div>
+                                <div class="tooltip-field">
+                                    <strong>📝 備註說明：</strong>
+                                    <div class="tooltip-notes-box">${escapeHtml(r.notes || '無特殊備註')}</div>
+                                </div>
+                            </div>
+                        </div>
                     </td>
                     ${cellsHtml}
                 </tr>
