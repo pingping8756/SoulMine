@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=239">
+    <link rel="stylesheet" href="style.css?v=240">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -800,8 +800,8 @@
                                         <span class="boss-option-text">樹王</span>
                                     </label>
                                     <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="龍王（和大拿他們一起湊）">
-                                        <span class="boss-option-text">龍王（和大拿他們一起湊）</span>
+                                        <input type="checkbox" name="survey-target-boss" value="龍王(和大拿一起湊)">
+                                        <span class="boss-option-text">龍王(和大拿一起湊)</span>
                                     </label>
                                     <label class="boss-option-chip">
                                         <input type="checkbox" name="survey-target-boss" value="困拉">
@@ -922,6 +922,9 @@
                             <button type="button" id="btn-smart-sched-auto-assign" class="btn-primary btn-gradient-purple" title="根據填寫時間與核心職業(火/眼/法)智能排定最佳出團">
                                 <span>一鍵排班</span>
                             </button>
+                            <button type="button" id="btn-smart-sched-save-draft" class="btn-secondary" style="font-size: 0.84rem; padding: 0.4rem 0.85rem; background: #eff6ff; color: #1d4ed8; border: 1.5px solid #93c5fd; font-weight: 800; cursor: pointer; display: flex; align-items: center; gap: 0.3rem;" title="儲存當前排班草稿至雲端與本地（自動同步已啟用）">
+                                <span>💾 暫存</span>
+                            </button>
                             <button type="button" id="btn-smart-sched-clear" class="btn-secondary" style="font-size: 0.84rem; padding: 0.4rem 0.85rem; background: #fff1f2; color: #e11d48; border-color: #fecdd3; font-weight: 800;">
                                 <span>清空</span>
                             </button>
@@ -934,6 +937,10 @@
                             <button type="button" id="btn-smart-sched-publish-all" class="btn-primary" style="font-size: 0.88rem; padding: 0.42rem 1.1rem; background: #16a34a; font-weight: 800; box-shadow: 0 2px 10px rgba(22, 163, 74, 0.3);">
                                 <span>一鍵發布</span>
                             </button>
+                            <span id="smart-sched-sync-status" style="font-size: 0.78rem; color: #16a34a; font-weight: 700; display: inline-flex; align-items: center; gap: 0.3rem; margin-left: 0.35rem;" title="排班狀態與雲端同步情況">
+                                <span class="sync-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #16a34a; display: inline-block;"></span>
+                                <span class="sync-text">雲端已同步</span>
+                            </span>
                         </div>
                     </div>
 
@@ -1024,6 +1031,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=250" defer></script>
+    <script src="app.js?v=251" defer></script>
 </body>
 </html>

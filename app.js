@@ -849,6 +849,11 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(e) {}
         }
 
+        // Sync smart schedule drafts from Firebase
+        if (data.smart_schedule_drafts && typeof data.smart_schedule_drafts === 'object') {
+            smartScheduleDraftsDB = data.smart_schedule_drafts;
+        }
+
         // Auto-repair creator for Bagel's raids if accidentally overwritten to Lumi
         Object.values(raidsDB).forEach(r => {
             if (r && r.creator === 'Lumi') {
@@ -1033,9 +1038,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return localStorage.getItem('soulmine_survey_user_name') || getSavedCreator() || (getSavedChar() && getSavedChar().name) || '';
     }
 
+    function matchesTargetBossOption(votedBoss, optionName) {
+        if (!votedBoss || !optionName) return false;
+        if (votedBoss === optionName) return true;
+        const v = String(votedBoss).replace(/（/g, '(').replace(/）/g, ')').replace('他們', '').trim();
+        const o = String(optionName).replace(/（/g, '(').replace(/）/g, ')').replace('他們', '').trim();
+        return v === o;
+    }
+
     const TARGET_BOSS_OPTIONS = [
         '樹王',
-        '龍王（和大拿他們一起湊）',
+        '龍王(和大拿一起湊)',
         '困拉',
         '跟活動',
         '炎魔',
@@ -1227,7 +1240,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 // 載入下週想打目標
                 const userBosses = existing.targetBosses || [];
                 document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
-                    const shouldCheck = userBosses.includes(cb.value);
+                    const shouldCheck = userBosses.some(b => matchesTargetBossOption(b, cb.value));
                     cb.checked = shouldCheck;
                     const chip = cb.closest('.boss-option-chip');
                     if (chip) chip.classList.toggle('checked', shouldCheck);
@@ -1303,7 +1316,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 3. 同步下週想打目標
             if (Array.isArray(pastResp.targetBosses) && pastResp.targetBosses.length > 0) {
                 document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
-                    const shouldCheck = pastResp.targetBosses.includes(cb.value);
+                    const shouldCheck = pastResp.targetBosses.some(b => matchesTargetBossOption(b, cb.value));
                     cb.checked = shouldCheck;
                     const chip = cb.closest('.boss-option-chip');
                     if (chip) chip.classList.toggle('checked', shouldCheck);
@@ -1741,7 +1754,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // 載入下週想打目標
         const userBosses = item.targetBosses || [];
         document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
-            const shouldCheck = userBosses.includes(cb.value);
+            const shouldCheck = userBosses.some(b => matchesTargetBossOption(b, cb.value));
             cb.checked = shouldCheck;
             const chip = cb.closest('.boss-option-chip');
             if (chip) chip.classList.toggle('checked', shouldCheck);
@@ -1797,6 +1810,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const bossColors = {
             '樹王': '#16a34a',
+            '龍王(和大拿一起湊)': '#ea580c',
             '龍王（和大拿他們一起湊）': '#ea580c',
             '困拉': '#9333ea',
             '跟活動': '#0284c7',
@@ -1806,7 +1820,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const stats = TARGET_BOSS_OPTIONS.map(opt => {
-            const voters = responses.filter(r => Array.isArray(r.targetBosses) && r.targetBosses.includes(opt)).map(r => r.name);
+            const voters = responses.filter(r => Array.isArray(r.targetBosses) && r.targetBosses.some(b => matchesTargetBossOption(b, opt))).map(r => r.name);
             const count = voters.length;
             const pct = totalVoters > 0 ? Math.round((count / totalVoters) * 100) : 0;
             return {
@@ -1838,16 +1852,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
             return `
                 <div class="boss-chart-row ${isTop ? 'is-top' : ''}" title="👥 投票成員 (${s.count}人)：${escapeHtml(votersText)}">
-                    <div class="boss-bar-meta">
-                        <span class="boss-bar-title">${escapeHtml(s.name)}</span>
-                        <span class="boss-bar-counts">
-                            <strong style="color: ${s.color}; font-size: 0.92rem;">${s.count}</strong> 票
-                            <span class="boss-bar-pct">(${s.pct}%)</span>
-                        </span>
-                    </div>
+                    <span class="boss-bar-title" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
                     <div class="boss-bar-track">
                         <div class="boss-bar-fill" style="width: ${barWidth}%; background: ${s.color};"></div>
                     </div>
+                    <span class="boss-bar-counts">
+                        <strong style="color: ${s.color}; font-size: 0.88rem;">${s.count}</strong> 票
+                        <span class="boss-bar-pct">(${s.pct}%)</span>
+                    </span>
                     <!-- 游標移過去才顯示的浮動名單卡片 -->
                     <div class="boss-hover-tooltip">
                         ${tooltipVotersHtml}
@@ -7685,13 +7697,129 @@ document.addEventListener('DOMContentLoaded', () => {
         { val: "艾畢奈亞", label: "🦋 蝴蝶", defaultGames: 7 }
     ];
 
+    let smartScheduleDraftsDB = {};
+    let smartSchedAutoSaveTimer = null;
+    let smartSchedIsModified = false;
+
     let smartSchedState = {
         selectedWeekId: null,
+        lastLoadedWeekId: null,
         bossesByDaySlot: {}, // { [slotKey]: "克雷塞爾", [slotKey_sq0]: "...", [slotKey_sq1]: "..." }
         squadsByDaySlot: {}, // { [slotKey]: [ squad0(6 slots), squad1(6 slots)... ] }
         selectedMemberName: null, // Highlight available slots for this member
         activePickerSlot: null // { slotKey, squadIdx, slotIdx }
     };
+
+    function updateSmartSchedSyncStatus(state, msg) {
+        const el = document.getElementById('smart-sched-sync-status');
+        if (!el) return;
+        const dot = el.querySelector('.sync-dot');
+        const text = el.querySelector('.sync-text');
+        if (state === 'saving') {
+            if (dot) dot.style.background = '#f59e0b';
+            if (text) {
+                text.style.color = '#d97706';
+                text.textContent = '⏳ 正在暫存...';
+            }
+        } else if (state === 'saved') {
+            const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+            if (dot) dot.style.background = '#16a34a';
+            if (text) {
+                text.style.color = '#16a34a';
+                text.textContent = msg || `☁️ 雲端已暫存 (${timeStr})`;
+            }
+        } else if (state === 'local') {
+            const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+            if (dot) dot.style.background = '#3b82f6';
+            if (text) {
+                text.style.color = '#2563eb';
+                text.textContent = `💾 本地已暫存 (${timeStr})`;
+            }
+        } else if (state === 'idle') {
+            if (dot) dot.style.background = '#94a3b8';
+            if (text) {
+                text.style.color = '#64748b';
+                text.textContent = msg || '尚未排班';
+            }
+        }
+    }
+
+    function saveSmartScheduleDraft(isAuto = false) {
+        const weekId = getSmartSchedActiveWeekId();
+        if (!weekId) return;
+
+        const bosses = smartSchedState.bossesByDaySlot || {};
+        const squads = smartSchedState.squadsByDaySlot || {};
+
+        const draftData = {
+            weekId: weekId,
+            bossesByDaySlot: bosses,
+            squadsByDaySlot: squads,
+            updatedAt: Date.now(),
+            updatedBy: getCurrentEffectiveUser() || '管理員'
+        };
+
+        // 1. LocalStorage
+        try {
+            localStorage.setItem(`soulmine_smart_sched_draft_${weekId}`, JSON.stringify(draftData));
+        } catch(e) {}
+
+        // 2. Firebase Realtime Database
+        if (typeof db !== 'undefined' && db && db.ref) {
+            updateSmartSchedSyncStatus('saving');
+            db.ref(`smart_schedule_drafts/${weekId}`).set(draftData)
+                .then(() => {
+                    smartScheduleDraftsDB[weekId] = draftData;
+                    smartSchedIsModified = false;
+                    updateSmartSchedSyncStatus('saved');
+                })
+                .catch(err => {
+                    console.warn("Failed to sync draft to Firebase:", err);
+                    updateSmartSchedSyncStatus('local');
+                });
+        } else {
+            updateSmartSchedSyncStatus('local');
+        }
+
+        if (!isAuto) {
+            alert(`💾 已成功暫存【${weekId}】全週排班草稿！\n已同步至雲端資料庫，任何管理員重新整理或切換週次皆會自動保留。`);
+        }
+    }
+    window.saveSmartScheduleDraft = saveSmartScheduleDraft;
+
+    function markSmartScheduleModified() {
+        smartSchedIsModified = true;
+        updateSmartSchedSyncStatus('saving');
+        if (smartSchedAutoSaveTimer) clearTimeout(smartSchedAutoSaveTimer);
+        smartSchedAutoSaveTimer = setTimeout(() => {
+            saveSmartScheduleDraft(true);
+        }, 800);
+    }
+
+    function loadSmartScheduleDraftForWeek(weekId) {
+        if (!weekId) return false;
+        let draft = (smartScheduleDraftsDB && smartScheduleDraftsDB[weekId]) || null;
+        if (!draft) {
+            try {
+                const raw = localStorage.getItem(`soulmine_smart_sched_draft_${weekId}`);
+                if (raw) draft = JSON.parse(raw);
+            } catch(e) {}
+        }
+        if (draft && (draft.squadsByDaySlot || draft.bossesByDaySlot)) {
+            smartSchedState.bossesByDaySlot = Object.assign({}, draft.bossesByDaySlot || {});
+            smartSchedState.squadsByDaySlot = Object.assign({}, draft.squadsByDaySlot || {});
+            smartSchedState.lastLoadedWeekId = weekId;
+            const timeStr = draft.updatedAt ? new Date(draft.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '';
+            updateSmartSchedSyncStatus('saved', `☁️ 已載入暫存 (${timeStr || '雲端'})`);
+            return true;
+        } else {
+            smartSchedState.bossesByDaySlot = {};
+            smartSchedState.squadsByDaySlot = {};
+            smartSchedState.lastLoadedWeekId = weekId;
+            updateSmartSchedSyncStatus('idle', '尚未排班');
+            return false;
+        }
+    }
 
     function getSmartSlotBoss(slotKey, squadIdx = 0) {
         if (!smartSchedState || !smartSchedState.bossesByDaySlot) return "克雷塞爾";
@@ -7790,10 +7918,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (weekSelect) {
             weekSelect.onchange = () => {
                 smartSchedState.selectedWeekId = weekSelect.value;
-                smartSchedState.bossesByDaySlot = {};
-                smartSchedState.squadsByDaySlot = {};
                 smartSchedState.selectedMemberName = null;
+                loadSmartScheduleDraftForWeek(weekSelect.value);
                 renderSmartSchedule();
+            };
+        }
+
+        const saveDraftBtn = document.getElementById('btn-smart-sched-save-draft');
+        if (saveDraftBtn) {
+            saveDraftBtn.onclick = () => {
+                saveSmartScheduleDraft(false);
             };
         }
 
@@ -7808,6 +7942,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (confirm('確定要清空目前所有時段已排定的隊伍嗎？此動作將重置排班版面。')) {
                     smartSchedState.bossesByDaySlot = {};
                     smartSchedState.squadsByDaySlot = {};
+                    saveSmartScheduleDraft(true);
                     renderSmartSchedule();
                 }
             };
@@ -7856,6 +7991,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         level: '',
                         roleTag: ''
                     };
+                    markSmartScheduleModified();
                     renderSmartSchedule();
                     closePicker();
                 }
@@ -8231,6 +8367,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         smartSchedState.squadsByDaySlot = newSquads;
         smartSchedState.bossesByDaySlot = newBosses;
+        markSmartScheduleModified();
         renderSmartSchedule();
 
         const totalResps = responses.length;
@@ -8251,6 +8388,9 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSmartSchedule() {
         initSmartWeekSelect();
         const weekId = getSmartSchedActiveWeekId();
+        if (weekId && smartSchedState.lastLoadedWeekId !== weekId) {
+            loadSmartScheduleDraftForWeek(weekId);
+        }
         const responses = getSmartSchedWeekResponses();
         const days = getWeekDaysDetails(weekId);
         const usageStats = getSmartSchedMemberUsageStats();
@@ -8694,6 +8834,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             smartSchedState.squadsByDaySlot[slotKey] = currentSquads;
         }
+        markSmartScheduleModified();
         renderSmartSchedule();
     };
 
@@ -8717,6 +8858,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const aBoss = getSmartSlotBoss(slotKey, 0);
             smartSchedState.bossesByDaySlot[`${slotKey}_sq1`] = aBoss || "克雷塞爾";
         }
+        markSmartScheduleModified();
         renderSmartSchedule();
     };
 
@@ -8739,6 +8881,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (smartSchedState.bossesByDaySlot) {
             delete smartSchedState.bossesByDaySlot[`${slotKey}_sq1`];
         }
+        markSmartScheduleModified();
         renderSmartSchedule();
     };
 
@@ -8750,6 +8893,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm('確定要移除此分隊嗎？隊伍內的成員席位將被清空。')) {
                 if (smartSchedState.squadsByDaySlot[slotKey]) {
                     smartSchedState.squadsByDaySlot[slotKey].splice(squadIdx, 1);
+                    markSmartScheduleModified();
                     renderSmartSchedule();
                 }
             }
@@ -8762,6 +8906,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!squad || !squad[inSquadSlotIdx] || !squad[inSquadSlotIdx].name) return;
         const removedName = squad[inSquadSlotIdx].name;
         squad[inSquadSlotIdx] = { name: '', job: '', level: '', roleTag: '' };
+        markSmartScheduleModified();
         renderSmartSchedule();
     };
 
@@ -8866,6 +9011,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        markSmartScheduleModified();
         renderSmartSchedule();
     }
 
@@ -8967,6 +9113,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const squad = smartSchedState.squadsByDaySlot[slotKey]?.[squadIdx];
         if (squad && squad[inSquadSlotIdx]) {
             squad[inSquadSlotIdx].roleTag = val;
+            markSmartScheduleModified();
             renderSmartSchedule();
         }
         window.closeMiniRolePopover();
@@ -8981,6 +9128,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (custom !== null) {
             if (squad && squad[inSquadSlotIdx]) {
                 squad[inSquadSlotIdx].roleTag = stripRoleIcon(custom.trim());
+                markSmartScheduleModified();
                 renderSmartSchedule();
             }
         }
@@ -9145,6 +9293,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 level: level,
                 roleTag: autoRole
             };
+            markSmartScheduleModified();
             renderSmartSchedule();
             const modal = document.getElementById('smart-sched-picker-modal');
             if (modal) modal.style.display = 'none';
@@ -9287,6 +9436,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             }
 
+            saveSmartScheduleDraft(true);
             alert(`🎉 成功發布 ${teamsToPublish.length} 支隊伍至看板！已為您切換至招募看板。`);
 
             // Switch to Tab 2
