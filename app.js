@@ -6963,7 +6963,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         setAdmin('阿甘');
                         alert('🎉 歡迎管理員 阿甘 登入！已啟用出團與角色卡資料庫管理權限。');
                     } else {
-                        alert('密碼錯誤！請輸入正確的管理員密碼（Lumi、Eric 或 Ohni）。');
+                        alert('密碼錯誤！請確認管理員密碼是否正確。');
                         return;
                     }
                     updateAdminUI();
