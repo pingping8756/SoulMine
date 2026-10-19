@@ -1004,6 +1004,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupRosterManagement();
             setupSmartSchedule();
             setupChangelogForm();
+            setupChangelogEditModal();
             setupGlobalHeartWidget();
             updateUI();
         } catch (e) {
@@ -9487,9 +9488,27 @@ document.addEventListener('DOMContentLoaded', () => {
             const dateObj = new Date(ts);
             const dateStr = log.date || `${dateObj.getFullYear()}/${(dateObj.getMonth()+1).toString().padStart(2,'0')}/${dateObj.getDate().toString().padStart(2,'0')}`;
 
-            // Delete button ONLY for Lumi
-            const deleteBtnHtml = isLumi() ? `
-                <button onclick="event.stopPropagation(); deleteChangelog(${ts})" style="background:transparent; border:1px solid var(--danger-color); color:var(--danger-color); border-radius:6px; padding:0.25rem 0.6rem; font-size:0.8rem; cursor:pointer; font-weight:bold;">🗑️ 刪除日誌</button>
+            // Action buttons for Lumi (✏️ 編輯 & 🗑️ 刪除，僅在點擊展開後顯示，且僅顯示圖示)
+            const adminHeaderActionsHtml = (isLumi() && isOpen) ? `
+                <div style="display: inline-flex; align-items: center; gap: 0.35rem; margin-left: 0.4rem;">
+                    <button type="button" onclick="event.stopPropagation(); window.openEditChangelogModal(${ts})" title="編輯日誌" style="background: #eff6ff; border: 1.5px solid #93c5fd; color: #1d4ed8; border-radius: 6px; padding: 0.22rem 0.45rem; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.15s ease;">
+                        ✏️
+                    </button>
+                    <button type="button" onclick="event.stopPropagation(); window.deleteChangelog(${ts})" title="刪除日誌" style="background: #fff1f2; border: 1.5px solid #fecdd3; color: #e11d48; border-radius: 6px; padding: 0.22rem 0.45rem; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.15s ease;">
+                        🗑️
+                    </button>
+                </div>
+            ` : '';
+
+            const adminFooterActionsHtml = isLumi() ? `
+                <div style="display: flex; gap: 0.4rem; align-items: center;">
+                    <button type="button" onclick="event.stopPropagation(); window.openEditChangelogModal(${ts})" title="編輯日誌" style="background: #eff6ff; border: 1.5px solid #93c5fd; color: #1d4ed8; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.15s ease;">
+                        ✏️
+                    </button>
+                    <button type="button" onclick="event.stopPropagation(); window.deleteChangelog(${ts})" title="刪除日誌" style="background: #fff1f2; border: 1.5px solid #fecdd3; color: #e11d48; border-radius: 6px; padding: 0.25rem 0.5rem; font-size: 0.88rem; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1; transition: all 0.15s ease;">
+                        🗑️
+                    </button>
+                </div>
             ` : '';
 
             const arrowIcon = isOpen 
@@ -9502,20 +9521,106 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${arrowIcon}
                         <h3 style="margin: 0; color: #0f172a !important; font-size: 1.15rem !important; font-weight: 700 !important; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(log.title)}</h3>
                     </div>
-                    <span style="color: #64748b !important; font-size: 0.88rem !important; font-weight: 600 !important; margin-left: 0.75rem; white-space: nowrap;">${dateStr}</span>
+                    <div style="display: flex; align-items: center; gap: 0.6rem; margin-left: 0.75rem; flex-shrink: 0;">
+                        <span style="color: #64748b !important; font-size: 0.88rem !important; font-weight: 600 !important; white-space: nowrap;">${dateStr}</span>
+                        ${adminHeaderActionsHtml}
+                    </div>
                 </div>
                 ${isOpen ? `
                     <div class="changelog-accordion-body" style="padding: 1.1rem 1.35rem 1.35rem 1.35rem; border-top: 1px solid rgba(0,0,0,0.06); background: #ffffff;">
                         <div style="color: #334155 !important; font-size: 0.98rem !important; line-height: 1.7 !important; white-space: pre-wrap !important; font-weight: 500 !important;">${escapeHtml(log.content)}</div>
                         <div style="margin-top: 1rem !important; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(0,0,0,0.06); padding-top: 0.6rem;">
                             <span style="font-size: 0.85rem !important; color: #64748b !important; font-weight: 600 !important;">更新者: ${escapeHtml(log.author || '系統')}</span>
-                            ${deleteBtnHtml}
+                            ${adminFooterActionsHtml}
                         </div>
                     </div>
                 ` : ''}
             `;
             container.appendChild(card);
         });
+    }
+
+    window.openEditChangelogModal = function(ts) {
+        if (!isLumi()) {
+            alert('只有總管理員 Lumi 才能編輯更新日誌！');
+            return;
+        }
+        const target = changelogs.find(c => (c.timestamp || c.id) === ts);
+        if (!target) {
+            alert('找不到此筆更新日誌！');
+            return;
+        }
+
+        const modal = document.getElementById('changelog-edit-modal');
+        const tsInput = document.getElementById('changelog-edit-ts');
+        const titleInput = document.getElementById('changelog-edit-title');
+        const authorInput = document.getElementById('changelog-edit-author');
+        const contentInput = document.getElementById('changelog-edit-content');
+
+        if (tsInput) tsInput.value = String(ts);
+        if (titleInput) titleInput.value = target.title || '';
+        if (authorInput) authorInput.value = target.author || 'Lumi';
+        if (contentInput) contentInput.value = target.content || '';
+
+        if (modal) {
+            modal.style.display = 'flex';
+            setTimeout(() => {
+                if (titleInput) titleInput.focus();
+            }, 60);
+        }
+    };
+
+    function setupChangelogEditModal() {
+        const modal = document.getElementById('changelog-edit-modal');
+        const closeX = document.getElementById('btn-close-changelog-edit-x');
+        const cancelBtn = document.getElementById('btn-cancel-changelog-edit');
+        const form = document.getElementById('changelog-edit-form');
+
+        const closeModal = () => {
+            if (modal) modal.style.display = 'none';
+        };
+
+        if (closeX) closeX.onclick = closeModal;
+        if (cancelBtn) cancelBtn.onclick = closeModal;
+        if (modal) {
+            modal.onclick = (e) => {
+                if (e.target === modal) closeModal();
+            };
+        }
+
+        if (form) {
+            form.onsubmit = (e) => {
+                e.preventDefault();
+                if (!isLumi()) {
+                    alert('只有總管理員 Lumi 才能編輯更新日誌！');
+                    return;
+                }
+                const ts = parseInt(document.getElementById('changelog-edit-ts').value, 10);
+                const title = document.getElementById('changelog-edit-title').value.trim();
+                const author = document.getElementById('changelog-edit-author').value.trim() || 'Lumi';
+                const content = document.getElementById('changelog-edit-content').value.trim();
+
+                if (!title || !content) {
+                    alert('請輸入日誌標題與內容！');
+                    return;
+                }
+
+                const targetIdx = changelogs.findIndex(c => (c.timestamp || c.id) === ts);
+                if (targetIdx !== -1) {
+                    changelogs[targetIdx].title = title;
+                    changelogs[targetIdx].author = author;
+                    changelogs[targetIdx].content = content;
+                    changelogs[targetIdx].updatedAt = Date.now();
+
+                    db.ref('changelog').set(changelogs);
+                    closeModal();
+                    renderChangelogs();
+                    alert('🎉 更新日誌已成功修改儲存！');
+                } else {
+                    alert('找不到此筆日誌，可能已被刪除。');
+                }
+            };
+        }
     }
 
     window.deleteChangelog = function(ts) {

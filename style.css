@@ -2278,13 +2278,6 @@ body::after {
     box-sizing: border-box;
     animation: fadeIn 0.15s ease-out;
 }
-@media (max-width: 480px) {
-    .boss-chart-popover {
-        left: -60px;
-        width: 320px;
-        max-width: calc(100vw - 2.5rem);
-    }
-}
 .boss-chart-popover-header {
     display: flex;
     justify-content: space-between;
@@ -2312,6 +2305,7 @@ body::after {
     gap: 0.35rem;
     max-height: 520px;
     overflow-y: auto;
+    overflow-x: hidden;
     padding-right: 2px;
 }
 .boss-chart-row {
@@ -2374,15 +2368,52 @@ body::after {
     font-weight: 700;
     white-space: nowrap;
 }
-@media (max-width: 480px) {
+
+/* Mobile responsive rules for Boss Chart Popover & Rows */
+@media (max-width: 768px) {
+    .boss-chart-popover {
+        position: fixed !important;
+        top: 50% !important;
+        left: 50% !important;
+        transform: translate(-50%, -50%) !important;
+        width: min(92vw, 400px) !important;
+        max-width: calc(100vw - 1.5rem) !important;
+        max-height: 85vh !important;
+        box-shadow: 0 15px 45px rgba(15, 23, 42, 0.45), 0 0 0 100vmax rgba(0, 0, 0, 0.45) !important;
+        border-radius: 12px !important;
+        padding: 0.75rem 0.85rem !important;
+        z-index: 999999 !important;
+    }
+    .boss-chart-popover-header {
+        margin-bottom: 0.4rem !important;
+        padding-bottom: 0.35rem !important;
+    }
+    .boss-chart-list {
+        max-height: 65vh !important;
+    }
+    .boss-chart-row {
+        gap: 0.45rem !important;
+        padding: 0.3rem 0.45rem !important;
+    }
     .boss-bar-title {
-        flex: 0 0 95px;
-        max-width: 95px;
-        font-size: 0.72rem;
+        flex: 0 0 115px !important;
+        max-width: 115px !important;
+        font-size: 0.74rem !important;
+    }
+    .boss-bar-track {
+        min-width: 35px !important;
+        height: 8px !important;
     }
     .boss-bar-counts {
-        flex: 0 0 52px;
-        font-size: 0.7rem;
+        flex: 0 0 62px !important;
+        min-width: 62px !important;
+        font-size: 0.72rem !important;
+    }
+    .boss-hover-tooltip {
+        font-size: 0.7rem !important;
+        padding: 0.4rem 0.6rem !important;
+        max-width: 100% !important;
+        box-sizing: border-box !important;
     }
 }
 
