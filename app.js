@@ -434,6 +434,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let changelogs = [];
     let surveyResponses = {};
     let smartScheduleDraftsDB = {};
+    let smartScheduleDraftsBagelDB = {};
     let smartSchedAutoSaveTimer = null;
     let smartSchedIsModified = false;
     let smartSchedState = {
@@ -863,12 +864,21 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch(e) {}
         }
 
-        // Sync smart schedule drafts from Firebase
+        // Sync smart schedule drafts from Firebase (管理員與 Bagel 獨立分開)
         if (data.smart_schedule_drafts && typeof data.smart_schedule_drafts === 'object') {
             smartScheduleDraftsDB = data.smart_schedule_drafts;
-            if (!smartSchedIsModified && typeof getSmartSchedActiveWeekId === 'function' && typeof loadSmartScheduleDraftForWeek === 'function') {
+            if (!isBagel() && !smartSchedIsModified && typeof getSmartSchedActiveWeekId === 'function' && typeof loadSmartScheduleDraftForWeek === 'function') {
                 const curActiveWeek = getSmartSchedActiveWeekId();
                 if (curActiveWeek && smartScheduleDraftsDB[curActiveWeek]) {
+                    loadSmartScheduleDraftForWeek(curActiveWeek, true);
+                }
+            }
+        }
+        if (data.smart_schedule_drafts_bagel && typeof data.smart_schedule_drafts_bagel === 'object') {
+            smartScheduleDraftsBagelDB = data.smart_schedule_drafts_bagel;
+            if (isBagel() && !smartSchedIsModified && typeof getSmartSchedActiveWeekId === 'function' && typeof loadSmartScheduleDraftForWeek === 'function') {
+                const curActiveWeek = getSmartSchedActiveWeekId();
+                if (curActiveWeek && smartScheduleDraftsBagelDB[curActiveWeek]) {
                     loadSmartScheduleDraftForWeek(curActiveWeek, true);
                 }
             }
@@ -1064,7 +1074,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (votedBoss === optionName) return true;
         const v = String(votedBoss).replace(/（/g, '(').replace(/）/g, ')').replace('他們', '').trim();
         const o = String(optionName).replace(/（/g, '(').replace(/）/g, ')').replace('他們', '').trim();
-        return v === o;
+        if (v === o) return true;
+        if (o === '爺爺' && (v.includes('阿卡') || v.includes('爺爺') || v.includes('伊農'))) return true;
+        return false;
     }
 
     const TARGET_BOSS_OPTIONS = [
@@ -1074,6 +1086,7 @@ document.addEventListener('DOMContentLoaded', () => {
         '跟活動',
         '炎魔',
         '普拉',
+        '爺爺',
         '補位，哪裡缺打哪裡'
     ];
 
@@ -1151,6 +1164,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     holidayHint.innerHTML = '';
                 }
+            }
+
+            // Check if Friday (days[3]) is a holiday/補假 to dynamically adjust 4+3 or 3+4 grid
+            const isFridayHoliday = Boolean(days[3] && days[3].isSpecialHoliday);
+            if (isFridayHoliday) {
+                slotsContainer.classList.add('friday-holiday');
+            } else {
+                slotsContainer.classList.remove('friday-holiday');
             }
 
             // Build slot chips - 7 columns (Tuesday to Monday), stacked vertically for weekend/holiday
@@ -1269,10 +1290,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 updateBossSelectedCount();
 
                 if (hintContainer) {
-                    hintContainer.style.display = 'block';
+                    hintContainer.style.display = 'inline-flex';
                     hintContainer.innerHTML = `
                         <div class="survey-prefill-card is-existing">
-                            <span class="prefill-msg">✅ 已為您載入 <strong>${escapeHtml(existing.name || curName)}</strong> 本週填寫紀錄（可直接修改並送出更新）</span>
+                            <span class="prefill-msg">✅ 本週已填（可直接修改）</span>
                         </div>
                     `;
                 }
@@ -1292,14 +1313,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const latestPast = pastResponses[0];
             if (latestPast && Array.isArray(latestPast.slots) && latestPast.slots.length > 0) {
                 if (hintContainer) {
-                    hintContainer.style.display = 'block';
+                    hintContainer.style.display = 'inline-flex';
                     hintContainer.innerHTML = `
-                        <div class="survey-prefill-card">
-                            <span class="prefill-msg">💡 找到 <strong>${escapeHtml(latestPast.name || curName)}</strong> 上次填寫時段（共 ${latestPast.slots.length} 個時段）</span>
-                            <button type="button" id="btn-prefill-past-slots" class="btn-prefill-action">
-                                ⚡ 一鍵帶入上次時段
-                            </button>
-                        </div>
+                        <button type="button" id="btn-prefill-past-slots" class="btn-prefill-action" title="找到 ${escapeHtml(latestPast.name || curName)} 上次填寫的 ${latestPast.slots.length} 個時段，點擊一鍵帶入">
+                            ⚡ 一鍵帶入上次時段
+                        </button>
                     `;
                     const btnPrefill = document.getElementById('btn-prefill-past-slots');
                     if (btnPrefill) {
@@ -1396,9 +1414,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const hintContainer = document.getElementById('survey-prefill-hint');
             if (hintContainer) {
+                hintContainer.style.display = 'inline-flex';
                 hintContainer.innerHTML = `
                     <div class="survey-prefill-card is-success">
-                        <span class="prefill-msg">✨ 已成功為您帶入 <strong>${appliedCount}</strong> 個時段！請確認後即可送出。</span>
+                        <span class="prefill-msg">✨ 已成功帶入 ${appliedCount} 個時段</span>
                     </div>
                 `;
             }
@@ -6716,6 +6735,17 @@ document.addEventListener('DOMContentLoaded', () => {
         return (getAdminUser() || '').toLowerCase() === 'lumi';
     }
 
+    function isBagel() {
+        const u = (getLoggedInUser() || getAdminUser() || '').trim().toLowerCase();
+        return u === 'bagel' || u === 'begel' || u === 'bagle' || u === 'bagelpray';
+    }
+    window.isBagel = isBagel;
+
+    function canAccessSmartSchedule() {
+        return isAdmin() || isBagel();
+    }
+    window.canAccessSmartSchedule = canAccessSmartSchedule;
+
     function setAdmin(user) {
         if (user) {
             localStorage.setItem('soulmine_admin_user', user);
@@ -6815,15 +6845,51 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 6. Toggle Smart Weekly Schedule Tab & Buttons (Only Admins)
+        // 6. Toggle Smart Weekly Schedule Tab & Buttons (Admins or Bagel)
+        const canSched = canAccessSmartSchedule();
+        const isBagelScope = isBagel();
         const smartSchedTabBtn = document.getElementById('tab-btn-smart-schedule');
         if (smartSchedTabBtn) {
-            smartSchedTabBtn.style.display = isAdmin() ? 'inline-flex' : 'none';
+            smartSchedTabBtn.style.display = canSched ? 'inline-flex' : 'none';
+            if (isBagelScope) {
+                smartSchedTabBtn.innerHTML = '🥯 全週排班';
+                smartSchedTabBtn.style.borderColor = '#f472b6';
+                smartSchedTabBtn.style.color = '#db2777';
+                smartSchedTabBtn.style.background = 'linear-gradient(135deg, rgba(244, 114, 182, 0.15), rgba(251, 146, 60, 0.15))';
+            } else {
+                smartSchedTabBtn.innerHTML = '全週排班';
+                smartSchedTabBtn.style.borderColor = '#c084fc';
+                smartSchedTabBtn.style.color = '#a855f7';
+                smartSchedTabBtn.style.background = 'linear-gradient(135deg, rgba(147, 51, 234, 0.15), rgba(249, 115, 22, 0.15))';
+            }
         }
         const smartSchedTriggers = document.querySelectorAll('.btn-smart-schedule-trigger');
         smartSchedTriggers.forEach(b => {
-            b.style.display = isAdmin() ? 'inline-flex' : 'none';
+            b.style.display = canSched ? 'inline-flex' : 'none';
+            const span = b.querySelector('span');
+            if (span) {
+                span.textContent = isBagelScope ? '🥯 全週排班' : '全週排班';
+            }
         });
+
+        // Update Title & Badge in #tab-smart-schedule
+        const schedTitleWrap = document.querySelector('.smart-sched-title');
+        if (schedTitleWrap) {
+            const badge = schedTitleWrap.querySelector('.admin-badge-pill');
+            if (badge) {
+                if (isBagelScope) {
+                    badge.innerHTML = '🥯 Bagel 專屬工作室';
+                    badge.style.background = '#fdf2f8';
+                    badge.style.color = '#db2777';
+                    badge.style.borderColor = '#fbcfe8';
+                } else {
+                    badge.innerHTML = '👑 管理員專屬';
+                    badge.style.background = '#fdf4ff';
+                    badge.style.color = '#9333ea';
+                    badge.style.borderColor = '#f0abfc';
+                }
+            }
+        }
 
         // 7. Refresh recruit board and survey summary matrix
         if (typeof renderRecruitBoard === 'function') {
@@ -6836,6 +6902,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderSurveySummary();
         }
         if (typeof renderSmartSchedule === 'function') {
+            smartSchedState.lastLoadedWeekId = null;
             renderSmartSchedule();
         }
     }
@@ -6904,6 +6971,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     renderChangelogs();
                     if (typeof window.renderRosterMgList === 'function') window.renderRosterMgList();
                     if (typeof window.renderCreateRosterKeys === 'function') window.renderCreateRosterKeys();
+                    const cb = generalLoginSuccessCallback;
+                    generalLoginSuccessCallback = null;
+                    if (typeof cb === 'function') cb();
+                    return;
+                }
+                if ((lowerName === 'bagel' || lowerName === 'begel') && (lowerPass === 'bagel' || lowerPass === 'begel')) {
+                    setLoggedInUser('Bagel');
+                    closeGeneralLoginModal();
+                    alert(`🎉 歡迎登入！已為您啟用 🥯 全週排班工作室。`);
+                    updateAdminUI();
                     const cb = generalLoginSuccessCallback;
                     generalLoginSuccessCallback = null;
                     if (typeof cb === 'function') cb();
@@ -6982,6 +7059,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (clean === 'ohni' || clean === '阿甘') {
                         setAdmin('阿甘');
                         alert('🎉 歡迎管理員 阿甘 登入！已啟用出團與角色卡資料庫管理權限。');
+                    } else if (clean === 'bagel' || clean === 'begel') {
+                        setLoggedInUser('Bagel');
+                        alert('🎉 歡迎登入！已為您啟用 🥯 全週排班工作室。');
                     } else {
                         alert('密碼錯誤！請確認管理員密碼是否正確。');
                         return;
@@ -7768,18 +7848,23 @@ document.addEventListener('DOMContentLoaded', () => {
             console.error("Failed to serialize smart schedule draft:", jsonErr);
         }
 
+        const isBagelScope = isBagel();
+        const draftNode = isBagelScope ? `smart_schedule_drafts_bagel/${weekId}` : `smart_schedule_drafts/${weekId}`;
+        const lsKey = isBagelScope ? `soulmine_smart_sched_draft_bagel_${weekId}` : `soulmine_smart_sched_draft_${weekId}`;
+        const updatedByUser = isBagelScope ? 'Bagel' : ((typeof getCurrentEffectiveUser === 'function' ? getCurrentEffectiveUser() : '') || '管理員');
+
         // Firebase RTDB keys cannot contain '/', '.', '#', '$', '[', or ']'.
         // Since slot keys are like "10/20(二)_晚", we store the full schedule payload in draftJson.
         const draftData = {
             weekId: weekId,
             draftJson: serializedJson,
             updatedAt: Date.now(),
-            updatedBy: (typeof getCurrentEffectiveUser === 'function' ? getCurrentEffectiveUser() : '') || '管理員'
+            updatedBy: updatedByUser
         };
 
         // 1. LocalStorage fallback
         try {
-            localStorage.setItem(`soulmine_smart_sched_draft_${weekId}`, JSON.stringify({
+            localStorage.setItem(lsKey, JSON.stringify({
                 weekId: weekId,
                 bossesByDaySlot: bosses,
                 squadsByDaySlot: squads,
@@ -7793,15 +7878,20 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof db !== 'undefined' && db && db.ref) {
             updateSmartSchedSyncStatus('saving');
             try {
-                db.ref(`smart_schedule_drafts/${weekId}`).set(draftData)
+                db.ref(draftNode).set(draftData)
                     .then(() => {
-                        smartScheduleDraftsDB[weekId] = draftData;
+                        if (isBagelScope) {
+                            smartScheduleDraftsBagelDB[weekId] = draftData;
+                        } else {
+                            smartScheduleDraftsDB[weekId] = draftData;
+                        }
                         smartSchedIsModified = false;
                         smartSchedState.loadedUpdatedAt = draftData.updatedAt;
                         const timeStr = new Date(draftData.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
                         updateSmartSchedSyncStatus('saved', `☁️ 雲端已同步 (${timeStr})`);
                         if (!isAuto) {
-                            alert(`💾 已成功將【${weekId}】全週排班草稿儲存至雲端！\n所有裝置下次打開皆會自動即時顯示。`);
+                            const scopeLabel = isBagelScope ? '🥯 ' : '';
+                            alert(`💾 已成功將【${weekId}】${scopeLabel}全週排班草稿儲存至雲端！\n所有裝置下次打開皆會自動即時顯示。`);
                         }
                     })
                     .catch(err => {
@@ -7838,11 +7928,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function loadSmartScheduleDraftForWeek(weekId, force = false) {
         if (!weekId) return false;
-        let draft = (smartScheduleDraftsDB && smartScheduleDraftsDB[weekId]) || null;
+        const isBagelScope = isBagel();
+        const targetDB = isBagelScope ? smartScheduleDraftsBagelDB : smartScheduleDraftsDB;
+        const lsKey = isBagelScope ? `soulmine_smart_sched_draft_bagel_${weekId}` : `soulmine_smart_sched_draft_${weekId}`;
+
+        let draft = (targetDB && targetDB[weekId]) || null;
         let isCloud = !!draft;
         if (!draft) {
             try {
-                const raw = localStorage.getItem(`soulmine_smart_sched_draft_${weekId}`);
+                const raw = localStorage.getItem(lsKey);
                 if (raw) draft = JSON.parse(raw);
             } catch(e) {}
         }
@@ -7935,8 +8029,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Trigger buttons from Tab 1 or Modals
         const switchTabToSmart = () => {
-            if (!isAdmin()) {
-                alert('智能自動排班為管理員專屬功能，請先登入管理員！');
+            if (!canAccessSmartSchedule()) {
+                alert('全週排班為管理員與授權專屬功能，請先登入！');
                 return;
             }
             const tabBtns = document.querySelectorAll('.tab-btn');
@@ -8454,15 +8548,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSmartSchedule() {
         initSmartWeekSelect();
         const weekId = getSmartSchedActiveWeekId();
+        const isBagelScope = isBagel();
+        const targetDB = isBagelScope ? smartScheduleDraftsBagelDB : smartScheduleDraftsDB;
+        const lsKey = isBagelScope ? `soulmine_smart_sched_draft_bagel_${weekId}` : `soulmine_smart_sched_draft_${weekId}`;
 
         // Auto-load draft if week changed, OR if board is currently empty, OR if cloud has a newer draft
-        const cloudDraft = (smartScheduleDraftsDB && smartScheduleDraftsDB[weekId]);
+        const cloudDraft = (targetDB && targetDB[weekId]);
         const cloudTime = (cloudDraft && cloudDraft.updatedAt) || 0;
         const isCurrentEmpty = (!smartSchedState.squadsByDaySlot || Object.keys(smartSchedState.squadsByDaySlot).length === 0);
 
         if (weekId) {
             const needLoad = (smartSchedState.lastLoadedWeekId !== weekId) ||
-                             (isCurrentEmpty && (cloudDraft || localStorage.getItem(`soulmine_smart_sched_draft_${weekId}`))) ||
+                             (isCurrentEmpty && (cloudDraft || localStorage.getItem(lsKey))) ||
                              (!smartSchedIsModified && cloudTime > (smartSchedState.loadedUpdatedAt || 0));
             if (needLoad) {
                 loadSmartScheduleDraftForWeek(weekId);
@@ -8917,8 +9014,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 在排班時段右上角點擊「+」新增 B 隊 (第二隊，可打不同突襲)
     window.addSmartSlotSquadB = function(slotKey) {
-        if (!isAdmin()) {
-            alert('全週排班為管理員專屬功能，請先登入管理員！');
+        if (!canAccessSmartSchedule()) {
+            alert('全週排班為管理員與授權專屬功能，請先登入！');
             return;
         }
         if (!smartSchedState.squadsByDaySlot[slotKey]) {
@@ -8941,8 +9038,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 移除 B 隊 (第二隊)
     window.removeSmartSlotSquadB = function(slotKey) {
-        if (!isAdmin()) {
-            alert('全週排班為管理員專屬功能，請先登入管理員！');
+        if (!canAccessSmartSchedule()) {
+            alert('全週排班為管理員與授權專屬功能，請先登入！');
             return;
         }
         const currentSquads = smartSchedState.squadsByDaySlot[slotKey] || [];
@@ -8989,8 +9086,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 點選下方成員可打時間：跑出綁定角色，選擇後自動往上排 (可指定排入 A 隊或 B 隊)
     window.clickSmartAvailMember = function(memberName, slotKey, targetSquadIdx) {
-        if (!isAdmin()) {
-            alert('全週排班為管理員專屬功能，請先登入管理員！');
+        if (!canAccessSmartSchedule()) {
+            alert('全週排班為管理員與授權專屬功能，請先登入！');
             return;
         }
 

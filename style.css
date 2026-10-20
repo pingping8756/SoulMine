@@ -1932,7 +1932,9 @@ body::after {
 
 .survey-h-input {
     width: 100%;
-    padding: 0.38rem 0.65rem;
+    height: 32px;
+    box-sizing: border-box;
+    padding: 0.35rem 0.65rem;
     font-size: 0.86rem;
     border-radius: 6px;
     border: 1.5px solid #94a3b8;
@@ -1947,24 +1949,55 @@ body::after {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
+.survey-name-input-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    flex-wrap: wrap;
+}
+.survey-name-input-compact {
+    width: 135px !important;
+    max-width: 150px !important;
+    flex: 0 0 135px !important;
+}
+
 .survey-h-col-name {
-    flex: 1.2;
-    min-width: 260px;
+    flex: 1 1 calc(50% - 0.425rem);
+    width: calc(50% - 0.425rem);
+    max-width: calc(50% - 0.425rem);
+    min-width: 0;
+    box-sizing: border-box;
 }
 .survey-h-col-scroll {
-    flex: 1;
-    min-width: 250px;
+    flex: 1 1 calc(50% - 0.425rem);
+    width: calc(50% - 0.425rem);
+    max-width: calc(50% - 0.425rem);
+    min-width: 0;
+    box-sizing: border-box;
 }
-@media (max-width: 768px) {
+@media (max-width: 960px) {
+    .survey-h-row {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        gap: 0.6rem !important;
+    }
     .survey-h-col-name,
     .survey-h-col-scroll {
         min-width: 0 !important;
         width: 100% !important;
+        max-width: 100% !important;
+        flex: none !important;
     }
     .survey-h-col-inline {
         flex-direction: column !important;
-        align-items: stretch !important;
+        align-items: flex-start !important;
         gap: 0.35rem !important;
+    }
+    .survey-name-input-wrap {
+        width: 100% !important;
+        display: flex !important;
+        align-items: center !important;
+        gap: 0.45rem !important;
     }
     .survey-h-scroll-radios {
         width: 100% !important;
@@ -2014,21 +2047,26 @@ body::after {
 
 /* Prefill Hint Card (做法 2：自動偵測歷史填寫紀錄與一鍵帶入) */
 .survey-prefill-hint {
-    margin: 0.15rem 0 0.35rem 0;
+    margin: 0 !important;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
 }
 .survey-prefill-card {
     display: inline-flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.35rem;
     background: #eff6ff;
     border: 1.5px solid #93c5fd;
-    border-radius: 8px;
-    padding: 0.3rem 0.75rem;
-    font-size: 0.82rem;
+    border-radius: 6px;
+    padding: 0 0.55rem;
+    height: 32px;
+    box-sizing: border-box;
+    font-size: 0.78rem;
     color: #1e3a8a;
-    box-shadow: 0 2px 6px rgba(59, 130, 246, 0.12);
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.12);
     animation: fadeIn 0.2s ease-in-out;
-    flex-wrap: wrap;
+    white-space: nowrap;
 }
 .survey-prefill-card.is-existing {
     background: #f0fdf4;
@@ -2045,16 +2083,19 @@ body::after {
     color: #ffffff;
     font-weight: 800;
     font-size: 0.78rem;
-    padding: 0.22rem 0.65rem;
+    padding: 0 0.65rem;
+    height: 32px;
+    box-sizing: border-box;
     border-radius: 6px;
     border: none;
     cursor: pointer;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.25);
     transition: all 0.15s ease;
     white-space: nowrap;
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
+    line-height: 1;
 }
 .btn-prefill-action:hover {
     background: linear-gradient(135deg, #1d4ed8, #1e40af);
@@ -2072,12 +2113,37 @@ body::after {
     padding: 0.45rem 0.6rem;
 }
 .survey-h-slots-row {
-    display: grid !important;
-    grid-template-columns: repeat(7, 1fr) !important;
-    gap: 0.35rem !important;
+    min-width: 0 !important;
     width: 100% !important;
-    align-items: start !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.45rem 0.35rem !important;
+    align-items: flex-start !important;
     box-sizing: border-box !important;
+}
+
+/* 常態週 (週五無補假)：上排週二、三、四、五 (4 等分各 25%)，下排週六、日、一 (3 等分各 33.33%) */
+.survey-h-slots-row:not(.friday-holiday) .survey-day-col:nth-child(-n+4) {
+    flex: 1 1 calc(25% - 0.35rem) !important;
+    min-width: calc(25% - 0.35rem) !important;
+    max-width: calc(25% - 0.2rem) !important;
+}
+.survey-h-slots-row:not(.friday-holiday) .survey-day-col:nth-child(n+5) {
+    flex: 1 1 calc(33.333% - 0.35rem) !important;
+    min-width: calc(33.333% - 0.35rem) !important;
+    max-width: calc(33.333% - 0.2rem) !important;
+}
+
+/* 週五補假週：上排週二、三、四 (3 等分各 33.33%)，下排週五、六、日、一 (4 等分各 25%) */
+.survey-h-slots-row.friday-holiday .survey-day-col:nth-child(-n+3) {
+    flex: 1 1 calc(33.333% - 0.35rem) !important;
+    min-width: calc(33.333% - 0.35rem) !important;
+    max-width: calc(33.333% - 0.2rem) !important;
+}
+.survey-h-slots-row.friday-holiday .survey-day-col:nth-child(n+4) {
+    flex: 1 1 calc(25% - 0.35rem) !important;
+    min-width: calc(25% - 0.35rem) !important;
+    max-width: calc(25% - 0.2rem) !important;
 }
 
 .survey-day-col {
@@ -2087,6 +2153,15 @@ body::after {
     width: 100% !important;
     min-width: 0 !important;
     align-items: stretch !important;
+    box-sizing: border-box !important;
+}
+
+/* 按鈕高度固定統一 (36px)，單一時段維持固定標準高度，不縱向拉長 */
+.survey-slot-chip {
+    height: 36px !important;
+    min-height: 36px !important;
+    max-height: 36px !important;
+    box-sizing: border-box !important;
 }
 
 @media (max-width: 860px) {
@@ -2094,28 +2169,7 @@ body::after {
         overflow-x: visible !important;
         padding-bottom: 0 !important;
     }
-    .survey-h-slots-row {
-        min-width: 0 !important;
-        width: 100% !important;
-        display: flex !important;
-        flex-wrap: wrap !important;
-        gap: 0.35rem !important;
-    }
-    /* 第一列：週二、三、四、五 (各佔 25%) */
-    .survey-h-slots-row .survey-day-col:nth-child(-n+4) {
-        flex: 1 1 calc(25% - 0.35rem) !important;
-        min-width: calc(25% - 0.35rem) !important;
-        max-width: calc(25% - 0.2rem) !important;
-    }
-    /* 第二列：週六、日、一 (各佔 33.33%，週末午/晚有更充裕的寬度) */
-    .survey-h-slots-row .survey-day-col:nth-child(n+5) {
-        flex: 1 1 calc(33.333% - 0.35rem) !important;
-        min-width: calc(33.333% - 0.35rem) !important;
-        max-width: calc(33.333% - 0.2rem) !important;
-    }
     .survey-slot-chip {
-        height: 36px !important;
-        min-height: 36px !important;
         padding: 0.2rem 0.15rem !important;
         font-size: 0.78rem !important;
     }
@@ -2128,7 +2182,7 @@ body::after {
     color: #c2410c;
 }
 
-/* Dual column layout: Slots Grid (half) + Target Bosses (half) */
+/* Dual column layout: Slots Grid (50%) + Target Bosses (50%) 視覺各半完美平衡 */
 .survey-h-dual-row {
     display: flex;
     gap: 0.85rem;
@@ -2138,8 +2192,10 @@ body::after {
     box-sizing: border-box;
 }
 .survey-h-col-slots-wrapper {
-    flex: 1 1 auto;
+    flex: 1 1 calc(50% - 0.425rem);
     min-width: 0;
+    max-width: calc(50% - 0.425rem);
+    width: calc(50% - 0.425rem);
     background: #f8fafc;
     border: 1.5px solid #e2e8f0;
     border-radius: 8px;
@@ -2149,9 +2205,10 @@ body::after {
     box-sizing: border-box;
 }
 .survey-h-col-boss-wrapper {
-    flex: 0 0 355px;
-    width: 355px;
-    max-width: 100%;
+    flex: 1 1 calc(50% - 0.425rem);
+    min-width: 0;
+    max-width: calc(50% - 0.425rem);
+    width: calc(50% - 0.425rem);
     background: #f8fafc;
     border: 1.5px solid #e2e8f0;
     border-radius: 8px;
@@ -2203,7 +2260,7 @@ body::after {
     box-sizing: border-box;
     letter-spacing: -0.2px;
 }
-.boss-option-chip:last-child {
+.boss-option-chip:nth-child(odd):last-child {
     flex: 1 1 100%;
 }
 .boss-option-chip:hover {
@@ -4696,6 +4753,193 @@ body::after {
     background: #e2e8f0;
     color: #0f172a;
     font-size: 0.84rem;
+}
+
+/* ========================================================
+   Smart Schedule & Report Responsive: Mobile & Landscape Mode (手機打橫一覽全週排班)
+   ======================================================== */
+@media (max-width: 960px), (max-height: 540px) and (orientation: landscape) {
+    .smart-schedule-card {
+        padding: 0.5rem 0.5rem !important;
+        border-radius: 10px !important;
+    }
+    .smart-sched-header {
+        gap: 0.4rem !important;
+        padding-bottom: 0.4rem !important;
+    }
+    .smart-sched-title-wrap {
+        gap: 0.4rem !important;
+    }
+    .smart-sched-title {
+        font-size: 1.05rem !important;
+    }
+    .admin-badge-pill {
+        font-size: 0.68rem !important;
+        padding: 0.1rem 0.4rem !important;
+    }
+    .smart-sched-week-picker {
+        padding: 0.12rem 0.4rem !important;
+        font-size: 0.78rem !important;
+    }
+    .smart-sched-select-input {
+        padding: 0.15rem 0.35rem !important;
+        font-size: 0.78rem !important;
+    }
+    .smart-sched-actions-bar {
+        gap: 0.25rem !important;
+    }
+    .smart-sched-actions-bar button {
+        padding: 0.22rem 0.5rem !important;
+        font-size: 0.75rem !important;
+    }
+    .smart-matrix-workspace {
+        margin-top: 0.35rem !important;
+    }
+    .smart-sched-matrix-scroll {
+        border-radius: 6px !important;
+    }
+
+    /* 緊湊縮短每行高度與欄寬，手機打橫時直接在同一個畫面一覽全週排班 */
+    .smart-matrix-table th,
+    .smart-matrix-table td {
+        width: 90px !important;
+        min-width: 90px !important;
+        max-width: 90px !important;
+        padding: 0.1rem 0.15rem !important;
+        font-size: 0.75rem !important;
+    }
+    .smart-matrix-table .sticky-col {
+        width: 62px !important;
+        min-width: 62px !important;
+        max-width: 62px !important;
+        font-size: 0.75rem !important;
+        padding: 0.1rem 0.25rem !important;
+    }
+
+    /* 表頭日期與 Boss 下拉列高度精簡 */
+    .smart-matrix-date-row th,
+    .smart-matrix-date-row td {
+        padding: 0.2rem 0.15rem !important;
+        font-size: 0.76rem !important;
+    }
+    .smart-matrix-date-row th div:first-of-type + div {
+        padding: 0 16px 0 2px !important;
+        font-size: 0.78rem !important;
+    }
+    .smart-matrix-date-row th div:last-of-type {
+        font-size: 0.68rem !important;
+        margin-top: 1px !important;
+    }
+    .smart-slot-add-squad-btn,
+    .smart-slot-remove-squad-btn {
+        width: 16px !important;
+        height: 16px !important;
+        font-size: 0.68rem !important;
+    }
+    .smart-matrix-boss-row td {
+        padding: 0.12rem 0.15rem !important;
+    }
+    .smart-matrix-boss-select {
+        height: 23px !important;
+        font-size: 0.72rem !important;
+        padding: 0 0.1rem !important;
+    }
+
+    /* 席位每行高度大幅緊湊 (從 42px 縮短為 27px) */
+    .smart-matrix-assigned-row td {
+        padding: 0.08rem 0.15rem !important;
+        height: 27px !important;
+        min-height: 27px !important;
+    }
+    .smart-matrix-chip-cell {
+        padding: 0.08rem 0.18rem !important;
+        border-radius: 4px !important;
+    }
+    .smart-matrix-chip-cell.empty-slot {
+        height: 25px !important;
+        line-height: 23px !important;
+        font-size: 0.68rem !important;
+    }
+    .smart-matrix-chip-cell.filled-slot {
+        min-height: 25px !important;
+        height: auto !important;
+    }
+    .smart-chip-line1 {
+        gap: 0.1rem !important;
+        line-height: 1.1 !important;
+    }
+    .smart-role-pill {
+        font-size: 0.6rem !important;
+        padding: 0 0.2rem !important;
+    }
+    .smart-cell-char-job {
+        font-size: 0.7rem !important;
+    }
+    .smart-chip-cancel-btn {
+        font-size: 0.65rem !important;
+    }
+    .smart-chip-line2 {
+        font-size: 0.68rem !important;
+        margin-top: 1px !important;
+    }
+    .smart-cell-char-name {
+        font-size: 0.74rem !important;
+        max-width: 50px !important;
+    }
+    .smart-cell-char-lvl {
+        font-size: 0.62rem !important;
+    }
+
+    /* 調查出席意願名冊各行高度緊湊 */
+    .smart-matrix-section-title-row td {
+        font-size: 0.75rem !important;
+        padding: 0.25rem 0.4rem !important;
+    }
+    .smart-matrix-avail-row td {
+        height: 24px !important;
+        padding: 0.08rem 0.15rem !important;
+        font-size: 0.74rem !important;
+    }
+    .smart-avail-clickable-cell {
+        padding: 0.06rem 0.25rem !important;
+        font-size: 0.7rem !important;
+    }
+    .smart-matrix-total-row td {
+        font-size: 0.8rem !important;
+        padding: 0.25rem 0.35rem !important;
+    }
+
+    /* 出團看板 (confirmed-report-table) 手機橫向自適應 */
+    .confirmed-report-table {
+        min-width: 0 !important;
+        width: 100% !important;
+    }
+    .confirmed-report-table th,
+    .confirmed-report-table td {
+        padding: 0.12rem 1px !important;
+        font-size: 0.74rem !important;
+    }
+    .confirmed-report-table thead tr.report-header-dates th {
+        font-size: 0.76rem !important;
+        padding: 0.2rem 1px !important;
+    }
+    .report-team-title {
+        font-size: 0.72rem !important;
+    }
+    .report-team-time {
+        font-size: 0.68rem !important;
+    }
+    .confirmed-report-table td.col-slot-cell {
+        height: 24px !important;
+        padding: 0.08rem 1px !important;
+    }
+    .slot-member-name {
+        font-size: 0.72rem !important;
+    }
+    .slot-job-text {
+        font-size: 0.62rem !important;
+        padding: 0 1px !important;
+    }
 }
 
 /* Mini Role Picker Popover Buttons */

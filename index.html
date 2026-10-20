@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=242">
+    <link rel="stylesheet" href="style.css?v=247">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -773,8 +773,11 @@
                                     <span class="survey-step-num bg-blue">1</span>
                                     <span>你的名字 / 遊戲 ID</span>
                                 </label>
-                                <input type="text" id="survey-user-name" required placeholder="請輸入名字或暱稱..." class="survey-h-input survey-h-input-inline" list="survey-name-datalist" autocomplete="off">
-                                <datalist id="survey-name-datalist"></datalist>
+                                <div class="survey-name-input-wrap">
+                                    <input type="text" id="survey-user-name" required placeholder="請輸入名字..." class="survey-h-input survey-h-input-inline survey-name-input-compact" list="survey-name-datalist" autocomplete="off">
+                                    <datalist id="survey-name-datalist"></datalist>
+                                    <span id="survey-prefill-hint" class="survey-prefill-hint" style="display: none;"></span>
+                                </div>
                             </div>
 
                             <!-- 2. 是否吃突襲券？ (標題與選項並排) -->
@@ -795,9 +798,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 智慧提示：自動偵測歷史填寫紀錄與一鍵帶入 -->
-                        <div id="survey-prefill-hint" class="survey-prefill-hint" style="display: none;"></div>
 
                         <!-- Row 2: Slots Grid & Target Boss Dual Column (時段半頁 + 下週要打？新題目) -->
                         <div class="survey-h-dual-row">
@@ -854,7 +854,7 @@
                                     </label>
                                     <label class="boss-option-chip">
                                         <input type="checkbox" name="survey-target-boss" value="爺爺">
-                                        <span class="boss-option-text">爺爺 (阿卡伊農)</span>
+                                        <span class="boss-option-text">爺爺</span>
                                     </label>
                                     <label class="boss-option-chip">
                                         <input type="checkbox" name="survey-target-boss" value="補位，哪裡缺打哪裡">
@@ -1065,6 +1065,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=260" defer></script>
+    <script src="app.js?v=267" defer></script>
 </body>
 </html>
