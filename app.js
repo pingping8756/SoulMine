@@ -431,6 +431,18 @@ document.addEventListener('DOMContentLoaded', () => {
     let confirmedTeams = [];
     let changelogs = [];
     let surveyResponses = {};
+    let smartScheduleDraftsDB = {};
+    let smartSchedAutoSaveTimer = null;
+    let smartSchedIsModified = false;
+    let smartSchedState = {
+        selectedWeekId: null,
+        lastLoadedWeekId: null,
+        loadedUpdatedAt: 0,
+        bossesByDaySlot: {}, // { [slotKey]: "克雷塞爾", [slotKey_sq0]: "...", [slotKey_sq1]: "..." }
+        squadsByDaySlot: {}, // { [slotKey]: [ squad0(6 slots), squad1(6 slots)... ] }
+        selectedMemberName: null, // Highlight available slots for this member
+        activePickerSlot: null // { slotKey, squadIdx, slotIdx }
+    };
     let raidDatePicker = null;
 
     // --- Create Raid Interactive Planner State ---
@@ -852,6 +864,12 @@ document.addEventListener('DOMContentLoaded', () => {
         // Sync smart schedule drafts from Firebase
         if (data.smart_schedule_drafts && typeof data.smart_schedule_drafts === 'object') {
             smartScheduleDraftsDB = data.smart_schedule_drafts;
+            if (!smartSchedIsModified && typeof getSmartSchedActiveWeekId === 'function' && typeof loadSmartScheduleDraftForWeek === 'function') {
+                const curActiveWeek = getSmartSchedActiveWeekId();
+                if (curActiveWeek && smartScheduleDraftsDB[curActiveWeek]) {
+                    loadSmartScheduleDraftForWeek(curActiveWeek, true);
+                }
+            }
         }
 
         // Auto-repair creator for Bagel's raids if accidentally overwritten to Lumi
@@ -7698,18 +7716,6 @@ document.addEventListener('DOMContentLoaded', () => {
         { val: "艾畢奈亞", label: "🦋 蝴蝶", defaultGames: 7 }
     ];
 
-    let smartScheduleDraftsDB = {};
-    let smartSchedAutoSaveTimer = null;
-    let smartSchedIsModified = false;
-
-    let smartSchedState = {
-        selectedWeekId: null,
-        lastLoadedWeekId: null,
-        bossesByDaySlot: {}, // { [slotKey]: "克雷塞爾", [slotKey_sq0]: "...", [slotKey_sq1]: "..." }
-        squadsByDaySlot: {}, // { [slotKey]: [ squad0(6 slots), squad1(6 slots)... ] }
-        selectedMemberName: null, // Highlight available slots for this member
-        activePickerSlot: null // { slotKey, squadIdx, slotIdx }
-    };
 
     function updateSmartSchedSyncStatus(state, msg) {
         const el = document.getElementById('smart-sched-sync-status');
@@ -7720,21 +7726,21 @@ document.addEventListener('DOMContentLoaded', () => {
             if (dot) dot.style.background = '#f59e0b';
             if (text) {
                 text.style.color = '#d97706';
-                text.textContent = '⏳ 正在暫存...';
+                text.textContent = msg || '⏳ 正在同步...';
             }
         } else if (state === 'saved') {
             const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
             if (dot) dot.style.background = '#16a34a';
             if (text) {
                 text.style.color = '#16a34a';
-                text.textContent = msg || `☁️ 雲端已暫存 (${timeStr})`;
+                text.textContent = msg || `☁️ 雲端已同步 (${timeStr})`;
             }
         } else if (state === 'local') {
             const timeStr = new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
             if (dot) dot.style.background = '#3b82f6';
             if (text) {
                 text.style.color = '#2563eb';
-                text.textContent = `💾 本地已暫存 (${timeStr})`;
+                text.textContent = msg || `💾 本機暫存 (${timeStr})`;
             }
         } else if (state === 'idle') {
             if (dot) dot.style.background = '#94a3b8';
@@ -7752,38 +7758,68 @@ document.addEventListener('DOMContentLoaded', () => {
         const bosses = smartSchedState.bossesByDaySlot || {};
         const squads = smartSchedState.squadsByDaySlot || {};
 
+        let serializedJson = '';
+        try {
+            serializedJson = JSON.stringify({ bossesByDaySlot: bosses, squadsByDaySlot: squads });
+        } catch(jsonErr) {
+            console.error("Failed to serialize smart schedule draft:", jsonErr);
+        }
+
+        // Firebase RTDB keys cannot contain '/', '.', '#', '$', '[', or ']'.
+        // Since slot keys are like "10/20(二)_晚", we store the full schedule payload in draftJson.
         const draftData = {
             weekId: weekId,
-            bossesByDaySlot: bosses,
-            squadsByDaySlot: squads,
+            draftJson: serializedJson,
             updatedAt: Date.now(),
-            updatedBy: getCurrentEffectiveUser() || '管理員'
+            updatedBy: (typeof getCurrentEffectiveUser === 'function' ? getCurrentEffectiveUser() : '') || '管理員'
         };
 
-        // 1. LocalStorage
+        // 1. LocalStorage fallback
         try {
-            localStorage.setItem(`soulmine_smart_sched_draft_${weekId}`, JSON.stringify(draftData));
+            localStorage.setItem(`soulmine_smart_sched_draft_${weekId}`, JSON.stringify({
+                weekId: weekId,
+                bossesByDaySlot: bosses,
+                squadsByDaySlot: squads,
+                draftJson: serializedJson,
+                updatedAt: draftData.updatedAt,
+                updatedBy: draftData.updatedBy
+            }));
         } catch(e) {}
 
         // 2. Firebase Realtime Database
         if (typeof db !== 'undefined' && db && db.ref) {
             updateSmartSchedSyncStatus('saving');
-            db.ref(`smart_schedule_drafts/${weekId}`).set(draftData)
-                .then(() => {
-                    smartScheduleDraftsDB[weekId] = draftData;
-                    smartSchedIsModified = false;
-                    updateSmartSchedSyncStatus('saved');
-                })
-                .catch(err => {
-                    console.warn("Failed to sync draft to Firebase:", err);
-                    updateSmartSchedSyncStatus('local');
-                });
+            try {
+                db.ref(`smart_schedule_drafts/${weekId}`).set(draftData)
+                    .then(() => {
+                        smartScheduleDraftsDB[weekId] = draftData;
+                        smartSchedIsModified = false;
+                        smartSchedState.loadedUpdatedAt = draftData.updatedAt;
+                        const timeStr = new Date(draftData.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' });
+                        updateSmartSchedSyncStatus('saved', `☁️ 雲端已同步 (${timeStr})`);
+                        if (!isAuto) {
+                            alert(`💾 已成功將【${weekId}】全週排班草稿儲存至雲端！\n所有裝置下次打開皆會自動即時顯示。`);
+                        }
+                    })
+                    .catch(err => {
+                        console.warn("Failed to sync draft to Firebase:", err);
+                        updateSmartSchedSyncStatus('local');
+                        if (!isAuto) {
+                            alert(`⚠️ 雲端同步失敗，已先將草稿保存在本機。\n錯誤訊息：${err.message || err}`);
+                        }
+                    });
+            } catch(syncErr) {
+                console.warn("Synchronous Firebase write error:", syncErr);
+                updateSmartSchedSyncStatus('local');
+                if (!isAuto) {
+                    alert(`⚠️ 雲端連線異常，已先保存在本機。\n錯誤訊息：${syncErr.message || syncErr}`);
+                }
+            }
         } else {
             updateSmartSchedSyncStatus('local');
-        }
-
-        if (!isAuto) {
-            alert(`💾 已成功暫存【${weekId}】全週排班草稿！\n已同步至雲端資料庫，任何管理員重新整理或切換週次皆會自動保留。`);
+            if (!isAuto) {
+                alert(`💾 目前離線模式，排班已儲存於本機瀏覽器。`);
+            }
         }
     }
     window.saveSmartScheduleDraft = saveSmartScheduleDraft;
@@ -7797,29 +7833,46 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 800);
     }
 
-    function loadSmartScheduleDraftForWeek(weekId) {
+    function loadSmartScheduleDraftForWeek(weekId, force = false) {
         if (!weekId) return false;
         let draft = (smartScheduleDraftsDB && smartScheduleDraftsDB[weekId]) || null;
+        let isCloud = !!draft;
         if (!draft) {
             try {
                 const raw = localStorage.getItem(`soulmine_smart_sched_draft_${weekId}`);
                 if (raw) draft = JSON.parse(raw);
             } catch(e) {}
         }
-        if (draft && (draft.squadsByDaySlot || draft.bossesByDaySlot)) {
-            smartSchedState.bossesByDaySlot = Object.assign({}, draft.bossesByDaySlot || {});
-            smartSchedState.squadsByDaySlot = Object.assign({}, draft.squadsByDaySlot || {});
-            smartSchedState.lastLoadedWeekId = weekId;
-            const timeStr = draft.updatedAt ? new Date(draft.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '';
-            updateSmartSchedSyncStatus('saved', `☁️ 已載入暫存 (${timeStr || '雲端'})`);
-            return true;
-        } else {
-            smartSchedState.bossesByDaySlot = {};
-            smartSchedState.squadsByDaySlot = {};
-            smartSchedState.lastLoadedWeekId = weekId;
-            updateSmartSchedSyncStatus('idle', '尚未排班');
-            return false;
+        if (draft) {
+            let loadedBosses = null;
+            let loadedSquads = null;
+            if (draft.draftJson) {
+                try {
+                    const parsed = JSON.parse(draft.draftJson);
+                    loadedBosses = parsed.bossesByDaySlot;
+                    loadedSquads = parsed.squadsByDaySlot;
+                } catch(e) {}
+            }
+            if (!loadedBosses) loadedBosses = draft.bossesByDaySlot;
+            if (!loadedSquads) loadedSquads = draft.squadsByDaySlot;
+
+            if (loadedBosses || loadedSquads) {
+                smartSchedState.bossesByDaySlot = Object.assign({}, loadedBosses || {});
+                smartSchedState.squadsByDaySlot = Object.assign({}, loadedSquads || {});
+                smartSchedState.lastLoadedWeekId = weekId;
+                smartSchedState.loadedUpdatedAt = draft.updatedAt || Date.now();
+                const timeStr = draft.updatedAt ? new Date(draft.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '';
+                const sourceLabel = isCloud ? '雲端已同步' : '本機暫存';
+                updateSmartSchedSyncStatus('saved', `☁️ ${sourceLabel} (${timeStr || '已同步'})`);
+                return true;
+            }
         }
+        smartSchedState.bossesByDaySlot = {};
+        smartSchedState.squadsByDaySlot = {};
+        smartSchedState.lastLoadedWeekId = weekId;
+        smartSchedState.loadedUpdatedAt = 0;
+        updateSmartSchedSyncStatus('idle', '尚未排班');
+        return false;
     }
 
     function getSmartSlotBoss(slotKey, squadIdx = 0) {
@@ -7920,6 +7973,7 @@ document.addEventListener('DOMContentLoaded', () => {
             weekSelect.onchange = () => {
                 smartSchedState.selectedWeekId = weekSelect.value;
                 smartSchedState.selectedMemberName = null;
+                smartSchedState.lastLoadedWeekId = null;
                 loadSmartScheduleDraftForWeek(weekSelect.value);
                 renderSmartSchedule();
             };
@@ -7928,6 +7982,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const saveDraftBtn = document.getElementById('btn-smart-sched-save-draft');
         if (saveDraftBtn) {
             saveDraftBtn.onclick = () => {
+                saveSmartScheduleDraft(false);
+            };
+        }
+
+        const syncStatusEl = document.getElementById('smart-sched-sync-status');
+        if (syncStatusEl) {
+            syncStatusEl.style.cursor = 'pointer';
+            syncStatusEl.onclick = () => {
                 saveSmartScheduleDraft(false);
             };
         }
@@ -8389,8 +8451,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderSmartSchedule() {
         initSmartWeekSelect();
         const weekId = getSmartSchedActiveWeekId();
-        if (weekId && smartSchedState.lastLoadedWeekId !== weekId) {
-            loadSmartScheduleDraftForWeek(weekId);
+
+        // Auto-load draft if week changed, OR if board is currently empty, OR if cloud has a newer draft
+        const cloudDraft = (smartScheduleDraftsDB && smartScheduleDraftsDB[weekId]);
+        const cloudTime = (cloudDraft && cloudDraft.updatedAt) || 0;
+        const isCurrentEmpty = (!smartSchedState.squadsByDaySlot || Object.keys(smartSchedState.squadsByDaySlot).length === 0);
+
+        if (weekId) {
+            const needLoad = (smartSchedState.lastLoadedWeekId !== weekId) ||
+                             (isCurrentEmpty && (cloudDraft || localStorage.getItem(`soulmine_smart_sched_draft_${weekId}`))) ||
+                             (!smartSchedIsModified && cloudTime > (smartSchedState.loadedUpdatedAt || 0));
+            if (needLoad) {
+                loadSmartScheduleDraftForWeek(weekId);
+            }
         }
         const responses = getSmartSchedWeekResponses();
         const days = getWeekDaysDetails(weekId);
