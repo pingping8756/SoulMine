@@ -335,6 +335,44 @@ function getMemberBoundRoster(surveyMemberName) {
     return matched;
 }
 
+function getSurveyNotesByMemberOrChar(nameOrChar, targetResponses) {
+    if (!nameOrChar) return '';
+    let respList = targetResponses;
+    if (!respList || !Array.isArray(respList) || respList.length === 0) {
+        if (typeof getSmartSchedWeekResponses === 'function') {
+            respList = getSmartSchedWeekResponses();
+        }
+        if ((!respList || respList.length === 0) && typeof surveyResponses === 'object') {
+            respList = Object.values(surveyResponses || {}).filter(r => r && r.name);
+        }
+    }
+    if (!Array.isArray(respList) || respList.length === 0) return '';
+    const q = String(nameOrChar).trim().toLowerCase();
+
+    // 1. Direct match on response member name
+    const direct = respList.find(r => r && r.name && r.name.trim().toLowerCase() === q);
+    if (direct && direct.notes && direct.notes.trim()) {
+        return direct.notes.trim();
+    }
+
+    // 2. Bound roster / alias lookup (character ID matches member's character)
+    for (const r of respList) {
+        if (!r || !r.notes || !r.notes.trim()) continue;
+        const roster = getMemberBoundRoster(r.name);
+        if (roster.some(c => c && c.id && c.id.trim().toLowerCase() === q)) {
+            return r.notes.trim();
+        }
+    }
+    return '';
+}
+
+function renderMemberNotesBadge(notes, memberName) {
+    if (!notes || !String(notes).trim()) return '';
+    const cleanNotes = String(notes).trim();
+    const label = memberName ? `【${escapeHtml(memberName)}】的問卷備註` : '問卷備註';
+    return `<span class="member-has-notes-badge" title="📝 ${label}：\n${escapeHtml(cleanNotes)}" onclick="if(window.matchMedia('(hover: none)').matches){ event.stopPropagation(); alert('${label}：\n\n${escapeHtml(cleanNotes)}'); }">📝</span>`;
+}
+
 function getCategoryByJob(job) {
     if (!job) return '力職';
     const j = normalizeJobName(job);
@@ -2166,18 +2204,22 @@ document.addEventListener('DOMContentLoaded', () => {
                 boundCharsHtml = '<span style="color:#94a3b8;">未綁定（自訂）</span>';
             }
 
+            const hasNotes = Boolean(r.notes && r.notes.trim());
+            const notesBadgeHtml = renderMemberNotesBadge(r.notes, r.name);
+
             const memberCellHtml = `
                 <td class="col-member" style="color: ${rowColor};">
                     <div class="matrix-member-cell">
                         <span class="matrix-name-text" style="color: ${rowColor}; font-weight: 800;">
                             ${escapeHtml(r.name)}
+                            ${notesBadgeHtml}
                             ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.68rem; font-weight:800; padding:0.05rem 0.35rem; border-radius:8px; margin-left:3px;">我</small>' : ''}
                         </span>
                         
                         <!-- Floating Tooltip Popover -->
                         <div class="matrix-floating-tooltip">
                             <div class="tooltip-title">
-                                <span>👤 ${escapeHtml(r.name)}</span>
+                                <span>👤 ${escapeHtml(r.name)}${hasNotes ? ' 📝' : ''}</span>
                                 <span style="font-size:0.72rem; color:#94a3b8;">${formatDateSimple(r.updatedAt)}</span>
                             </div>
                             <div class="tooltip-field">
@@ -2202,7 +2244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <div class="tooltip-field">
                                 <strong>📝 備註說明：</strong>
-                                <div class="tooltip-notes-box">${escapeHtml(r.notes || '無特殊備註')}</div>
+                                <div class="tooltip-notes-box ${hasNotes ? 'has-notes-content' : ''}">${escapeHtml(r.notes || '無特殊備註')}</div>
                             </div>
                         </div>
                     </div>
@@ -6177,6 +6219,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const roleBadge = cleanRoleTag ? `<span class="member-role-badge ${roleInfo.cssClass}">${escapeHtml(cleanRoleTag)}</span>` : '';
                         const normJob = normalizeJobName(m.job);
                         const jobTag = normJob ? `<span class="slot-job-text" title="Lv.${m.level || '?'}">${escapeHtml(normJob)}</span>` : '';
+                        const confirmedNotes = getSurveyNotesByMemberOrChar(name);
+                        const confirmedNotesBadge = renderMemberNotesBadge(confirmedNotes, name);
 
                         rowCells += `
                             <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''}">
@@ -6184,8 +6228,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <div class="slot-inner">
                                     <div style="display:inline-flex; align-items:center; gap:2px; min-width:0; overflow:hidden; white-space:nowrap; flex:1;">
                                         ${jobTag}
-                                        <span class="slot-member-name ${isMe ? 'is-me-name' : ''}">
+                                        <span class="slot-member-name ${isMe ? 'is-me-name' : ''}" title="${escapeHtml(name)}${confirmedNotes ? `\n📝 備註：${escapeHtml(confirmedNotes)}` : ''}">
                                             ${escapeHtml(name)}
+                                            ${confirmedNotesBadge}
                                             ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.6rem; font-weight:800; padding:0 3px; border-radius:4px; margin-left:1px;">我</small>' : ''}
                                         </span>
                                     </div>
@@ -8931,10 +8976,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isFilled) {
                     const jobColor = getHighContrastJobColor(chip.job);
                     const cleanRole = stripRoleIcon(chip.roleTag);
+                    const chipNotes = getSurveyNotesByMemberOrChar(chip.name, responses);
                     cellBody = `
                         <div class="smart-matrix-chip-cell filled-slot ${conflictInfo.hasConflict ? 'has-conflict' : ''}"
                              onclick="window.unassignSmartSlot('${escapeHtml(col.slotKey)}', ${col.squadIdx}, ${rowIdx})"
-                             title="${conflictInfo.hasConflict ? escapeHtml(conflictInfo.reason) + ' (點擊取消退回下方)' : '點擊直接取消並退回下方名冊'}">
+                             title="${conflictInfo.hasConflict ? escapeHtml(conflictInfo.reason) + ' (點擊取消退回下方)' : '點擊直接取消並退回下方名冊'}${chipNotes ? `\n📝 備註：${escapeHtml(chipNotes)}` : ''}">
                             <!-- Line 1: 定位標籤 + 職業 (固定長度) + ✕退選 -->
                             <div class="smart-chip-line1">
                                 <span class="smart-role-pill ${cleanRole ? 'has-role' : ''}"
@@ -8945,7 +8991,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </div>
                             <!-- Line 2: 角色 ID (字數截斷防爆欄寬) + 等級 Lv. + 衝突警示 -->
                             <div class="smart-chip-line2">
-                                <span class="smart-cell-char-name ${conflictInfo.hasConflict ? 'text-conflict' : ''}" title="${escapeHtml(chip.name)}">${escapeHtml(chip.name)}</span>
+                                <span class="smart-cell-char-name ${conflictInfo.hasConflict ? 'text-conflict' : ''}" title="${escapeHtml(chip.name)}${chipNotes ? `\n📝 備註：${escapeHtml(chipNotes)}` : ''}">${escapeHtml(chip.name)}</span>
                                 <div style="display:flex; align-items:center; gap:0.2rem; flex-shrink:0;">
                                     ${chip.level ? `<span class="smart-cell-char-lvl">Lv.${chip.level}</span>` : ''}
                                     ${conflictInfo.hasConflict ? '<span style="color: #ef4444; font-size: 0.72rem;">⚠️</span>' : ''}
@@ -8999,6 +9045,9 @@ document.addEventListener('DOMContentLoaded', () => {
             const stat = usageStats[k] || { count: 0, canScroll: (r.scroll === '是') };
             const isScrollYes = (r.scroll === '是');
             const nameColor = isScrollYes ? '#000000' : '#dc2626';
+
+            const hasRNotes = Boolean(r.notes && r.notes.trim());
+            const rNotesBadge = renderMemberNotesBadge(r.notes, r.name);
 
             let cellsHtml = '';
             columns.forEach(col => {
@@ -9054,12 +9103,13 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div class="matrix-member-cell">
                             <span class="${isScrollYes ? 'smart-member-name-scroll' : 'smart-member-name-noscroll'}" style="color: ${nameColor} !important; font-weight: 800;">
                                 ${escapeHtml(r.name)}
+                                ${rNotesBadge}
                             </span>
                             
                             <!-- Floating Tooltip Popover (跟明細那裡一樣) -->
                             <div class="matrix-floating-tooltip">
                                 <div class="tooltip-title">
-                                    <span>👤 ${escapeHtml(r.name)}</span>
+                                    <span>👤 ${escapeHtml(r.name)}${hasRNotes ? ' 📝' : ''}</span>
                                     <span style="font-size:0.72rem; color:#94a3b8;">${updatedTimeStr}</span>
                                 </div>
                                 <div class="tooltip-field">
@@ -9084,7 +9134,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                 </div>
                                 <div class="tooltip-field">
                                     <strong>📝 備註說明：</strong>
-                                    <div class="tooltip-notes-box">${escapeHtml(r.notes || '無特殊備註')}</div>
+                                    <div class="tooltip-notes-box ${hasRNotes ? 'has-notes-content' : ''}">${escapeHtml(r.notes || '無特殊備註')}</div>
                                 </div>
                             </div>
                         </div>
@@ -9348,8 +9398,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const boss = getSmartSlotBoss(slotKey, targetSquadIdx);
         const sqName = (typeof targetSquadIdx === 'number' && targetSquadIdx === 1) ? ' ｜ 隊伍：B隊' : (typeof targetSquadIdx === 'number' ? ' ｜ 隊伍：A隊' : '');
 
-        if (titleEl) titleEl.textContent = `選擇出戰角色：${memberName}`;
-        if (subtitleEl) subtitleEl.textContent = `時段：${slotKey}${sqName} ｜ 討伐 Boss：${boss}`;
+        const memberNotes = getSurveyNotesByMemberOrChar(memberName);
+        const memberNotesBadge = renderMemberNotesBadge(memberNotes, memberName);
+
+        if (titleEl) titleEl.innerHTML = `選擇出戰角色：${escapeHtml(memberName)} ${memberNotesBadge}`;
+        if (subtitleEl) subtitleEl.innerHTML = `時段：${escapeHtml(slotKey)}${escapeHtml(sqName)} ｜ 討伐 Boss：${escapeHtml(boss)}${memberNotes ? `<br><span style="color:#d97706; font-weight:700;">📝 備註：${escapeHtml(memberNotes)}</span>` : ''}`;
 
         if (listContainer) {
             listContainer.innerHTML = boundChars.map(c => {
@@ -9576,12 +9629,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const countBadge = `<span style="font-size: 0.74rem; color: #64748b; font-weight: 700;">已排 ${c.stat.count} 團</span>`;
 
+            const cNotes = getSurveyNotesByMemberOrChar(c.name, responses);
+            const cNotesBadge = renderMemberNotesBadge(cNotes, c.name);
+
             const normJob = normalizeJobName(c.job);
             html += `
                 <div class="smart-picker-candidate-card" onclick="window.pickMemberIntoSmartSlot('${encodeURIComponent(c.name)}', '${encodeURIComponent(normJob)}', ${c.level || 120})">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <div style="display: flex; align-items: baseline; gap: 0.5rem;">
-                            <span style="font-size: 0.96rem; font-weight: 800; color: #0f172a;">${escapeHtml(c.name)}</span>
+                            <span style="font-size: 0.96rem; font-weight: 800; color: #0f172a;">${escapeHtml(c.name)} ${cNotesBadge}</span>
                             <span style="font-size: 0.84rem; font-weight: 800; color: ${jobColor};">${escapeHtml(normJob)}</span>
                             <span style="font-size: 0.78rem; font-weight: 700; color: #64748b;">Lv.${c.level}</span>
                         </div>
