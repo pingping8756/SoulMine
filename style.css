@@ -2258,21 +2258,21 @@ body::after {
         line-height: 1.1 !important;
     }
     .boss-option-chip {
-        min-width: 110px !important;
-        padding: 0.28rem 0.35rem !important;
-        font-size: 0.75rem !important;
+        min-width: 0 !important;
+        padding: 0.25rem 0.3rem !important;
+        font-size: 0.72rem !important;
     }
     .boss-option-text {
         white-space: normal !important;
-        word-break: break-word !important;
-        line-height: 1.2 !important;
+        word-break: break-all !important;
+        line-height: 1.15 !important;
     }
 }
 
 /* Boss Options Grid & Chips */
 .survey-boss-grid {
-    display: flex;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
     gap: 0.35rem;
     width: 100%;
     box-sizing: border-box;
@@ -2280,17 +2280,17 @@ body::after {
     align-content: flex-start;
 }
 .boss-option-chip {
-    flex: 1 1 calc(50% - 0.25rem);
-    min-width: 120px;
+    width: 100%;
+    min-width: 0;
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.32rem 0.45rem;
+    gap: 0.32rem;
+    padding: 0.32rem 0.38rem;
     background: #ffffff;
     border: 1.5px solid #cbd5e1;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: #1e293b;
     transition: all 0.15s ease;
@@ -2298,31 +2298,102 @@ body::after {
     box-sizing: border-box;
     letter-spacing: -0.2px;
 }
-.boss-option-chip:nth-child(odd):last-child {
-    flex: 1 1 100%;
-}
 .boss-option-chip:hover {
     border-color: #3b82f6;
-    background: #eff6ff;
+    background: #f0f7ff;
 }
-.boss-option-chip.checked {
-    border-color: #2563eb;
-    background: #eff6ff;
-    color: #1d4ed8;
-    box-shadow: 0 1px 4px rgba(37, 99, 235, 0.15);
-}
-.boss-option-chip input[type="checkbox"] {
-    width: 14px;
-    height: 14px;
-    accent-color: #2563eb;
-    cursor: pointer;
-    margin: 0;
+
+/* Boss Rank Badge (1, 2, 3 順位) */
+.boss-rank-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    min-width: 20px;
+    border-radius: 50%;
+    border: 1.5px dashed #94a3b8;
+    font-size: 0.72rem;
+    font-weight: 900;
+    color: #94a3b8;
+    background: #f8fafc;
     flex-shrink: 0;
+    transition: all 0.15s ease;
+    box-sizing: border-box;
+    line-height: 1;
 }
+.boss-option-chip:hover .boss-rank-badge {
+    border-color: #3b82f6;
+    color: #3b82f6;
+    background: #eff6ff;
+}
+
+/* Rank 1: Gold / Amber */
+.boss-option-chip.rank-1 {
+    border-color: #f59e0b !important;
+    background: #fffbeb !important;
+    color: #92400e !important;
+    box-shadow: 0 1px 4px rgba(245, 158, 11, 0.25) !important;
+}
+.boss-option-chip.rank-1 .boss-rank-badge {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    border: 1.5px solid #d97706 !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.4) !important;
+}
+
+/* Rank 2: Blue */
+.boss-option-chip.rank-2 {
+    border-color: #3b82f6 !important;
+    background: #eff6ff !important;
+    color: #1e40af !important;
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.25) !important;
+}
+.boss-option-chip.rank-2 .boss-rank-badge {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    border: 1.5px solid #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.4) !important;
+}
+
+/* Rank 3: Purple */
+.boss-option-chip.rank-3 {
+    border-color: #8b5cf6 !important;
+    background: #faf5ff !important;
+    color: #5b21b6 !important;
+    box-shadow: 0 1px 4px rgba(139, 92, 246, 0.25) !important;
+}
+.boss-option-chip.rank-3 .boss-rank-badge {
+    background: linear-gradient(135deg, #8b5cf6, #7c3aed) !important;
+    border: 1.5px solid #7c3aed !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(124, 58, 237, 0.4) !important;
+}
+
+/* Clear ranks button */
+.btn-clear-boss-ranks {
+    background: #f1f5f9;
+    border: 1px solid #cbd5e1;
+    color: #64748b;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1.3;
+    transition: all 0.15s ease;
+}
+.btn-clear-boss-ranks:hover {
+    background: #fee2e2;
+    border-color: #fca5a5;
+    color: #dc2626;
+}
+
 .boss-option-text {
-    line-height: 1.25;
-    word-break: break-word;
-    white-space: nowrap;
+    line-height: 1.18;
+    word-break: break-all;
+    white-space: normal;
+    font-size: 0.74rem;
 }
 
 /* Boss Chart Button in Modal Header */
@@ -2362,13 +2433,13 @@ body::after {
     position: absolute;
     left: 0;
     top: calc(100% + 6px);
-    width: 440px;
-    max-width: calc(95vw - 2.5rem);
+    width: 620px;
+    max-width: calc(96vw - 1rem);
     background: #ffffff;
     border: 1.5px solid #cbd5e1;
     border-radius: 10px;
     box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
-    padding: 0.75rem 0.85rem;
+    padding: 0.55rem 0.75rem;
     z-index: 100000;
     box-sizing: border-box;
     animation: fadeIn 0.15s ease-out;
@@ -2377,8 +2448,8 @@ body::after {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-bottom: 0.45rem;
-    margin-bottom: 0.5rem;
+    padding-bottom: 0.35rem;
+    margin-bottom: 0.25rem;
     border-bottom: 1.5px solid #e2e8f0;
 }
 .boss-chart-close-x {
@@ -2395,10 +2466,10 @@ body::after {
     color: #0f172a;
 }
 .boss-chart-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-    max-height: 520px;
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.22rem 0.45rem;
+    max-height: 480px;
     overflow-y: auto;
     overflow-x: hidden;
     padding-right: 2px;
@@ -2408,14 +2479,15 @@ body::after {
     display: flex;
     flex-direction: row;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.35rem;
     background: #f8fafc;
     border: 1.5px solid #e2e8f0;
     border-radius: 6px;
-    padding: 0.32rem 0.55rem;
+    padding: 0.18rem 0.4rem;
     cursor: pointer;
     box-sizing: border-box;
     transition: background 0.15s ease, border-color 0.15s ease;
+    min-height: 27px;
 }
 .boss-chart-row:hover {
     background: #f1f5f9;
@@ -2431,9 +2503,9 @@ body::after {
     border-color: #fde047;
 }
 .boss-bar-title {
-    flex: 0 0 135px;
-    max-width: 135px;
-    font-size: 0.78rem;
+    flex: 0 0 92px;
+    max-width: 92px;
+    font-size: 0.73rem;
     font-weight: 800;
     color: #0f172a;
     white-space: nowrap;
@@ -2443,25 +2515,61 @@ body::after {
 }
 .boss-bar-track {
     flex: 1 1 auto;
-    min-width: 50px;
-    height: 10px;
+    min-width: 35px;
+    height: 8px;
     background: #e2e8f0;
-    border-radius: 5px;
+    border-radius: 4px;
     overflow: hidden;
     position: relative;
+    display: flex;
 }
-.boss-bar-fill {
+.boss-bar-seg {
     height: 100%;
-    border-radius: 5px;
     transition: width 0.3s ease;
 }
+.boss-bar-seg.seg-1 {
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+.boss-bar-seg.seg-2 {
+    background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+.boss-bar-seg.seg-3 {
+    background: linear-gradient(135deg, #a855f7, #7c3aed);
+}
+.boss-bar-seg.seg-other {
+    background: #94a3b8;
+}
 .boss-bar-counts {
-    flex: 0 0 65px;
-    text-align: right;
-    font-size: 0.76rem;
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 0.28rem;
+    font-size: 0.72rem;
     color: #475569;
     font-weight: 700;
     white-space: nowrap;
+    line-height: 1;
+}
+.boss-bar-total-tag {
+    font-size: 0.74rem;
+    color: #0f172a;
+    font-weight: 800;
+}
+.boss-bar-ranks-detail {
+    display: flex;
+    gap: 0.18rem;
+    font-size: 0.67rem;
+    font-weight: 800;
+}
+.boss-bar-ranks-detail .rank-count.r1 {
+    color: #d97706;
+}
+.boss-bar-ranks-detail .rank-count.r2 {
+    color: #2563eb;
+}
+.boss-bar-ranks-detail .rank-count.r3 {
+    color: #7c3aed;
 }
 
 /* Mobile responsive rules for Boss Chart Popover & Rows */
@@ -2471,44 +2579,63 @@ body::after {
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        width: min(92vw, 400px) !important;
-        max-width: calc(100vw - 1.5rem) !important;
+        width: min(94vw, 600px) !important;
+        max-width: calc(100vw - 1rem) !important;
         max-height: 85vh !important;
         box-shadow: 0 15px 45px rgba(15, 23, 42, 0.45), 0 0 0 100vmax rgba(0, 0, 0, 0.45) !important;
         border-radius: 12px !important;
-        padding: 0.75rem 0.85rem !important;
+        padding: 0.55rem 0.65rem !important;
         z-index: 999999 !important;
     }
     .boss-chart-popover-header {
-        margin-bottom: 0.4rem !important;
-        padding-bottom: 0.35rem !important;
+        margin-bottom: 0.3rem !important;
+        padding-bottom: 0.25rem !important;
     }
     .boss-chart-list {
-        max-height: 65vh !important;
-    }
-    .boss-chart-row {
-        gap: 0.45rem !important;
-        padding: 0.3rem 0.45rem !important;
-    }
-    .boss-bar-title {
-        flex: 0 0 115px !important;
-        max-width: 115px !important;
-        font-size: 0.74rem !important;
-    }
-    .boss-bar-track {
-        min-width: 35px !important;
-        height: 8px !important;
-    }
-    .boss-bar-counts {
-        flex: 0 0 62px !important;
-        min-width: 62px !important;
-        font-size: 0.72rem !important;
+        max-height: 72vh !important;
     }
     .boss-hover-tooltip {
         font-size: 0.7rem !important;
-        padding: 0.4rem 0.6rem !important;
+        padding: 0.35rem 0.55rem !important;
         max-width: 100% !important;
         box-sizing: border-box !important;
+    }
+}
+
+/* Portrait mobile (< 520px): single column with ultra-compact height so 8 rows fit without scrolling */
+@media (max-width: 520px) {
+    .boss-chart-popover {
+        width: min(94vw, 390px) !important;
+        padding: 0.45rem 0.55rem !important;
+    }
+    .boss-chart-list {
+        grid-template-columns: 1fr !important;
+        gap: 0.16rem !important;
+    }
+    .boss-chart-row {
+        gap: 0.3rem !important;
+        padding: 0.15rem 0.35rem !important;
+        min-height: 25px !important;
+    }
+    .boss-bar-title {
+        flex: 0 0 95px !important;
+        max-width: 95px !important;
+        font-size: 0.71rem !important;
+    }
+    .boss-bar-track {
+        min-width: 30px !important;
+        height: 7px !important;
+    }
+    .boss-bar-counts {
+        gap: 0.2rem !important;
+        font-size: 0.69rem !important;
+    }
+    .boss-bar-total-tag {
+        font-size: 0.71rem !important;
+    }
+    .boss-bar-ranks-detail {
+        font-size: 0.65rem !important;
+        gap: 0.14rem !important;
     }
 }
 
@@ -2529,8 +2656,8 @@ body::after {
     z-index: 50;
     pointer-events: none;
 }
-/* For the last two rows, position tooltip above so it never overflows the bottom */
-.boss-chart-row:nth-last-child(-n+2) .boss-hover-tooltip {
+/* For the last four rows (bottom rows in 2-column mode), position tooltip above so it never overflows the bottom */
+.boss-chart-row:nth-last-child(-n+4) .boss-hover-tooltip {
     top: auto;
     bottom: calc(100% + 4px);
 }
@@ -2544,6 +2671,31 @@ body::after {
     gap: 0.25rem;
     margin-top: 0.2rem;
 }
+.boss-tooltip-group {
+    margin-top: 5px;
+    padding-top: 4px;
+    border-top: 1px solid rgba(255, 255, 255, 0.12);
+}
+.boss-tooltip-group-title {
+    font-size: 0.72rem;
+    font-weight: 800;
+    margin-bottom: 3px;
+    display: flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+.boss-tooltip-group-title.gold {
+    color: #fde047;
+}
+.boss-tooltip-group-title.blue {
+    color: #93c5fd;
+}
+.boss-tooltip-group-title.purple {
+    color: #d8b4fe;
+}
+.boss-tooltip-group-title.slate {
+    color: #cbd5e1;
+}
 .boss-tooltip-voter-tag {
     background: rgba(255, 255, 255, 0.15);
     color: #ffffff;
@@ -2553,6 +2705,26 @@ body::after {
     font-size: 0.72rem;
     font-weight: 700;
     white-space: nowrap;
+}
+.boss-tooltip-voter-tag.gold {
+    background: rgba(245, 158, 11, 0.25);
+    border-color: rgba(245, 158, 11, 0.55);
+    color: #fef08a;
+}
+.boss-tooltip-voter-tag.blue {
+    background: rgba(59, 130, 246, 0.25);
+    border-color: rgba(59, 130, 246, 0.55);
+    color: #bfdbfe;
+}
+.boss-tooltip-voter-tag.purple {
+    background: rgba(168, 85, 247, 0.25);
+    border-color: rgba(168, 85, 247, 0.55);
+    color: #e9d5ff;
+}
+.boss-tooltip-voter-tag.slate {
+    background: rgba(148, 163, 184, 0.2);
+    border-color: rgba(148, 163, 184, 0.4);
+    color: #cbd5e1;
 }
 .tooltip-boss-pill {
     background: #eff6ff;
@@ -2564,6 +2736,21 @@ body::after {
     font-weight: 700;
     display: inline-block;
     white-space: nowrap;
+}
+.tooltip-boss-pill.rank-1 {
+    background: #fef3c7 !important;
+    color: #92400e !important;
+    border-color: #fcd34d !important;
+}
+.tooltip-boss-pill.rank-2 {
+    background: #dbeafe !important;
+    color: #1e40af !important;
+    border-color: #bfdbfe !important;
+}
+.tooltip-boss-pill.rank-3 {
+    background: #ede9fe !important;
+    color: #5b21b6 !important;
+    border-color: #ddd6fe !important;
 }
 
 /* Row 3: Notes & Actions */

@@ -6,7 +6,7 @@
     <title>🎃 SoulMine 組隊系統 👻</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=250">
+    <link rel="stylesheet" href="style.css?v=254">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -430,10 +430,15 @@
                         <div id="survey-boss-chart-popover" class="boss-chart-popover" style="display: none;">
                             <div class="boss-chart-popover-header">
                                 <span style="font-weight: 900; font-size: 0.88rem; color: #0f172a; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
-                                    <span>📊 突襲統計表</span>
+                                    <span>📊 突襲意願統計表</span>
                                     <span id="boss-chart-header-week" style="font-size: 0.72rem; color: #64748b; font-weight: normal;"></span>
                                 </span>
                                 <button type="button" id="btn-close-boss-chart-popover" class="boss-chart-close-x" title="關閉統計表">&times;</button>
+                            </div>
+                            <div class="boss-chart-legend" style="display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem; padding: 0.15rem 0.25rem 0.35rem; font-size: 0.7rem; color: #64748b; font-weight: 700; border-bottom: 1px solid #f1f5f9; margin-bottom: 0.3rem;">
+                                <span style="display: inline-flex; align-items: center; gap: 0.2rem;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #f59e0b; display: inline-block;"></span>🥇 首選(3分)</span>
+                                <span style="display: inline-flex; align-items: center; gap: 0.2rem;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #3b82f6; display: inline-block;"></span>🥈 二志願(2分)</span>
+                                <span style="display: inline-flex; align-items: center; gap: 0.2rem;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #a855f7; display: inline-block;"></span>🥉 備選(1分)</span>
                             </div>
                             <div id="survey-boss-chart-list" class="boss-chart-list">
                                 <!-- Populated dynamically via JS -->
@@ -822,44 +827,55 @@
                                         <div style="display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
                                             <span class="survey-step-num bg-blue">4</span>
                                             <span style="font-weight: 800; color: #0f172a;">下週要打？</span>
-                                            <span style="font-size: 0.74rem; color: #64748b; font-weight: 600;">選擇一個或多個答案</span>
+                                            <span style="font-size: 0.74rem; color: #64748b; font-weight: 600;">依序點選 1、2、3 順位</span>
                                         </div>
-                                        <span id="survey-boss-selected-count" style="font-size: 0.72rem; color: #2563eb; font-weight: 700; background: #eff6ff; padding: 1px 6px; border-radius: 10px; display: none;">已選 0 項</span>
+                                        <div style="display: flex; align-items: center; gap: 0.35rem;">
+                                            <button type="button" id="btn-clear-boss-ranks" class="btn-clear-boss-ranks" style="display: none;" title="清空已選順位">重設</button>
+                                            <span id="survey-boss-selected-count" style="font-size: 0.72rem; color: #2563eb; font-weight: 700; background: #eff6ff; padding: 1px 6px; border-radius: 10px; display: none;">已排 0/3 順位</span>
+                                        </div>
                                     </label>
                                 </div>
                                 <div id="survey-boss-container" class="survey-boss-grid">
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="樹王">
+                                    <div class="boss-option-chip" data-boss="樹王">
+                                        <span class="boss-rank-badge"></span>
                                         <span class="boss-option-text">樹王</span>
-                                    </label>
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="龍王(和大拿一起湊)">
-                                        <span class="boss-option-text">龍王(和大拿一起湊)</span>
-                                    </label>
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="困拉">
-                                        <span class="boss-option-text">困拉</span>
-                                    </label>
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="跟活動">
-                                        <span class="boss-option-text">跟活動</span>
-                                    </label>
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="炎魔">
-                                        <span class="boss-option-text">炎魔</span>
-                                    </label>
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="普拉">
+                                        <input type="checkbox" name="survey-target-boss" value="樹王" style="display: none;">
+                                    </div>
+                                    <div class="boss-option-chip" data-boss="普拉">
+                                        <span class="boss-rank-badge"></span>
                                         <span class="boss-option-text">普拉</span>
-                                    </label>
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="爺爺">
+                                        <input type="checkbox" name="survey-target-boss" value="普拉" style="display: none;">
+                                    </div>
+                                    <div class="boss-option-chip" data-boss="困拉">
+                                        <span class="boss-rank-badge"></span>
+                                        <span class="boss-option-text">困拉</span>
+                                        <input type="checkbox" name="survey-target-boss" value="困拉" style="display: none;">
+                                    </div>
+                                    <div class="boss-option-chip" data-boss="炎魔">
+                                        <span class="boss-rank-badge"></span>
+                                        <span class="boss-option-text">炎魔</span>
+                                        <input type="checkbox" name="survey-target-boss" value="炎魔" style="display: none;">
+                                    </div>
+                                    <div class="boss-option-chip" data-boss="跟活動">
+                                        <span class="boss-rank-badge"></span>
+                                        <span class="boss-option-text">跟活動</span>
+                                        <input type="checkbox" name="survey-target-boss" value="跟活動" style="display: none;">
+                                    </div>
+                                    <div class="boss-option-chip" data-boss="龍王(跟大拿一起湊)">
+                                        <span class="boss-rank-badge"></span>
+                                        <span class="boss-option-text">龍王(跟大拿一起湊)</span>
+                                        <input type="checkbox" name="survey-target-boss" value="龍王(跟大拿一起湊)" style="display: none;">
+                                    </div>
+                                    <div class="boss-option-chip" data-boss="爺爺">
+                                        <span class="boss-rank-badge"></span>
                                         <span class="boss-option-text">爺爺</span>
-                                    </label>
-                                    <label class="boss-option-chip">
-                                        <input type="checkbox" name="survey-target-boss" value="補位，哪裡缺打哪裡">
-                                        <span class="boss-option-text">補位，哪裡缺打哪裡</span>
-                                    </label>
+                                        <input type="checkbox" name="survey-target-boss" value="爺爺" style="display: none;">
+                                    </div>
+                                    <div class="boss-option-chip" data-boss="缺那裡補哪裡">
+                                        <span class="boss-rank-badge"></span>
+                                        <span class="boss-option-text">缺那裡補哪裡</span>
+                                        <input type="checkbox" name="survey-target-boss" value="缺那裡補哪裡" style="display: none;">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1065,6 +1081,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=268" defer></script>
+    <script src="app.js?v=271" defer></script>
 </body>
 </html>

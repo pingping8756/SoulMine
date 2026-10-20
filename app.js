@@ -1076,19 +1076,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const v = String(votedBoss).replace(/（/g, '(').replace(/）/g, ')').replace('他們', '').trim();
         const o = String(optionName).replace(/（/g, '(').replace(/）/g, ')').replace('他們', '').trim();
         if (v === o) return true;
+        if (o.includes('龍王') && v.includes('龍王')) return true;
         if (o === '爺爺' && (v.includes('阿卡') || v.includes('爺爺') || v.includes('伊農'))) return true;
+        if ((o.includes('補') || o.includes('缺')) && (v.includes('補') || v.includes('缺'))) return true;
         return false;
     }
 
     const TARGET_BOSS_OPTIONS = [
         '樹王',
-        '龍王(和大拿一起湊)',
-        '困拉',
-        '跟活動',
-        '炎魔',
         '普拉',
+        '困拉',
+        '炎魔',
+        '跟活動',
+        '龍王(跟大拿一起湊)',
         '爺爺',
-        '補位，哪裡缺打哪裡'
+        '缺那裡補哪裡'
     ];
 
     function setupSurveyForm() {
@@ -1099,33 +1101,103 @@ document.addEventListener('DOMContentLoaded', () => {
         const holidayHint = document.getElementById('survey-week-holiday-hint');
         const slotsContainer = document.getElementById('survey-slots-container');
 
-        // Setup Target Boss Checkbox Listeners & Count
-        function updateBossSelectedCount() {
-            const checkedCbs = document.querySelectorAll('input[name="survey-target-boss"]:checked');
-            const countBadge = document.getElementById('survey-boss-selected-count');
-            if (countBadge) {
-                if (checkedCbs.length > 0) {
-                    countBadge.style.display = 'inline-block';
-                    countBadge.textContent = `已選 ${checkedCbs.length} 項`;
-                } else {
-                    countBadge.style.display = 'none';
-                }
-            }
-        }
-        function initSurveyBossCheckboxes() {
+        // Setup Target Boss 1, 2, 3 Rank Preference System
+        let surveyBossRanks = []; // Stores ordered boss names: [1st, 2nd, 3rd]
+
+        function updateBossRankUI() {
             const chips = document.querySelectorAll('.boss-option-chip');
             chips.forEach(chip => {
-                const cb = chip.querySelector('input[type="checkbox"]');
-                if (cb) {
-                    cb.addEventListener('change', () => {
-                        chip.classList.toggle('checked', cb.checked);
-                        updateBossSelectedCount();
-                    });
+                const bossName = chip.getAttribute('data-boss') || chip.querySelector('.boss-option-text')?.textContent.trim();
+                const rankIdx = surveyBossRanks.findIndex(b => matchesTargetBossOption(b, bossName));
+                const badge = chip.querySelector('.boss-rank-badge');
+                const cb = chip.querySelector('input[name="survey-target-boss"]');
+
+                chip.classList.remove('rank-selected', 'rank-1', 'rank-2', 'rank-3');
+                if (rankIdx !== -1) {
+                    const rankNum = rankIdx + 1;
+                    chip.classList.add('rank-selected', `rank-${rankNum}`);
+                    if (badge) badge.textContent = rankNum;
+                    if (cb) cb.checked = true;
+                } else {
+                    if (badge) badge.textContent = '';
+                    if (cb) cb.checked = false;
                 }
             });
-            updateBossSelectedCount();
+
+            const countBadge = document.getElementById('survey-boss-selected-count');
+            const resetBtn = document.getElementById('btn-clear-boss-ranks');
+            const len = surveyBossRanks.length;
+            if (countBadge) {
+                if (len === 0) {
+                    countBadge.style.display = 'none';
+                } else if (len >= 3) {
+                    countBadge.style.display = 'inline-block';
+                    countBadge.style.background = '#dcfce7';
+                    countBadge.style.color = '#15803d';
+                    countBadge.textContent = '已選滿 3 個順位';
+                } else {
+                    countBadge.style.display = 'inline-block';
+                    countBadge.style.background = '#eff6ff';
+                    countBadge.style.color = '#2563eb';
+                    countBadge.textContent = `已排 ${len}/3 順位`;
+                }
+            }
+            if (resetBtn) {
+                resetBtn.style.display = len > 0 ? 'inline-flex' : 'none';
+            }
         }
-        initSurveyBossCheckboxes();
+
+        function toggleBossRank(bossName) {
+            if (!bossName) return;
+            const existingIdx = surveyBossRanks.findIndex(b => matchesTargetBossOption(b, bossName));
+            if (existingIdx !== -1) {
+                surveyBossRanks.splice(existingIdx, 1);
+            } else {
+                if (surveyBossRanks.length < 3) {
+                    surveyBossRanks.push(bossName);
+                } else {
+                    // Replace 3rd rank if already 3 selected
+                    surveyBossRanks[2] = bossName;
+                }
+            }
+            updateBossRankUI();
+        }
+
+        function setSurveyBossRanks(ranks) {
+            if (Array.isArray(ranks)) {
+                surveyBossRanks = ranks.slice(0, 3);
+            } else {
+                surveyBossRanks = [];
+            }
+            updateBossRankUI();
+        }
+        window.setSurveyBossRanks = setSurveyBossRanks;
+
+        function initSurveyBossRanks() {
+            const chips = document.querySelectorAll('.boss-option-chip');
+            chips.forEach(chip => {
+                chip.onclick = (e) => {
+                    e.preventDefault();
+                    const bossName = chip.getAttribute('data-boss') || chip.querySelector('.boss-option-text')?.textContent.trim();
+                    if (bossName) {
+                        toggleBossRank(bossName);
+                    }
+                };
+            });
+
+            const resetBtn = document.getElementById('btn-clear-boss-ranks');
+            if (resetBtn) {
+                resetBtn.onclick = (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    surveyBossRanks = [];
+                    updateBossRankUI();
+                };
+            }
+
+            updateBossRankUI();
+        }
+        initSurveyBossRanks();
 
         // Populate Week Options (4~5 Tuesday-start cycles)
         const weekOptions = getSurveyWeekOptions();
@@ -1280,15 +1352,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
 
-                // 載入下週想打目標
-                const userBosses = existing.targetBosses || [];
-                document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
-                    const shouldCheck = userBosses.some(b => matchesTargetBossOption(b, cb.value));
-                    cb.checked = shouldCheck;
-                    const chip = cb.closest('.boss-option-chip');
-                    if (chip) chip.classList.toggle('checked', shouldCheck);
-                });
-                updateBossSelectedCount();
+                // 載入下週想打目標 (1, 2, 3 順位)
+                setSurveyBossRanks(existing.targetBosses || []);
 
                 if (hintContainer) {
                     hintContainer.style.display = 'inline-flex';
@@ -1353,15 +1418,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 notesInput.value = pastResp.notes;
             }
 
-            // 3. 同步下週想打目標
+            // 3. 同步下週想打目標 (1, 2, 3 順位)
             if (Array.isArray(pastResp.targetBosses) && pastResp.targetBosses.length > 0) {
-                document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
-                    const shouldCheck = pastResp.targetBosses.some(b => matchesTargetBossOption(b, cb.value));
-                    cb.checked = shouldCheck;
-                    const chip = cb.closest('.boss-option-chip');
-                    if (chip) chip.classList.toggle('checked', shouldCheck);
-                });
-                updateBossSelectedCount();
+                setSurveyBossRanks(pastResp.targetBosses);
             }
 
             // 4. 將前次時段對應至本週的星期與時段 (二/三/四/五/六/日/一 + 午/晚)
@@ -1456,13 +1515,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 r.checked = false;
             });
 
-            // 清空下週想打目標
-            document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
-                cb.checked = false;
-                const chip = cb.closest('.boss-option-chip');
-                if (chip) chip.classList.remove('checked');
-            });
-            updateBossSelectedCount();
+            // 清空下週想打目標 (1, 2, 3 順位)
+            setSurveyBossRanks([]);
         }
         window.resetSurveyForm = resetSurveyForm;
 
@@ -1495,11 +1549,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // 收集下週想打目標 (多選)
-                const selectedBosses = [];
-                document.querySelectorAll('input[name="survey-target-boss"]:checked').forEach(cb => {
-                    selectedBosses.push(cb.value);
-                });
+                // 收集下週想打目標 (1, 2, 3 順位)
+                const selectedBosses = surveyBossRanks.slice();
 
                 const scrollRadios = document.querySelectorAll('input[name="survey-scroll"]:checked');
                 if (scrollRadios.length === 0) {
@@ -1793,22 +1844,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // 載入下週想打目標
-        const userBosses = item.targetBosses || [];
-        document.querySelectorAll('input[name="survey-target-boss"]').forEach(cb => {
-            const shouldCheck = userBosses.some(b => matchesTargetBossOption(b, cb.value));
-            cb.checked = shouldCheck;
-            const chip = cb.closest('.boss-option-chip');
-            if (chip) chip.classList.toggle('checked', shouldCheck);
-        });
-        const countBadge = document.getElementById('survey-boss-selected-count');
-        if (countBadge) {
-            if (userBosses.length > 0) {
-                countBadge.style.display = 'inline-block';
-                countBadge.textContent = `已選 ${userBosses.length} 項`;
-            } else {
-                countBadge.style.display = 'none';
-            }
-        }
+        // 載入下週想打目標 (1, 2, 3 順位)
+        setSurveyBossRanks(item.targetBosses || []);
 
         // Close detail modal so user can view and edit the main horizontal form
         const modal = document.getElementById('survey-detail-modal');
@@ -1849,58 +1886,118 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const bossColors = {
-            '樹王': '#16a34a',
-            '龍王(和大拿一起湊)': '#ea580c',
-            '龍王（和大拿他們一起湊）': '#ea580c',
-            '困拉': '#9333ea',
-            '跟活動': '#0284c7',
-            '炎魔': '#dc2626',
-            '普拉': '#3b82f6',
-            '補位，哪裡缺打哪裡': '#d97706'
-        };
-
-        const stats = TARGET_BOSS_OPTIONS.map(opt => {
-            const voters = responses.filter(r => Array.isArray(r.targetBosses) && r.targetBosses.some(b => matchesTargetBossOption(b, opt))).map(r => r.name);
-            const count = voters.length;
+        const stats = TARGET_BOSS_OPTIONS.map((opt, index) => {
+            const voterEntries = responses
+                .filter(r => Array.isArray(r.targetBosses) && r.targetBosses.some(b => matchesTargetBossOption(b, opt)))
+                .map(r => {
+                    const rIdx = r.targetBosses.findIndex(b => matchesTargetBossOption(b, opt));
+                    const rankNum = rIdx !== -1 ? rIdx + 1 : null;
+                    return { name: r.name, rank: rankNum };
+                });
+            const r1List = voterEntries.filter(v => v.rank === 1);
+            const r2List = voterEntries.filter(v => v.rank === 2);
+            const r3List = voterEntries.filter(v => v.rank === 3);
+            const count = voterEntries.length;
+            const count1 = r1List.length;
+            const count2 = r2List.length;
+            const count3 = r3List.length;
+            const countOther = count - (count1 + count2 + count3);
+            // Weighted score: 1st rank = 3 pts, 2nd = 2 pts, 3rd = 1 pt
+            const score = count1 * 3 + count2 * 2 + count3 * 1 + countOther * 1;
             const pct = totalVoters > 0 ? Math.round((count / totalVoters) * 100) : 0;
             return {
                 name: opt,
+                defaultIndex: index,
                 count: count,
+                count1: count1,
+                count2: count2,
+                count3: count3,
+                countOther: countOther,
+                r1List: r1List,
+                r2List: r2List,
+                r3List: r3List,
+                score: score,
                 pct: pct,
-                voters: voters,
-                color: bossColors[opt] || '#3b82f6'
+                voterEntries: voterEntries,
+                voters: voterEntries.map(v => v.name)
             };
         });
 
-        const maxCount = Math.max(...stats.map(s => s.count), 0);
+        // Sort by weighted score descending; if score tied, by count1 desc, total count desc, then default index
+        stats.sort((a, b) => {
+            if (b.score !== a.score) return b.score - a.score;
+            if (b.count1 !== a.count1) return b.count1 - a.count1;
+            if (b.count !== a.count) return b.count - a.count;
+            return a.defaultIndex - b.defaultIndex;
+        });
+
+        const maxScore = Math.max(...stats.map(s => s.score), 0);
 
         chartList.innerHTML = stats.map(s => {
-            const isTop = s.count > 0 && s.count === maxCount;
-            const barWidth = totalVoters > 0 ? (s.count / totalVoters) * 100 : 0;
-            
+            const isTop = s.score > 0 && s.score === maxScore;
+            const w1 = totalVoters > 0 ? (s.count1 / totalVoters) * 100 : 0;
+            const w2 = totalVoters > 0 ? (s.count2 / totalVoters) * 100 : 0;
+            const w3 = totalVoters > 0 ? (s.count3 / totalVoters) * 100 : 0;
+            const wOther = totalVoters > 0 ? (s.countOther / totalVoters) * 100 : 0;
+
             const votersText = s.voters.length > 0 ? s.voters.join('、') : '尚無成員選擇';
-            
-            const tooltipVotersHtml = s.voters.length > 0
-                ? `<div style="font-weight: 800; color: #38bdf8; margin-bottom: 3px; display: flex; align-items: center; justify-content: space-between;">
-                       <span>👥 投票成員 (${s.count}人)：</span>
-                       <span style="font-size: 0.7rem; color: #94a3b8; font-weight: normal;">${s.pct}%</span>
+
+            const tooltipVotersHtml = s.voterEntries.length > 0
+                ? `<div style="font-weight: 800; color: #38bdf8; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between;">
+                       <span>👥 意願成員 (${s.count}人 / ${s.score}積分)：</span>
+                       <span style="font-size: 0.72rem; color: #94a3b8; font-weight: normal;">佔比 ${s.pct}%</span>
                    </div>
-                   <div class="boss-tooltip-voters-list">
-                       ${s.voters.map(v => `<span class="boss-tooltip-voter-tag">${escapeHtml(v)}</span>`).join('')}
-                   </div>`
+                   ${s.r1List.length > 0 ? `
+                       <div class="boss-tooltip-group">
+                           <div class="boss-tooltip-group-title gold">🥇 第一志願 (${s.r1List.length}人)：</div>
+                           <div class="boss-tooltip-voters-list">
+                               ${s.r1List.map(v => `<span class="boss-tooltip-voter-tag gold">${escapeHtml(v.name)}</span>`).join('')}
+                           </div>
+                       </div>
+                   ` : ''}
+                   ${s.r2List.length > 0 ? `
+                       <div class="boss-tooltip-group">
+                           <div class="boss-tooltip-group-title blue">🥈 第二志願 (${s.r2List.length}人)：</div>
+                           <div class="boss-tooltip-voters-list">
+                               ${s.r2List.map(v => `<span class="boss-tooltip-voter-tag blue">${escapeHtml(v.name)}</span>`).join('')}
+                           </div>
+                       </div>
+                   ` : ''}
+                   ${s.r3List.length > 0 ? `
+                       <div class="boss-tooltip-group">
+                           <div class="boss-tooltip-group-title purple">🥉 第三志願 (${s.r3List.length}人)：</div>
+                           <div class="boss-tooltip-voters-list">
+                               ${s.r3List.map(v => `<span class="boss-tooltip-voter-tag purple">${escapeHtml(v.name)}</span>`).join('')}
+                           </div>
+                       </div>
+                   ` : ''}
+                   ${s.countOther > 0 ? `
+                       <div class="boss-tooltip-group">
+                           <div class="boss-tooltip-group-title slate">未標順位 (${s.countOther}人)：</div>
+                           <div class="boss-tooltip-voters-list">
+                               ${s.voterEntries.filter(v => !v.rank).map(v => `<span class="boss-tooltip-voter-tag slate">${escapeHtml(v.name)}</span>`).join('')}
+                           </div>
+                       </div>
+                   ` : ''}`
                 : `<div style="color: #94a3b8; font-style: italic;">尚無成員選擇此項目</div>`;
 
             return `
                 <div class="boss-chart-row ${isTop ? 'is-top' : ''}" title="👥 投票成員 (${s.count}人)：${escapeHtml(votersText)}">
                     <span class="boss-bar-title" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
                     <div class="boss-bar-track">
-                        <div class="boss-bar-fill" style="width: ${barWidth}%; background: ${s.color};"></div>
+                        ${w1 > 0 ? `<div class="boss-bar-seg seg-1" style="width: ${w1}%;" title="🥇 1順位: ${s.count1}人"></div>` : ''}
+                        ${w2 > 0 ? `<div class="boss-bar-seg seg-2" style="width: ${w2}%;" title="🥈 2順位: ${s.count2}人"></div>` : ''}
+                        ${w3 > 0 ? `<div class="boss-bar-seg seg-3" style="width: ${w3}%;" title="🥉 3順位: ${s.count3}人"></div>` : ''}
+                        ${wOther > 0 ? `<div class="boss-bar-seg seg-other" style="width: ${wOther}%;" title="未標順位: ${s.countOther}人"></div>` : ''}
                     </div>
-                    <span class="boss-bar-counts">
-                        <strong style="color: ${s.color}; font-size: 0.88rem;">${s.count}</strong> 票
-                        <span class="boss-bar-pct">(${s.pct}%)</span>
-                    </span>
+                    <div class="boss-bar-counts">
+                        <span class="boss-bar-total-tag"><strong>${s.count}</strong>人</span>
+                        <div class="boss-bar-ranks-detail">
+                            <span class="rank-count r1" title="1順位: ${s.count1}人">🥇${s.count1}</span>
+                            <span class="rank-count r2" title="2順位: ${s.count2}人">🥈${s.count2}</span>
+                            <span class="rank-count r3" title="3順位: ${s.count3}人">🥉${s.count3}</span>
+                        </div>
+                    </div>
                     <!-- 游標移過去才顯示的浮動名單卡片 -->
                     <div class="boss-hover-tooltip">
                         ${tooltipVotersHtml}
@@ -2095,7 +2192,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                 <strong>🎯 下週想打：</strong>
                                 <div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:2px;">
                                     ${(Array.isArray(r.targetBosses) && r.targetBosses.length > 0)
-                                        ? r.targetBosses.map(b => `<span class="tooltip-boss-pill">${escapeHtml(b)}</span>`).join('')
+                                        ? r.targetBosses.map((b, bIdx) => {
+                                            const medals = ['🥇', '🥈', '🥉'];
+                                            const medal = medals[bIdx] || `${bIdx + 1}.`;
+                                            return `<span class="tooltip-boss-pill rank-${bIdx + 1}">${medal} ${escapeHtml(b)}</span>`;
+                                        }).join('')
                                         : '<span style="color:#94a3b8; font-size:0.75rem;">未填寫</span>'}
                                 </div>
                             </div>
@@ -8973,7 +9074,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <strong>🎯 下週想打：</strong>
                                     <div style="display:flex; flex-wrap:wrap; gap:3px; margin-top:2px;">
                                         ${(Array.isArray(r.targetBosses) && r.targetBosses.length > 0)
-                                            ? r.targetBosses.map(b => `<span class="tooltip-boss-pill">${escapeHtml(b)}</span>`).join('')
+                                            ? r.targetBosses.map((b, bIdx) => {
+                                                const medals = ['🥇', '🥈', '🥉'];
+                                                const medal = medals[bIdx] || `${bIdx + 1}.`;
+                                                return `<span class="tooltip-boss-pill rank-${bIdx + 1}">${medal} ${escapeHtml(b)}</span>`;
+                                            }).join('')
                                             : '<span style="color:#94a3b8; font-size:0.75rem;">未填寫</span>'}
                                     </div>
                                 </div>
