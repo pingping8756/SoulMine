@@ -116,7 +116,8 @@ const BOSS_LIST = [
     { name: "闇黑龍王", icon: "🐉", color: "#c084fc" },
     { name: "普通殘暴炎魔", icon: "🔥", color: "#fb923c" },
     { name: "困難殘暴炎魔", icon: "🌋", color: "#ef4444" },
-    { name: "艾畢奈亞", icon: "🦋", color: "#f472b6" }
+    { name: "艾畢奈亞", icon: "🦋", color: "#f472b6" },
+    { name: "阿卡伊農", icon: "👴", color: "#818cf8" }
 ];
 let currentSelectedBoss = null;
 
@@ -129,6 +130,7 @@ function normalizeBossName(name) {
     if (name === "普炎" || name === "炎魔" || name.includes("普通殘暴炎魔") || name.includes("普通炎魔")) return "普通殘暴炎魔";
     if (name === "困炎" || name.includes("困難殘暴炎魔") || name.includes("困難炎魔")) return "困難殘暴炎魔";
     if (name.includes("蝴蝶") || name.includes("畢奈亞")) return "艾畢奈亞";
+    if (name.includes("阿卡") || name.includes("爺爺") || name.includes("伊農")) return "阿卡伊農";
     return name;
 }
 
@@ -7713,7 +7715,8 @@ document.addEventListener('DOMContentLoaded', () => {
         { val: "闇黑龍王", label: "🐉 龍王", defaultGames: 3 },
         { val: "普通殘暴炎魔", label: "🔥 普炎", defaultGames: 7 },
         { val: "困難殘暴炎魔", label: "🌋 困炎", defaultGames: 7 },
-        { val: "艾畢奈亞", label: "🦋 蝴蝶", defaultGames: 7 }
+        { val: "艾畢奈亞", label: "🦋 蝴蝶", defaultGames: 7 },
+        { val: "阿卡伊農", label: "👴 爺爺", defaultGames: 7 }
     ];
 
 
