@@ -443,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
         loadedUpdatedAt: 0,
         bossesByDaySlot: {}, // { [slotKey]: "克雷塞爾", [slotKey_sq0]: "...", [slotKey_sq1]: "..." }
         squadsByDaySlot: {}, // { [slotKey]: [ squad0(6 slots), squad1(6 slots)... ] }
+        timesByDaySlot: {},  // { [slotKey]: "20:00" | "20:30" | "21:00" | "21:30" }
         selectedMemberName: null, // Highlight available slots for this member
         activePickerSlot: null // { slotKey, squadIdx, slotIdx }
     };
@@ -7840,10 +7841,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const bosses = smartSchedState.bossesByDaySlot || {};
         const squads = smartSchedState.squadsByDaySlot || {};
+        const times = smartSchedState.timesByDaySlot || {};
 
         let serializedJson = '';
         try {
-            serializedJson = JSON.stringify({ bossesByDaySlot: bosses, squadsByDaySlot: squads });
+            serializedJson = JSON.stringify({ bossesByDaySlot: bosses, squadsByDaySlot: squads, timesByDaySlot: times });
         } catch(jsonErr) {
             console.error("Failed to serialize smart schedule draft:", jsonErr);
         }
@@ -7868,6 +7870,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 weekId: weekId,
                 bossesByDaySlot: bosses,
                 squadsByDaySlot: squads,
+                timesByDaySlot: times,
                 draftJson: serializedJson,
                 updatedAt: draftData.updatedAt,
                 updatedBy: draftData.updatedBy
@@ -7943,19 +7946,23 @@ document.addEventListener('DOMContentLoaded', () => {
         if (draft) {
             let loadedBosses = null;
             let loadedSquads = null;
+            let loadedTimes = null;
             if (draft.draftJson) {
                 try {
                     const parsed = JSON.parse(draft.draftJson);
                     loadedBosses = parsed.bossesByDaySlot;
                     loadedSquads = parsed.squadsByDaySlot;
+                    loadedTimes = parsed.timesByDaySlot;
                 } catch(e) {}
             }
             if (!loadedBosses) loadedBosses = draft.bossesByDaySlot;
             if (!loadedSquads) loadedSquads = draft.squadsByDaySlot;
+            if (!loadedTimes) loadedTimes = draft.timesByDaySlot;
 
-            if (loadedBosses || loadedSquads) {
+            if (loadedBosses || loadedSquads || loadedTimes) {
                 smartSchedState.bossesByDaySlot = Object.assign({}, loadedBosses || {});
                 smartSchedState.squadsByDaySlot = Object.assign({}, loadedSquads || {});
+                smartSchedState.timesByDaySlot = Object.assign({}, loadedTimes || {});
                 smartSchedState.lastLoadedWeekId = weekId;
                 smartSchedState.loadedUpdatedAt = draft.updatedAt || Date.now();
                 const timeStr = draft.updatedAt ? new Date(draft.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -7966,6 +7973,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         smartSchedState.bossesByDaySlot = {};
         smartSchedState.squadsByDaySlot = {};
+        smartSchedState.timesByDaySlot = {};
         smartSchedState.lastLoadedWeekId = weekId;
         smartSchedState.loadedUpdatedAt = 0;
         updateSmartSchedSyncStatus('idle', '尚未排班');
@@ -7989,6 +7997,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return smartSchedState.bossesByDaySlot[slotKey] || "克雷塞爾";
     }
     window.getSmartSlotBoss = getSmartSlotBoss;
+
+    // 時段預設時間與自訂時間 (下午 14:00，晚上 20:00~21:30)
+    function getSmartSlotTime(slotKey, squadIdx = 0) {
+        if (smartSchedState && smartSchedState.timesByDaySlot) {
+            const keyWithSq = `${slotKey}_sq${squadIdx}`;
+            if (smartSchedState.timesByDaySlot[keyWithSq]) {
+                return smartSchedState.timesByDaySlot[keyWithSq];
+            }
+            if (smartSchedState.timesByDaySlot[slotKey]) {
+                return smartSchedState.timesByDaySlot[slotKey];
+            }
+        }
+        return (slotKey && slotKey.includes('_午')) ? '14:00' : '20:00';
+    }
+    window.getSmartSlotTime = getSmartSlotTime;
+
+    window.changeSmartSlotTime = function(slotKey, timeVal) {
+        if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
+        smartSchedState.timesByDaySlot[slotKey] = timeVal;
+        markSmartScheduleModified();
+    };
 
     function getSmartRoleTagForJob(job) {
         if (!job) return '打手';
@@ -8102,6 +8131,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (confirm('確定要清空目前所有時段已排定的隊伍嗎？此動作將重置排班版面。')) {
                     smartSchedState.bossesByDaySlot = {};
                     smartSchedState.squadsByDaySlot = {};
+                    smartSchedState.timesByDaySlot = {};
                     saveSmartScheduleDraft(true);
                     renderSmartSchedule();
                 }
@@ -8721,13 +8751,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 ? `<button type="button" class="smart-slot-add-squad-btn" onclick="window.addSmartSlotSquadB('${escapeHtml(s.slotKey)}')" title="＋ 在此時段往右新增第二隊，可打不同突襲">+</button>`
                 : `<button type="button" class="smart-slot-remove-squad-btn" onclick="window.removeSmartSlotSquadB('${escapeHtml(s.slotKey)}')" title="✕ 移除第二隊">✕</button>`;
 
+            const isAfternoon = (s.slotDef && s.slotDef.period === '午');
+            const currentSlotTime = getSmartSlotTime(s.slotKey);
+            const timeOptions = ['20:00', '20:30', '21:00', '21:30'];
+
+            const timeSubHtml = isAfternoon
+                ? `<div class="smart-slot-time-sub"><span>(${escapeHtml(s.dayName)}) 下午 14:00</span></div>`
+                : `
+                    <div class="smart-slot-time-sub">
+                        <span>(${escapeHtml(s.dayName)}) 晚上</span>
+                        <select class="smart-slot-time-select" onclick="event.stopPropagation()" onchange="window.changeSmartSlotTime('${escapeHtml(s.slotKey)}', this.value)" title="選擇出團時間 (20:00~21:30)">
+                            ${timeOptions.map(t => `<option value="${t}" ${currentSlotTime === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
+                    </div>
+                `;
+
             return `
                 <th colspan="${s.colspan}" class="${isHoli ? 'smart-matrix-date-weekend' : ''}" style="text-align: center; position: relative; vertical-align: middle;">
                     <div style="position: absolute; top: 4px; right: 4px; z-index: 2;">
                         ${squadBtn}
                     </div>
                     <div style="font-size: 0.92rem; font-weight: 900; padding: 0 22px 0 6px;">${escapeHtml(s.shortDate)} ${holiBadge}</div>
-                    <div style="font-size: 0.78rem; font-weight: 700; color: #64748b; margin-top: 2px;">(${escapeHtml(s.dayName)}) ${escapeHtml(s.slotDef.period === '午' ? '下午' : '晚上')}</div>
+                    ${timeSubHtml}
                 </th>
             `;
         }).join('');
@@ -9496,7 +9541,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         totalTeams++;
                         const squadBoss = getSmartSlotBoss(slotKey, sqIdx);
                         const squadName = squads.length > 1 ? (sqIdx === 0 ? 'A隊' : 'B隊') : '隊伍';
-                        text += `\n📅 ${slotKey}【${squadBoss}】${squadName} (${filled.length}/6人)：\n`;
+                        const slotTime = getSmartSlotTime(slotKey, sqIdx);
+                        text += `\n📅 ${slotKey} ${slotTime}【${squadBoss}】${squadName} (${filled.length}/6人)：\n`;
                         filled.forEach((c, i) => {
                             text += `  ${i + 1}. ${c.name} (${normalizeJobName(c.job)} Lv.${c.level}) [${stripRoleIcon(c.roleTag) || '打手'}]\n`;
                         });
@@ -9565,7 +9611,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const y = dateObj.getFullYear();
                 const m = dateObj.getMonth() + 1;
                 const dt = dateObj.getDate();
-                const timeStr = team.period === '午' ? '14:00' : '20:00';
+                const chosenTime = getSmartSlotTime(team.slotKey);
+                const timeStr = team.period === '午' ? '14:00' : (chosenTime || '20:00');
                 const [hrs, mins] = timeStr.split(':').map(Number);
                 const schedDate = new Date(y, m - 1, dt, hrs, mins, 0);
 
