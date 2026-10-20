@@ -1990,7 +1990,7 @@ body::after {
     }
     .survey-h-col-inline {
         flex-direction: column !important;
-        align-items: flex-start !important;
+        align-items: stretch !important;
         gap: 0.35rem !important;
     }
     .survey-name-input-wrap {
@@ -1998,6 +1998,11 @@ body::after {
         display: flex !important;
         align-items: center !important;
         gap: 0.45rem !important;
+    }
+    .survey-name-input-compact {
+        width: auto !important;
+        flex: 1 1 135px !important;
+        max-width: 100% !important;
     }
     .survey-h-scroll-radios {
         width: 100% !important;
@@ -2220,14 +2225,47 @@ body::after {
 
 @media (max-width: 960px) {
     .survey-h-dual-row {
-        flex-direction: column;
-        gap: 0.75rem;
+        flex-direction: column !important;
+        gap: 0.75rem !important;
     }
     .survey-h-col-slots-wrapper,
     .survey-h-col-boss-wrapper {
         min-width: 0 !important;
         width: 100% !important;
+        max-width: 100% !important;
         flex: none !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .survey-h-col-slots-wrapper,
+    .survey-h-col-boss-wrapper {
+        padding: 0.4rem 0.45rem !important;
+    }
+    .survey-slot-chip {
+        font-size: 0.73rem !important;
+        padding: 0.2rem 0.1rem !important;
+        letter-spacing: -0.3px !important;
+    }
+    .survey-slot-chip.holiday {
+        padding-right: 0.15rem !important;
+    }
+    .slot-holiday-corner-badge {
+        font-size: 0.58rem !important;
+        top: 1px !important;
+        right: 1px !important;
+        padding: 0 2px !important;
+        line-height: 1.1 !important;
+    }
+    .boss-option-chip {
+        min-width: 110px !important;
+        padding: 0.28rem 0.35rem !important;
+        font-size: 0.75rem !important;
+    }
+    .boss-option-text {
+        white-space: normal !important;
+        word-break: break-word !important;
+        line-height: 1.2 !important;
     }
 }
 
@@ -2538,7 +2576,7 @@ body::after {
     gap: 0.65rem;
     align-items: stretch;
 }
-@media (max-width: 768px) {
+@media (max-width: 960px) {
     .survey-h-row-bottom {
         flex-direction: column !important;
         align-items: stretch !important;
