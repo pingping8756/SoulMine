@@ -6460,16 +6460,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     const boss = normalizeBossName(t.boss || 'Boss');
                     const timeStr = t.timeText || t.time || '時間未定';
                     const channel = t.finalChannel ? ` (頻道: ${t.finalChannel})` : (t.channels && t.channels !== '未指定' ? ` (頻道: ${t.channels})` : '');
-                    text += `  ▶ [隊伍 ${tIdx + 1}] [${boss}] ${t.gamesCount || 7}場 ⏰ ${timeStr}${channel}\n`;
+                    text += `▶ [隊伍 ${tIdx + 1}] [${boss}] ${t.gamesCount || 7}場 ⏰ ${timeStr}${channel}\n`;
                     if (t.note) {
-                        text += `     📝 備註：${t.note}\n`;
+                        text += `📝 備註：${t.note}\n`;
                     }
                     const members = t.members ? (Array.isArray(t.members) ? t.members : Object.values(t.members)) : [];
-                    text += `     👥 成員 (${members.length}人)：\n`;
+                    text += `👥 成員 (${members.length}人)：\n`;
                     members.forEach((m, mIdx) => {
                         const cleanRole = stripRoleIcon(m.roleTag);
                         const role = cleanRole ? `【${cleanRole}】` : '';
-                        text += `        ${mIdx + 1}. [${normalizeJobName(m.job) || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
+                        text += `${mIdx + 1}. [${normalizeJobName(m.job) || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
                     });
                     text += `\n`;
                 });
@@ -9705,7 +9705,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         const slotTime = getSmartSlotTime(slotKey, sqIdx);
                         text += `\n📅 ${slotKey} ${slotTime}【${squadBoss}】${squadName} (${filled.length}/6人)：\n`;
                         filled.forEach((c, i) => {
-                            text += `  ${i + 1}. ${c.name} (${normalizeJobName(c.job)} Lv.${c.level}) [${stripRoleIcon(c.roleTag) || '打手'}]\n`;
+                            text += `${i + 1}. ${c.name} (${normalizeJobName(c.job)} Lv.${c.level}) [${stripRoleIcon(c.roleTag) || '打手'}]\n`;
                         });
                     }
                 });
