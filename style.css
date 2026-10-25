@@ -4386,6 +4386,25 @@ body::after {
     color: #16a34a !important;
 }
 
+.confirmed-report-table .member-role-badge {
+    max-width: 48%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 1px 3px !important;
+    font-size: 0.65rem !important;
+    display: inline-block !important;
+    vertical-align: middle;
+    text-align: center;
+    flex-shrink: 0 !important;
+    cursor: help;
+}
+
+.confirmed-report-table .slot-member-name {
+    min-width: 0;
+    flex: 1;
+}
+
 .slot-empty-text {
     font-size: 0.75rem;
     color: #cbd5e1;

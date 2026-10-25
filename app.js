@@ -6216,19 +6216,24 @@ document.addEventListener('DOMContentLoaded', () => {
                         const roleTag = m.roleTag || ((team.slotRoles && team.slotRoles[slotIdx]) ? team.slotRoles[slotIdx] : '');
                         const cleanRoleTag = stripRoleIcon(roleTag);
                         const roleInfo = getTacticalRoleInfo(cleanRoleTag);
-                        const roleBadge = cleanRoleTag ? `<span class="member-role-badge ${roleInfo.cssClass}">${escapeHtml(cleanRoleTag)}</span>` : '';
                         const normJob = normalizeJobName(m.job);
-                        const jobTag = normJob ? `<span class="slot-job-text" title="Lv.${m.level || '?'}">${escapeHtml(normJob)}</span>` : '';
                         const confirmedNotes = getSurveyNotesByMemberOrChar(name);
                         const confirmedNotesBadge = renderMemberNotesBadge(confirmedNotes, name);
+                        const lvlStr = m.level ? `Lv.${m.level}` : '';
+
+                        // 懸停完整提示：名字 + 等級 + 職業 + 定位 + 備註
+                        const memberFullInfo = `${name}${lvlStr ? ` (${lvlStr})` : ''}${normJob ? ` [${normJob}]` : ''}${cleanRoleTag ? ` 【${cleanRoleTag}】` : ''}${confirmedNotes ? `\n📝 備註：${confirmedNotes}` : ''}`;
+
+                        const roleBadge = cleanRoleTag ? `<span class="member-role-badge ${roleInfo.cssClass}" title="${escapeHtml(memberFullInfo)}">${escapeHtml(cleanRoleTag)}</span>` : '';
+                        const jobTag = normJob ? `<span class="slot-job-text" title="${escapeHtml(name)}${lvlStr ? ` (${lvlStr})` : ''}">${escapeHtml(normJob)}</span>` : '';
 
                         rowCells += `
-                            <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''}">
+                            <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''}" title="${escapeHtml(memberFullInfo)}">
                                 ${squadHeader}
                                 <div class="slot-inner">
                                     <div style="display:inline-flex; align-items:center; gap:2px; min-width:0; overflow:hidden; white-space:nowrap; flex:1;">
                                         ${jobTag}
-                                        <span class="slot-member-name ${isMe ? 'is-me-name' : ''}" title="${escapeHtml(name)}${confirmedNotes ? `\n📝 備註：${escapeHtml(confirmedNotes)}` : ''}">
+                                        <span class="slot-member-name ${isMe ? 'is-me-name' : ''}" title="${escapeHtml(memberFullInfo)}">
                                             ${escapeHtml(name)}
                                             ${confirmedNotesBadge}
                                             ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.6rem; font-weight:800; padding:0 3px; border-radius:4px; margin-left:1px;">我</small>' : ''}
