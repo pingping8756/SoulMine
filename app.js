@@ -1739,6 +1739,62 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
+        // Floating tooltip smart positioning (智能自動判斷向上或向下，絕不切到頂部或底部)
+        function positionFloatingTooltip(memberCell) {
+            const tooltip = memberCell.querySelector('.matrix-floating-tooltip');
+            if (!tooltip) return;
+
+            const cellRect = memberCell.getBoundingClientRect();
+            const tooltipHeight = tooltip.offsetHeight || 240;
+            const tooltipWidth = tooltip.offsetWidth || 280;
+
+            // 水平位置：預設在成員欄右側，若右側空間不足則顯示在左側
+            let left = cellRect.right + 10;
+            if (left + tooltipWidth > window.innerWidth - 10) {
+                left = Math.max(10, cellRect.left - tooltipWidth - 10);
+            }
+
+            // 垂直位置智能判斷：
+            // 若下方剩餘空間足夠容納卡片，則頂部對齊成員列頂部向下展開；
+            // 若下方不足但上方足夠，則底部對齊成員列底部向上展開；
+            // 若皆不足（卡片較長或螢幕視窗較扁），則垂直置中於該列
+            const spaceBelow = window.innerHeight - cellRect.bottom;
+            const spaceAbove = cellRect.top;
+
+            let top;
+            if (spaceBelow >= tooltipHeight + 10) {
+                top = cellRect.top;
+            } else if (spaceAbove >= tooltipHeight + 10) {
+                top = cellRect.bottom - tooltipHeight;
+            } else {
+                top = cellRect.top + (cellRect.height / 2) - (tooltipHeight / 2);
+            }
+
+            // 確保卡片頂部與底部均完整保留在可視範圍內（邊距 10px）
+            const maxTop = Math.max(10, window.innerHeight - tooltipHeight - 10);
+            top = Math.max(10, Math.min(top, maxTop));
+
+            tooltip.style.left = `${Math.round(left)}px`;
+            tooltip.style.top = `${Math.round(top)}px`;
+
+            // 箭頭指標智能指向成員列的垂直正中心
+            const cellCenterY = cellRect.top + (cellRect.height / 2);
+            const arrowY = Math.max(12, Math.min(cellCenterY - top, tooltipHeight - 12));
+            tooltip.style.setProperty('--arrow-top', `${Math.round(arrowY)}px`);
+        }
+
+        document.addEventListener('mouseover', (e) => {
+            const memberCell = e.target.closest('.matrix-member-cell');
+            if (!memberCell) return;
+            positionFloatingTooltip(memberCell);
+        });
+
+        // Reposition if user scrolls inside table while hovered
+        window.addEventListener('scroll', () => {
+            const hoveredCell = document.querySelector('.matrix-member-cell:hover');
+            if (hoveredCell) positionFloatingTooltip(hoveredCell);
+        }, { passive: true, capture: true });
+
         // Toggle Boss Chart Popover (打王意願簡圖)
         const btnToggleBossChart = document.getElementById('btn-toggle-boss-chart');
         const popoverBossChart = document.getElementById('survey-boss-chart-popover');
@@ -1976,69 +2032,40 @@ document.addEventListener('DOMContentLoaded', () => {
             const w1 = totalVoters > 0 ? (s.count1 / totalVoters) * 100 : 0;
             const w2 = totalVoters > 0 ? (s.count2 / totalVoters) * 100 : 0;
             const w3 = totalVoters > 0 ? (s.count3 / totalVoters) * 100 : 0;
-            const wOther = totalVoters > 0 ? (s.countOther / totalVoters) * 100 : 0;
 
-            const votersText = s.voters.length > 0 ? s.voters.join('、') : '尚無成員選擇';
-
-            const tooltipVotersHtml = s.voterEntries.length > 0
-                ? `<div style="font-weight: 800; color: #38bdf8; margin-bottom: 5px; display: flex; align-items: center; justify-content: space-between;">
-                       <span>👥 意願成員 (${s.count}人 / ${s.score}積分)：</span>
-                       <span style="font-size: 0.72rem; color: #94a3b8; font-weight: normal;">佔比 ${s.pct}%</span>
-                   </div>
-                   ${s.r1List.length > 0 ? `
-                       <div class="boss-tooltip-group">
-                           <div class="boss-tooltip-group-title gold">🥇 第一志願 (${s.r1List.length}人)：</div>
-                           <div class="boss-tooltip-voters-list">
-                               ${s.r1List.map(v => `<span class="boss-tooltip-voter-tag gold">${escapeHtml(v.name)}</span>`).join('')}
-                           </div>
-                       </div>
-                   ` : ''}
-                   ${s.r2List.length > 0 ? `
-                       <div class="boss-tooltip-group">
-                           <div class="boss-tooltip-group-title blue">🥈 第二志願 (${s.r2List.length}人)：</div>
-                           <div class="boss-tooltip-voters-list">
-                               ${s.r2List.map(v => `<span class="boss-tooltip-voter-tag blue">${escapeHtml(v.name)}</span>`).join('')}
-                           </div>
-                       </div>
-                   ` : ''}
-                   ${s.r3List.length > 0 ? `
-                       <div class="boss-tooltip-group">
-                           <div class="boss-tooltip-group-title purple">🥉 第三志願 (${s.r3List.length}人)：</div>
-                           <div class="boss-tooltip-voters-list">
-                               ${s.r3List.map(v => `<span class="boss-tooltip-voter-tag purple">${escapeHtml(v.name)}</span>`).join('')}
-                           </div>
-                       </div>
-                   ` : ''}
-                   ${s.countOther > 0 ? `
-                       <div class="boss-tooltip-group">
-                           <div class="boss-tooltip-group-title slate">未標順位 (${s.countOther}人)：</div>
-                           <div class="boss-tooltip-voters-list">
-                               ${s.voterEntries.filter(v => !v.rank).map(v => `<span class="boss-tooltip-voter-tag slate">${escapeHtml(v.name)}</span>`).join('')}
-                           </div>
-                       </div>
-                   ` : ''}`
-                : `<div style="color: #94a3b8; font-style: italic;">尚無成員選擇此項目</div>`;
+            let votersPillsHtml = '';
+            if (s.voterEntries.length > 0) {
+                const r1Chips = s.r1List.map(v => `<span class="voter-pill r1" title="第一志願 (首選)">🥇 ${escapeHtml(v.name)}</span>`).join('');
+                const r2Chips = s.r2List.map(v => `<span class="voter-pill r2" title="第二志願">🥈 ${escapeHtml(v.name)}</span>`).join('');
+                const r3Chips = s.r3List.map(v => `<span class="voter-pill r3" title="第三志願 (備選)">🥉 ${escapeHtml(v.name)}</span>`).join('');
+                const otherChips = s.voterEntries.filter(v => !v.rank).map(v => `<span class="voter-pill r-other">${escapeHtml(v.name)}</span>`).join('');
+                votersPillsHtml = `<div class="boss-voters-wrap">${r1Chips}${r2Chips}${r3Chips}${otherChips}</div>`;
+            } else {
+                votersPillsHtml = `<span class="boss-no-voters">尚無人選擇</span>`;
+            }
 
             return `
-                <div class="boss-chart-row ${isTop ? 'is-top' : ''}" title="👥 投票成員 (${s.count}人)：${escapeHtml(votersText)}">
-                    <span class="boss-bar-title" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
-                    <div class="boss-bar-track">
-                        ${w1 > 0 ? `<div class="boss-bar-seg seg-1" style="width: ${w1}%;" title="🥇 1順位: ${s.count1}人"></div>` : ''}
-                        ${w2 > 0 ? `<div class="boss-bar-seg seg-2" style="width: ${w2}%;" title="🥈 2順位: ${s.count2}人"></div>` : ''}
-                        ${w3 > 0 ? `<div class="boss-bar-seg seg-3" style="width: ${w3}%;" title="🥉 3順位: ${s.count3}人"></div>` : ''}
-                        ${wOther > 0 ? `<div class="boss-bar-seg seg-other" style="width: ${wOther}%;" title="未標順位: ${s.countOther}人"></div>` : ''}
-                    </div>
-                    <div class="boss-bar-counts">
-                        <span class="boss-bar-total-tag"><strong>${s.count}</strong>人</span>
+                <div class="boss-chart-row ${isTop ? 'is-top' : ''}">
+                    <div class="boss-row-header">
+                        <div class="boss-title-wrap">
+                            <span class="boss-bar-title" title="${escapeHtml(s.name)}">${escapeHtml(s.name)}</span>
+                            <span class="boss-count-badge ${s.count > 0 ? 'active' : ''}">${s.count}人</span>
+                        </div>
                         <div class="boss-bar-ranks-detail">
-                            <span class="rank-count r1" title="1順位: ${s.count1}人">🥇${s.count1}</span>
-                            <span class="rank-count r2" title="2順位: ${s.count2}人">🥈${s.count2}</span>
-                            <span class="rank-count r3" title="3順位: ${s.count3}人">🥉${s.count3}</span>
+                            <span class="rank-count r1" title="首選(3分): ${s.count1}人">🥇${s.count1}</span>
+                            <span class="rank-count r2" title="二志願(2分): ${s.count2}人">🥈${s.count2}</span>
+                            <span class="rank-count r3" title="備選(1分): ${s.count3}人">🥉${s.count3}</span>
                         </div>
                     </div>
-                    <!-- 游標移過去才顯示的浮動名單卡片 -->
-                    <div class="boss-hover-tooltip">
-                        ${tooltipVotersHtml}
+                    ${s.count > 0 ? `
+                        <div class="boss-bar-track-mini" style="height: 3px; border-radius: 2px; display: flex; overflow: hidden; background: #e2e8f0; margin-top: 3px; width: 100%;">
+                            ${w1 > 0 ? `<div style="width: ${w1}%; background: #f59e0b;"></div>` : ''}
+                            ${w2 > 0 ? `<div style="width: ${w2}%; background: #3b82f6;"></div>` : ''}
+                            ${w3 > 0 ? `<div style="width: ${w3}%; background: #a855f7;"></div>` : ''}
+                        </div>
+                    ` : ''}
+                    <div class="boss-row-voters">
+                        ${votersPillsHtml}
                     </div>
                 </div>
             `;

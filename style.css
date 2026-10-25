@@ -2433,16 +2433,17 @@ body::after {
     position: absolute;
     left: 0;
     top: calc(100% + 6px);
-    width: 620px;
+    width: 660px;
     max-width: calc(96vw - 1rem);
     background: #ffffff;
     border: 1.5px solid #cbd5e1;
-    border-radius: 10px;
-    box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
-    padding: 0.55rem 0.75rem;
+    border-radius: 12px;
+    box-shadow: 0 16px 40px rgba(15, 23, 42, 0.22);
+    padding: 0.65rem 0.85rem;
     z-index: 100000;
     box-sizing: border-box;
     animation: fadeIn 0.15s ease-out;
+    overflow: visible;
 }
 .boss-chart-popover-header {
     display: flex;
@@ -2468,99 +2469,76 @@ body::after {
 .boss-chart-list {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 0.22rem 0.45rem;
-    max-height: 480px;
-    overflow-y: auto;
-    overflow-x: hidden;
-    padding-right: 2px;
+    gap: 0.45rem 0.65rem;
+    overflow: visible;
 }
 .boss-chart-row {
     position: relative;
     display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.35rem;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.2rem;
     background: #f8fafc;
     border: 1.5px solid #e2e8f0;
-    border-radius: 6px;
-    padding: 0.18rem 0.4rem;
-    cursor: pointer;
+    border-radius: 8px;
+    padding: 0.35rem 0.55rem;
     box-sizing: border-box;
-    transition: background 0.15s ease, border-color 0.15s ease;
-    min-height: 27px;
+    transition: all 0.15s ease;
 }
 .boss-chart-row:hover {
     background: #f1f5f9;
-    border-color: #94a3b8;
-    z-index: 10;
+    border-color: #cbd5e1;
 }
 .boss-chart-row.is-top {
-    background: #fefce8;
-    border-color: #fef08a;
+    background: #fffbeb;
+    border-color: #fde047;
+    box-shadow: 0 1px 3px rgba(245, 158, 11, 0.1);
 }
 .boss-chart-row.is-top:hover {
     background: #fef9c3;
-    border-color: #fde047;
+    border-color: #eab308;
+}
+.boss-row-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.35rem;
+    width: 100%;
+}
+.boss-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-width: 0;
+    flex: 1;
 }
 .boss-bar-title {
-    flex: 0 0 92px;
-    max-width: 92px;
-    font-size: 0.73rem;
+    font-size: 0.82rem;
     font-weight: 800;
     color: #0f172a;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    letter-spacing: -0.2px;
 }
-.boss-bar-track {
-    flex: 1 1 auto;
-    min-width: 35px;
-    height: 8px;
-    background: #e2e8f0;
-    border-radius: 4px;
-    overflow: hidden;
-    position: relative;
-    display: flex;
-}
-.boss-bar-seg {
-    height: 100%;
-    transition: width 0.3s ease;
-}
-.boss-bar-seg.seg-1 {
-    background: linear-gradient(135deg, #f59e0b, #d97706);
-}
-.boss-bar-seg.seg-2 {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-}
-.boss-bar-seg.seg-3 {
-    background: linear-gradient(135deg, #a855f7, #7c3aed);
-}
-.boss-bar-seg.seg-other {
-    background: #94a3b8;
-}
-.boss-bar-counts {
-    flex: 0 0 auto;
-    display: flex;
-    flex-direction: row;
-    align-items: center;
-    gap: 0.28rem;
-    font-size: 0.72rem;
-    color: #475569;
-    font-weight: 700;
-    white-space: nowrap;
-    line-height: 1;
-}
-.boss-bar-total-tag {
-    font-size: 0.74rem;
-    color: #0f172a;
+.boss-count-badge {
+    font-size: 0.68rem;
     font-weight: 800;
+    padding: 1px 5px;
+    border-radius: 10px;
+    background: #e2e8f0;
+    color: #64748b;
+    flex-shrink: 0;
+}
+.boss-count-badge.active {
+    background: #2563eb;
+    color: #ffffff;
 }
 .boss-bar-ranks-detail {
     display: flex;
-    gap: 0.18rem;
-    font-size: 0.67rem;
+    gap: 0.22rem;
+    font-size: 0.68rem;
     font-weight: 800;
+    flex-shrink: 0;
 }
 .boss-bar-ranks-detail .rank-count.r1 {
     color: #d97706;
@@ -2572,6 +2550,56 @@ body::after {
     color: #7c3aed;
 }
 
+/* Direct Voters Tags */
+.boss-row-voters {
+    width: 100%;
+}
+.boss-voters-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem;
+    margin-top: 0.2rem;
+}
+.voter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 4px;
+    line-height: 1.25;
+    white-space: nowrap;
+}
+.voter-pill.r1 {
+    background: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde047;
+}
+.voter-pill.r2 {
+    background: #dbeafe;
+    color: #1e40af;
+    border: 1px solid #bfdbfe;
+}
+.voter-pill.r3 {
+    background: #f3e8ff;
+    color: #6b21a8;
+    border: 1px solid #e9d5ff;
+}
+.voter-pill.r-other {
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+.boss-no-voters {
+    display: inline-block;
+    font-size: 0.7rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 0.15rem;
+}
+
 /* Mobile responsive rules for Boss Chart Popover & Rows */
 @media (max-width: 768px) {
     .boss-chart-popover {
@@ -2579,152 +2607,21 @@ body::after {
         top: 50% !important;
         left: 50% !important;
         transform: translate(-50%, -50%) !important;
-        width: min(94vw, 600px) !important;
+        width: min(94vw, 580px) !important;
         max-width: calc(100vw - 1rem) !important;
         max-height: 85vh !important;
+        overflow-y: auto !important;
         box-shadow: 0 15px 45px rgba(15, 23, 42, 0.45), 0 0 0 100vmax rgba(0, 0, 0, 0.45) !important;
         border-radius: 12px !important;
-        padding: 0.55rem 0.65rem !important;
+        padding: 0.65rem 0.75rem !important;
         z-index: 999999 !important;
     }
-    .boss-chart-popover-header {
-        margin-bottom: 0.3rem !important;
-        padding-bottom: 0.25rem !important;
-    }
-    .boss-chart-list {
-        max-height: 72vh !important;
-    }
-    .boss-hover-tooltip {
-        font-size: 0.7rem !important;
-        padding: 0.35rem 0.55rem !important;
-        max-width: 100% !important;
-        box-sizing: border-box !important;
-    }
 }
-
-/* Portrait mobile (< 520px): single column with ultra-compact height so 8 rows fit without scrolling */
-@media (max-width: 520px) {
-    .boss-chart-popover {
-        width: min(94vw, 390px) !important;
-        padding: 0.45rem 0.55rem !important;
-    }
+@media (max-width: 560px) {
     .boss-chart-list {
         grid-template-columns: 1fr !important;
-        gap: 0.16rem !important;
+        gap: 0.35rem !important;
     }
-    .boss-chart-row {
-        gap: 0.3rem !important;
-        padding: 0.15rem 0.35rem !important;
-        min-height: 25px !important;
-    }
-    .boss-bar-title {
-        flex: 0 0 95px !important;
-        max-width: 95px !important;
-        font-size: 0.71rem !important;
-    }
-    .boss-bar-track {
-        min-width: 30px !important;
-        height: 7px !important;
-    }
-    .boss-bar-counts {
-        gap: 0.2rem !important;
-        font-size: 0.69rem !important;
-    }
-    .boss-bar-total-tag {
-        font-size: 0.71rem !important;
-    }
-    .boss-bar-ranks-detail {
-        font-size: 0.65rem !important;
-        gap: 0.14rem !important;
-    }
-}
-
-/* Floating tooltip that appears strictly on cursor hover */
-.boss-hover-tooltip {
-    display: none;
-    position: absolute;
-    top: calc(100% + 4px);
-    left: 0;
-    right: 0;
-    background: #0f172a;
-    color: #ffffff;
-    padding: 0.5rem 0.75rem;
-    border-radius: 8px;
-    font-size: 0.75rem;
-    line-height: 1.4;
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
-    z-index: 50;
-    pointer-events: none;
-}
-/* For the last four rows (bottom rows in 2-column mode), position tooltip above so it never overflows the bottom */
-.boss-chart-row:nth-last-child(-n+4) .boss-hover-tooltip {
-    top: auto;
-    bottom: calc(100% + 4px);
-}
-.boss-chart-row:hover .boss-hover-tooltip {
-    display: block;
-    animation: fadeIn 0.12s ease-out;
-}
-.boss-tooltip-voters-list {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.25rem;
-    margin-top: 0.2rem;
-}
-.boss-tooltip-group {
-    margin-top: 5px;
-    padding-top: 4px;
-    border-top: 1px solid rgba(255, 255, 255, 0.12);
-}
-.boss-tooltip-group-title {
-    font-size: 0.72rem;
-    font-weight: 800;
-    margin-bottom: 3px;
-    display: flex;
-    align-items: center;
-    gap: 0.2rem;
-}
-.boss-tooltip-group-title.gold {
-    color: #fde047;
-}
-.boss-tooltip-group-title.blue {
-    color: #93c5fd;
-}
-.boss-tooltip-group-title.purple {
-    color: #d8b4fe;
-}
-.boss-tooltip-group-title.slate {
-    color: #cbd5e1;
-}
-.boss-tooltip-voter-tag {
-    background: rgba(255, 255, 255, 0.15);
-    color: #ffffff;
-    border: 1px solid rgba(255, 255, 255, 0.25);
-    border-radius: 4px;
-    padding: 1px 6px;
-    font-size: 0.72rem;
-    font-weight: 700;
-    white-space: nowrap;
-}
-.boss-tooltip-voter-tag.gold {
-    background: rgba(245, 158, 11, 0.25);
-    border-color: rgba(245, 158, 11, 0.55);
-    color: #fef08a;
-}
-.boss-tooltip-voter-tag.blue {
-    background: rgba(59, 130, 246, 0.25);
-    border-color: rgba(59, 130, 246, 0.55);
-    color: #bfdbfe;
-}
-.boss-tooltip-voter-tag.purple {
-    background: rgba(168, 85, 247, 0.25);
-    border-color: rgba(168, 85, 247, 0.55);
-    color: #e9d5ff;
-}
-.boss-tooltip-voter-tag.slate {
-    background: rgba(148, 163, 184, 0.2);
-    border-color: rgba(148, 163, 184, 0.4);
-    color: #cbd5e1;
 }
 .tooltip-boss-pill {
     background: #eff6ff;
@@ -3718,31 +3615,34 @@ body::after {
 .matrix-floating-tooltip {
     visibility: hidden;
     opacity: 0;
-    position: absolute;
-    left: calc(100% + 10px);
-    top: 50%;
-    transform: translateY(-50%);
+    position: fixed !important;
+    left: -9999px;
+    top: -9999px;
+    transform: none !important;
     background: #0f172a !important;
     color: #f8fafc !important;
     text-align: left;
-    padding: 0.75rem 0.95rem;
+    padding: 0.65rem 0.85rem;
     border-radius: 8px;
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.55), 0 5px 15px rgba(0, 0, 0, 0.35);
-    font-size: 0.84rem;
-    line-height: 1.5;
-    z-index: 100000 !important;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6), 0 4px 12px rgba(0, 0, 0, 0.4);
+    font-size: 0.82rem;
+    line-height: 1.45;
+    z-index: 10000000 !important;
     pointer-events: none;
-    transition: opacity 0.15s ease, visibility 0.15s ease;
+    transition: opacity 0.12s ease;
     min-width: 220px;
     max-width: 340px;
+    max-height: calc(100vh - 80px);
+    overflow-y: auto;
     white-space: normal;
     border: 1.5px solid #475569;
+    box-sizing: border-box;
 }
 
 .matrix-floating-tooltip::before {
     content: "";
     position: absolute;
-    top: 50%;
+    top: var(--arrow-top, 24px);
     right: 100%;
     margin-top: -6px;
     border-width: 6px;
@@ -3754,34 +3654,6 @@ body::after {
 .matrix-member-cell:focus-within .matrix-floating-tooltip {
     visibility: visible;
     opacity: 1;
-}
-
-/* Prevent clipping on top and bottom rows */
-.survey-matrix-table tbody tr:first-child .matrix-floating-tooltip {
-    top: 0;
-    transform: none;
-}
-.survey-matrix-table tbody tr:first-child .matrix-floating-tooltip::before {
-    top: 14px;
-    margin-top: 0;
-}
-.survey-matrix-table tbody tr:nth-child(2) .matrix-floating-tooltip {
-    top: -8px;
-    transform: none;
-}
-.survey-matrix-table tbody tr:nth-child(2) .matrix-floating-tooltip::before {
-    top: 22px;
-    margin-top: 0;
-}
-.survey-matrix-table tbody tr:last-child .matrix-floating-tooltip {
-    top: auto;
-    bottom: 0;
-    transform: none;
-}
-.survey-matrix-table tbody tr:last-child .matrix-floating-tooltip::before {
-    top: auto;
-    bottom: 14px;
-    margin-top: 0;
 }
 
 .tooltip-title {
@@ -4613,20 +4485,6 @@ body::after {
 }
 .smart-matrix-table tbody tr.smart-matrix-avail-row:hover td.sticky-col {
     z-index: 99999 !important;
-}
-.smart-matrix-table tbody tr.smart-matrix-avail-row:last-of-type .matrix-floating-tooltip,
-.smart-matrix-table tbody tr.smart-matrix-avail-row:nth-last-of-type(2) .matrix-floating-tooltip,
-.smart-matrix-table tbody tr.smart-matrix-avail-row:nth-last-of-type(3) .matrix-floating-tooltip {
-    top: auto !important;
-    bottom: 0 !important;
-    transform: none !important;
-}
-.smart-matrix-table tbody tr.smart-matrix-avail-row:last-of-type .matrix-floating-tooltip::before,
-.smart-matrix-table tbody tr.smart-matrix-avail-row:nth-last-of-type(2) .matrix-floating-tooltip::before,
-.smart-matrix-table tbody tr.smart-matrix-avail-row:nth-last-of-type(3) .matrix-floating-tooltip::before {
-    top: auto !important;
-    bottom: 14px !important;
-    margin-top: 0 !important;
 }
 
 /* Sticky top sections */
