@@ -985,7 +985,7 @@ body::after {
     background: rgba(26, 15, 43, 0.82);
     border: 1px solid var(--card-border);
     border-radius: 14px;
-    padding: 1.4rem;
+    padding: 1.15rem 1rem;
     cursor: pointer;
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -1039,19 +1039,36 @@ body::after {
     color: #ffa726;
 }
 
-/* 3-Column Boss Category Grid */
+/* 4-Column Boss Category Grid */
 .boss-grid-overview {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 1.25rem;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
 }
-@media (max-width: 960px) {
+@media (max-width: 1180px) {
     .boss-grid-overview {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, minmax(0, 1fr));
     }
 }
 @media (max-width: 580px) {
     .boss-grid-overview {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* 4-Column Recruitment Teams Grid (Vertical Cards) */
+.raids-grid-view {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1rem;
+}
+@media (max-width: 1200px) {
+    .raids-grid-view {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+@media (max-width: 640px) {
+    .raids-grid-view {
         grid-template-columns: 1fr;
     }
 }
@@ -4217,8 +4234,9 @@ body::after {
 }
 
 .confirmed-report-table td.col-slot-cell {
-    padding: 0.22rem 2px;
-    height: 28px;
+    padding: 0.25rem 3px;
+    height: auto;
+    min-height: 28px;
     background: #ffffff;
     vertical-align: middle;
     transition: background-color 0.15s ease;
@@ -4246,10 +4264,29 @@ body::after {
 
 .slot-inner {
     display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 1.5px;
+    width: 100%;
+    min-width: 0;
+}
+
+.slot-top-row {
+    display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: 2px;
     width: 100%;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+}
+
+.slot-role-row {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    overflow: hidden;
 }
 
 .slot-member-name {
@@ -4262,6 +4299,8 @@ body::after {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    min-width: 0;
+    flex: 1;
 }
 
 .slot-member-name.is-me-name {
@@ -4269,16 +4308,17 @@ body::after {
 }
 
 .confirmed-report-table .member-role-badge {
-    max-width: 48%;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 1px 3px !important;
-    font-size: 0.65rem !important;
+    padding: 1px 4px !important;
+    font-size: 0.68rem !important;
     display: inline-block !important;
     vertical-align: middle;
     text-align: center;
     flex-shrink: 0 !important;
+    line-height: 1.25;
     cursor: help;
 }
 
