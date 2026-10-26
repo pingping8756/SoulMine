@@ -8237,25 +8237,41 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     window.getSmartSlotBoss = getSmartSlotBoss;
 
-    // 時段預設時間與自訂時間 (下午 14:00，晚上 20:00~21:30)
+    // 時段預設時間與自訂時間 (下午 14:00，晚上 20:00~21:30，支援 A/B 分隊各自獨立時間)
     function getSmartSlotTime(slotKey, squadIdx = 0) {
+        const sq = parseInt(squadIdx, 10) || 0;
         if (smartSchedState && smartSchedState.timesByDaySlot) {
-            const keyWithSq = `${slotKey}_sq${squadIdx}`;
+            const keyWithSq = `${slotKey}_sq${sq}`;
             if (smartSchedState.timesByDaySlot[keyWithSq]) {
                 return smartSchedState.timesByDaySlot[keyWithSq];
             }
-            if (smartSchedState.timesByDaySlot[slotKey]) {
+            if (sq === 0 && smartSchedState.timesByDaySlot[slotKey]) {
                 return smartSchedState.timesByDaySlot[slotKey];
             }
+        }
+        if (sq === 1) {
+            return (slotKey && slotKey.includes('_午')) ? '15:00' : '21:00';
         }
         return (slotKey && slotKey.includes('_午')) ? '14:00' : '20:00';
     }
     window.getSmartSlotTime = getSmartSlotTime;
 
-    window.changeSmartSlotTime = function(slotKey, timeVal) {
+    window.changeSmartSlotTime = function(slotKey, squadIdx, timeVal) {
         if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
-        smartSchedState.timesByDaySlot[slotKey] = timeVal;
+        let sq = 0;
+        let val = timeVal;
+        if (typeof squadIdx === 'string' && timeVal === undefined) {
+            val = squadIdx;
+            sq = 0;
+        } else {
+            sq = parseInt(squadIdx, 10) || 0;
+        }
+        smartSchedState.timesByDaySlot[`${slotKey}_sq${sq}`] = val;
+        if (sq === 0) {
+            smartSchedState.timesByDaySlot[slotKey] = val;
+        }
         markSmartScheduleModified();
+        renderSmartSchedule();
     };
 
     function getSmartRoleTagForJob(job) {
@@ -8552,20 +8568,27 @@ document.addEventListener('DOMContentLoaded', () => {
         return usage;
     }
 
-    // Check conflict for a specific slot chip
-    function checkSmartSlotConflict(memberName, slotKey, usageStats) {
+    // Check conflict for a specific slot chip (若同一天排了兩隊以上，檢查實際出團時間是否相同)
+    function checkSmartSlotConflict(memberName, slotKey, usageStats, currentSquadIdx = 0) {
         if (!memberName) return { hasConflict: false, reason: '' };
         const k = memberName.trim().toLowerCase();
         const stat = usageStats[k];
         if (!stat) return { hasConflict: false, reason: '' };
 
-        // 1. Same time slot collision (同一人在同一個時段被排了兩隊以上)
+        // 1. Same time collision (比對實際出團時間是否重複)
         const sameSlotOccurrences = stat.slots.filter(s => s.slotKey === slotKey);
         if (sameSlotOccurrences.length > 1) {
-            return {
-                hasConflict: true,
-                reason: `⚠️ 同時段重複入座：此成員在此時段已被安排了 ${sameSlotOccurrences.length} 次！`
-            };
+            const currentTime = getSmartSlotTime(slotKey, currentSquadIdx);
+            const duplicateSameTime = sameSlotOccurrences.filter(s => {
+                const sTime = getSmartSlotTime(s.slotKey, s.squadIdx);
+                return sTime === currentTime;
+            });
+            if (duplicateSameTime.length > 1) {
+                return {
+                    hasConflict: true,
+                    reason: `⚠️ 出團時間衝突：此成員在相同時間 (${currentTime}) 排了 ${duplicateSameTime.length} 支隊伍！`
+                };
+            }
         }
 
         // 依需求：場次次數是否超過由管理員自行檢查，此處已移除吃券場次限制偵測
@@ -8987,31 +9010,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 右上角按鈕：若為 1 隊顯示「+」以新增第二隊；若已為 2 隊顯示「✕」以移除第二隊
             const squadBtn = s.colspan === 1
-                ? `<button type="button" class="smart-slot-add-squad-btn" onclick="window.addSmartSlotSquadB('${escapeHtml(s.slotKey)}')" title="＋ 在此時段往右新增第二隊，可打不同突襲">+</button>`
+                ? `<button type="button" class="smart-slot-add-squad-btn" onclick="window.addSmartSlotSquadB('${escapeHtml(s.slotKey)}')" title="＋ 在此時段往右新增第二隊，可打不同突襲與時間">+</button>`
                 : `<button type="button" class="smart-slot-remove-squad-btn" onclick="window.removeSmartSlotSquadB('${escapeHtml(s.slotKey)}')" title="✕ 移除第二隊">✕</button>`;
 
             const isAfternoon = (s.slotDef && s.slotDef.period === '午');
-            const currentSlotTime = getSmartSlotTime(s.slotKey);
-            const timeOptions = ['20:00', '20:30', '21:00', '21:30'];
-
-            const timeSubHtml = isAfternoon
-                ? `<div class="smart-slot-time-sub"><span>(${escapeHtml(s.dayName)}) 下午 14:00</span></div>`
-                : `
-                    <div class="smart-slot-time-sub">
-                        <span>(${escapeHtml(s.dayName)}) 晚上</span>
-                        <select class="smart-slot-time-select" onclick="event.stopPropagation()" onchange="window.changeSmartSlotTime('${escapeHtml(s.slotKey)}', this.value)" title="選擇出團時間 (20:00~21:30)">
-                            ${timeOptions.map(t => `<option value="${t}" ${currentSlotTime === t ? 'selected' : ''}>${t}</option>`).join('')}
-                        </select>
-                    </div>
-                `;
+            const periodLabel = isAfternoon ? ' (下午)' : '';
 
             return `
                 <th colspan="${s.colspan}" class="${isHoli ? 'smart-matrix-date-weekend' : ''}" style="text-align: center; position: relative; vertical-align: middle;">
                     <div style="position: absolute; top: 4px; right: 4px; z-index: 2;">
                         ${squadBtn}
                     </div>
-                    <div style="font-size: 0.92rem; font-weight: 900; padding: 0 22px 0 6px;">${escapeHtml(s.shortDate)} ${holiBadge}</div>
-                    ${timeSubHtml}
+                    <div style="font-size: 0.92rem; font-weight: 900; padding: 0 22px 0 6px;">${escapeHtml(s.shortDate)} (${escapeHtml(s.dayName)})${periodLabel} ${holiBadge}</div>
                 </th>
             `;
         }).join('');
@@ -9020,6 +9030,36 @@ document.addEventListener('DOMContentLoaded', () => {
             <tr class="smart-matrix-date-row">
                 <th class="sticky-col">時段</th>
                 ${middleDateThs}
+            </tr>
+        `;
+
+        // ==========================================
+        // 1.5. TIME SELECTOR (各分隊獨立時間下拉選擇)
+        // ==========================================
+        const middleTimeTds = columns.map(col => {
+            const isAfternoon = (col.slotDef && col.slotDef.period === '午');
+            const currentTime = getSmartSlotTime(col.slotKey, col.squadIdx);
+            const defaultOptions = isAfternoon
+                ? ['13:00', '13:30', '14:00', '14:30', '15:00', '15:30', '16:00']
+                : ['19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30', '23:00'];
+            const timeOptions = defaultOptions.includes(currentTime) ? defaultOptions : [currentTime, ...defaultOptions].sort();
+
+            return `
+                <td>
+                    <div class="smart-matrix-time-wrap">
+                        ${col.squadLabel ? `<span class="smart-squad-tag ${col.squadIdx === 1 ? 'tag-b' : 'tag-a'}">${escapeHtml(col.squadLabel)}</span>` : ''}
+                        <select class="smart-matrix-time-select" onchange="window.changeSmartSlotTime('${escapeHtml(col.slotKey)}', ${col.squadIdx}, this.value)" title="選擇出團時間">
+                            ${timeOptions.map(t => `<option value="${t}" ${currentTime === t ? 'selected' : ''}>${t}</option>`).join('')}
+                        </select>
+                    </div>
+                </td>
+            `;
+        }).join('');
+
+        const middleTimeRow = `
+            <tr class="smart-matrix-time-row">
+                <td class="sticky-col">時間</td>
+                ${middleTimeTds}
             </tr>
         `;
 
@@ -9063,7 +9103,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const squad = squads[col.squadIdx] || [];
                 const chip = squad[rowIdx] || { name: '', job: '', level: '', roleTag: '' };
                 const isFilled = Boolean(chip.name);
-                const conflictInfo = checkSmartSlotConflict(chip.name, col.slotKey, usageStats);
+                const conflictInfo = checkSmartSlotConflict(chip.name, col.slotKey, usageStats, col.squadIdx);
 
                 let cellBody = '';
                 if (isFilled) {
@@ -9154,14 +9194,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (isAssignedHere) {
                     const tag = col.squadLabel ? `${col.squadLabel}排定` : '已排入';
                     cellMarker = `<span class="smart-avail-assigned-marker" title="已安排在此隊出團！點擊上方席位可取消">✓ ${escapeHtml(tag)}</span>`;
-                } else if (isAssignedOtherSquad) {
-                    cellMarker = `<span class="smart-avail-empty-marker" title="已排入同時段另一隊">-</span>`;
                 } else if (isChecked) {
                     const icon = col.squadLabel ? (col.squadIdx === 0 ? '🅰️' : '🅱️') : '➕';
+                    const otherHint = isAssignedOtherSquad ? '（在另一隊亦有排班）' : '';
                     cellMarker = `
-                        <div class="smart-avail-clickable-cell"
+                        <div class="smart-avail-clickable-cell ${isAssignedOtherSquad ? 'avail-other-assigned' : ''}"
                              onclick="window.clickSmartAvailMember('${escapeHtml(r.name)}', '${escapeHtml(col.slotKey)}', ${col.squadIdx})"
-                             title="點擊選擇出戰角色，排入 ${col.squadLabel || '隊伍'}（${isScrollYes ? '可吃券' : '不吃券'}）${r.notes ? `\n📝 備註：${escapeHtml(r.notes)}` : ''}">
+                             title="點擊選擇出戰角色，排入 ${col.squadLabel || '隊伍'}（${isScrollYes ? '可吃券' : '不吃券'}）${otherHint}${r.notes ? `\n📝 備註：${escapeHtml(r.notes)}` : ''}">
                             <span class="smart-avail-name-text ${isScrollYes ? 'smart-member-name-scroll' : 'smart-member-name-noscroll'}" style="color: ${nameColor} !important;">${escapeHtml(r.name)}</span>
                             <span class="smart-avail-add-icon">${icon}</span>
                         </div>
@@ -9257,15 +9296,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tbody>
                     <!-- 1. 最上方：時段日期表頭 (雙隊時跨兩欄合併) -->
                     ${middleDateRow}
-                    <!-- 2. 最上方：Boss 下拉選擇 (龍王時右側新增 B 隊欄) -->
+                    <!-- 2. 時間列：各分隊獨立時間下拉選擇 -->
+                    ${middleTimeRow}
+                    <!-- 3. 最上方：Boss 下拉選擇 (龍王時右側新增 B 隊欄) -->
                     ${middleBossRow}
-                    <!-- 3. 上方：已排入出團隊伍席位 (固定 6 席高度，ID與職業對調鎖定欄寬) -->
+                    <!-- 4. 上方：已排入出團隊伍席位 (固定 6 席高度，ID與職業對調鎖定欄寬) -->
                     ${topRowsHtml}
-                    <!-- 4. 分隔線：調查名冊標題 -->
+                    <!-- 5. 分隔線：調查名冊標題 -->
                     ${dividerRow}
-                    <!-- 5. 下方：全員問卷填寫可打時段名冊 (點擊成員可排入 A 隊或 B 隊) -->
+                    <!-- 6. 下方：全員問卷填寫可打時段名冊 (點擊成員可排入 A 隊或 B 隊) -->
                     ${memberRowsHtml}
-                    <!-- 6. 最底：填寫人數總計 -->
+                    <!-- 7. 最底：填寫人數總計 -->
                     ${bottomTotalRow}
                 </tbody>
             </table>
@@ -9305,7 +9346,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSmartSchedule();
     };
 
-    // 在排班時段右上角點擊「+」新增 B 隊 (第二隊，可打不同突襲)
+    // 在排班時段右上角點擊「+」新增 B 隊 (第二隊，可打不同突襲與時間)
     window.addSmartSlotSquadB = function(slotKey) {
         if (!canAccessSmartSchedule()) {
             alert('全週排班為管理員與授權專屬功能，請先登入！');
@@ -9324,6 +9365,22 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!smartSchedState.bossesByDaySlot[`${slotKey}_sq1`]) {
             const aBoss = getSmartSlotBoss(slotKey, 0);
             smartSchedState.bossesByDaySlot[`${slotKey}_sq1`] = aBoss || "克雷塞爾";
+        }
+        // Initialize Time for Squad B if not set (預設比 A 隊晚 30~60 分鐘或排 21:00/21:30)
+        if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
+        if (!smartSchedState.timesByDaySlot[`${slotKey}_sq1`]) {
+            const aTime = getSmartSlotTime(slotKey, 0);
+            let bTime = '21:00';
+            if (slotKey.includes('_午')) {
+                bTime = (aTime === '14:00') ? '14:30' : '15:00';
+            } else {
+                if (aTime === '20:00') bTime = '20:30';
+                else if (aTime === '20:30') bTime = '21:00';
+                else if (aTime === '21:00') bTime = '21:30';
+                else if (aTime === '21:30') bTime = '22:00';
+                else bTime = '21:30';
+            }
+            smartSchedState.timesByDaySlot[`${slotKey}_sq1`] = bTime;
         }
         markSmartScheduleModified();
         renderSmartSchedule();
@@ -9347,6 +9404,9 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSquads.splice(1, 1);
         if (smartSchedState.bossesByDaySlot) {
             delete smartSchedState.bossesByDaySlot[`${slotKey}_sq1`];
+        }
+        if (smartSchedState.timesByDaySlot) {
+            delete smartSchedState.timesByDaySlot[`${slotKey}_sq1`];
         }
         markSmartScheduleModified();
         renderSmartSchedule();
@@ -9378,17 +9438,19 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     // 點選下方成員可打時間：跑出綁定角色，選擇後自動往上排 (可指定排入 A 隊或 B 隊)
-    window.clickSmartAvailMember = function(memberName, slotKey, targetSquadIdx) {
+    window.clickSmartAvailMember = function(memberName, slotKey, targetSquadIdx = 0) {
         if (!canAccessSmartSchedule()) {
             alert('全週排班為管理員與授權專屬功能，請先登入！');
             return;
         }
 
-        // 檢查是否已在該時段排入
+        // 檢查是否已在該分隊排入 (若同一人打不同隊伍或開分身，允許排入不同分隊)
         const squads = smartSchedState.squadsByDaySlot[slotKey] || [];
-        const isAlreadyAssigned = squads.some(sq => sq.some(c => c && c.name && c.name.toLowerCase() === memberName.toLowerCase()));
-        if (isAlreadyAssigned) {
-            alert(`成員【${memberName}】在此時段已經排入隊伍了！`);
+        const targetSq = squads[targetSquadIdx] || [];
+        const isAlreadyInThisSquad = targetSq.some(c => c && c.name && c.name.toLowerCase() === memberName.toLowerCase());
+        if (isAlreadyInThisSquad) {
+            const sqLabel = targetSquadIdx === 1 ? 'B隊' : 'A隊';
+            alert(`成員【${memberName}】已經在此【${sqLabel}】中了！若要換人請先點擊上方席位取消。`);
             return;
         }
 
@@ -9399,7 +9461,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // 多個角色：彈出快速挑選視窗
             openSmartCharQuickSelectModal(memberName, slotKey, boundChars, targetSquadIdx);
         } else if (boundChars.length === 1) {
-            // 單一角色：一秒自動直接往上排入！
+            // 單一角色：直接排入目標分隊！
             const char = boundChars[0];
             assignCharIntoSlot(slotKey, memberName, char.job, char.level, '', targetSquadIdx);
         } else {
@@ -9438,44 +9500,11 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. 若指定分隊已滿，嘗試排入現有的其他分隊
+        // 2. 若指定分隊已滿
         if (!placed) {
-            for (let sqIdx = 0; sqIdx < currentSquads.length; sqIdx++) {
-                if (sqIdx === preferredSqIdx) continue;
-                const sq = currentSquads[sqIdx];
-                for (let slIdx = 0; slIdx < 6; slIdx++) {
-                    if (!sq[slIdx].name) {
-                        const autoRole = roleTag || getSmartRoleTagForJob(job);
-                        sq[slIdx] = {
-                            name: memberName,
-                            job: job || '打手',
-                            level: level || 120,
-                            roleTag: autoRole
-                        };
-                        placed = true;
-                        break;
-                    }
-                }
-                if (placed) break;
-            }
-        }
-
-        // 3. 若現有隊伍 6 席已滿，且未達 2 隊，自動擴增 B 隊
-        if (!placed) {
-            if (currentSquads.length < 2) {
-                currentSquads.push(Array.from({ length: 6 }, () => ({ name: '', job: '', level: '', roleTag: '' })));
-                const autoRole = roleTag || getSmartRoleTagForJob(job);
-                currentSquads[1][0] = {
-                    name: memberName,
-                    job: job || '打手',
-                    level: level || 120,
-                    roleTag: autoRole
-                };
-                placed = true;
-            } else {
-                alert(`時段【${slotKey}】目前隊伍席位已額滿 (12席)！請先取消其他成員席位。`);
-                return;
-            }
+            const sqName = preferredSqIdx === 1 ? 'B隊' : 'A隊';
+            alert(`【${slotKey}】的 ${sqName} 席位已滿 (6人)！請先取消該隊其他成員席位。`);
+            return;
         }
 
         markSmartScheduleModified();
@@ -9489,13 +9518,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const listContainer = document.getElementById('smart-char-modal-cards-list');
 
         const boss = getSmartSlotBoss(slotKey, targetSquadIdx);
+        const sqTime = getSmartSlotTime(slotKey, targetSquadIdx);
         const sqName = (typeof targetSquadIdx === 'number' && targetSquadIdx === 1) ? ' ｜ 隊伍：B隊' : (typeof targetSquadIdx === 'number' ? ' ｜ 隊伍：A隊' : '');
 
         const memberNotes = getSurveyNotesByMemberOrChar(memberName);
         const memberNotesBadge = renderMemberNotesBadge(memberNotes, memberName);
 
         if (titleEl) titleEl.innerHTML = `選擇出戰角色：${escapeHtml(memberName)} ${memberNotesBadge}`;
-        if (subtitleEl) subtitleEl.innerHTML = `時段：${escapeHtml(slotKey)}${escapeHtml(sqName)} ｜ 討伐 Boss：${escapeHtml(boss)}${memberNotes ? `<br><span style="color:#d97706; font-weight:700;">📝 備註：${escapeHtml(memberNotes)}</span>` : ''}`;
+        if (subtitleEl) subtitleEl.innerHTML = `時段：${escapeHtml(slotKey)} ${escapeHtml(sqTime)}${escapeHtml(sqName)} ｜ 討伐 Boss：${escapeHtml(boss)}${memberNotes ? `<br><span style="color:#d97706; font-weight:700;">📝 備註：${escapeHtml(memberNotes)}</span>` : ''}`;
 
         if (listContainer) {
             listContainer.innerHTML = boundChars.map(c => {
@@ -9832,11 +9862,14 @@ document.addEventListener('DOMContentLoaded', () => {
                         const isDk = isDragonKingBoss(squadBoss);
                         const defaultGames = (SMART_BOSS_OPTIONS.find(o => o.val === squadBoss)?.defaultGames) || (isDk ? 3 : 7);
                         const squadLetter = (sqIdx === 0 && squads.length > 1) ? ' (A隊)' : ((sqIdx === 1) ? ' (B隊)' : '');
+                        const squadTime = getSmartSlotTime(slotKey, sqIdx);
                         teamsToPublish.push({
                             boss: squadBoss,
                             gamesCount: defaultGames,
                             maxPlayers: isDk ? 12 : 6,
                             slotKey: slotKey,
+                            squadIdx: sqIdx,
+                            squadTime: squadTime,
                             dateStr: d.dateStr,
                             dateObj: d.dateObj,
                             period: slotDef.period,
@@ -9865,8 +9898,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const y = dateObj.getFullYear();
                 const m = dateObj.getMonth() + 1;
                 const dt = dateObj.getDate();
-                const chosenTime = getSmartSlotTime(team.slotKey);
-                const timeStr = team.period === '午' ? '14:00' : (chosenTime || '20:00');
+                const chosenTime = team.squadTime || getSmartSlotTime(team.slotKey, team.squadIdx);
+                const timeStr = team.period === '午' ? chosenTime : (chosenTime || '20:00');
                 const [hrs, mins] = timeStr.split(':').map(Number);
                 const schedDate = new Date(y, m - 1, dt, hrs, mins, 0);
 

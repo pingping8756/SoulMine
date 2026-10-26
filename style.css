@@ -4664,6 +4664,81 @@ body::after {
     transform: scale(1.15);
 }
 
+/* 1.5. Time Selector Row directly under Date Header */
+.smart-matrix-time-row td {
+    background: #f8fafc;
+    padding: 0.25rem 0.35rem;
+    border-bottom: 1px solid #cbd5e1;
+}
+.smart-matrix-time-row .sticky-col {
+    background: #e2e8f0;
+    font-size: 0.82rem;
+    color: #334155;
+    font-weight: 800;
+}
+.smart-matrix-time-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+}
+.smart-matrix-time-select {
+    width: 100%;
+    max-width: 84px;
+    height: 24px;
+    line-height: 22px;
+    padding: 0 4px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #1e293b;
+    background: #ffffff;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    text-align: center;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+.smart-matrix-time-select:hover {
+    border-color: #6366f1;
+    background: #f8fafc;
+}
+.smart-matrix-time-select:focus {
+    border-color: #4f46e5;
+    box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.18);
+}
+.smart-squad-tag {
+    font-size: 0.68rem;
+    font-weight: 900;
+    padding: 0.1rem 0.3rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+.smart-squad-tag.tag-a {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #bfdbfe;
+}
+.smart-squad-tag.tag-b {
+    background: #fdf2f8;
+    color: #db2777;
+    border: 1px solid #fbcfe8;
+}
+
+/* Availability cells when already assigned in other squad */
+.smart-avail-clickable-cell.avail-other-assigned {
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+.smart-avail-clickable-cell.avail-other-assigned:hover {
+    background: #dcfce7;
+    border-color: #22c55e;
+}
+
 /* 2. Boss Selector Row directly under Date (Top of Table) */
 .smart-matrix-boss-row td {
     background: #ffffff;
