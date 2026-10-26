@@ -10247,14 +10247,22 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // 觸發彩蛋氣泡 (心靈雞湯 + 笑話)
+        // 觸發彩蛋氣泡 (提高新笑話抽取機率：80% 抽新笑話，20% 抽經典打王日常)
         const triggerEasterEgg = () => {
             if (!speechBubble || !bubbleText) return;
 
+            const classicCutoff = 27; // 前 27 則為既有的暖心打王日常，27 之後為本次新增的笑話
             let randIdx;
+            let attempts = 0;
             do {
-                randIdx = Math.floor(Math.random() * HEART_EASTER_EGGS.length);
-            } while (randIdx === lastEggIndex && HEART_EASTER_EGGS.length > 1);
+                const pickNew = Math.random() < 0.80; // 80% 高機率優先抽最新加入的幽默笑話
+                if (pickNew && HEART_EASTER_EGGS.length > classicCutoff) {
+                    randIdx = classicCutoff + Math.floor(Math.random() * (HEART_EASTER_EGGS.length - classicCutoff));
+                } else {
+                    randIdx = Math.floor(Math.random() * Math.min(classicCutoff, HEART_EASTER_EGGS.length));
+                }
+                attempts++;
+            } while (randIdx === lastEggIndex && attempts < 10);
             lastEggIndex = randIdx;
 
             const egg = HEART_EASTER_EGGS[randIdx];
@@ -10270,7 +10278,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bubbleHideTimer) clearTimeout(bubbleHideTimer);
             bubbleHideTimer = setTimeout(() => {
                 speechBubble.style.display = 'none';
-            }, 4500);
+            }, 5000);
         };
 
         // 飄出 功德+1 粒子特效
