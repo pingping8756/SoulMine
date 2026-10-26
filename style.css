@@ -2995,7 +2995,7 @@ body::after {
     left: 0;
     z-index: 10 !important;
     background-color: #ffffff;
-    border-right: 2px solid #94a3b8 !important;
+    border-right: 2px solid #cbd5e1 !important;
     width: 105px;
     min-width: 105px;
     max-width: 105px;
@@ -3044,7 +3044,7 @@ body::after {
     vertical-align: middle;
     text-align: center;
     position: relative;
-    border-bottom: 1px solid #e2e8f0;
+    border-bottom: 1px solid #cbd5e1;
 }
 
 /* 補假標籤改在左上角 */
@@ -3140,11 +3140,13 @@ body::after {
 .survey-matrix-table th.col-weekend,
 .survey-matrix-table td.col-weekend {
     background-color: #fffaf5;
+    border: 1px solid #cbd5e1 !important;
 }
 
 .survey-matrix-table thead th.col-weekend {
     background-color: #ffedd5 !important;
     color: #c2410c !important;
+    border: 1px solid #cbd5e1 !important;
 }
 
 .survey-matrix-table tfoot td.matrix-footer-summary {
@@ -3297,7 +3299,7 @@ body::after {
 /* Footer Total Row */
 .survey-matrix-table tfoot tr {
     background: #f8fafc;
-    border-top: 2px solid #94a3b8;
+    border-top: 2px solid #cbd5e1;
 }
 
 .survey-matrix-table tfoot td {
@@ -3610,6 +3612,14 @@ body::after {
     background: #ea580c;
     color: #ffffff;
     box-shadow: 0 1px 2px rgba(234, 88, 12, 0.25);
+}
+
+/* Ensure modal content does not create an unintended containing block for fixed tooltips on Mac Safari / WebKit */
+#survey-detail-modal .modal-content,
+#survey-predraft-modal .modal-content {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transform: none !important;
 }
 
 .matrix-floating-tooltip {

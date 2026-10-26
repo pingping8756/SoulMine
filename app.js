@@ -1739,60 +1739,106 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Floating tooltip smart positioning (智能自動判斷向上或向下，絕不切到頂部或底部)
+        // 計算在 Safari / Mac WebKit 等環境下，祖先元素若有 backdrop-filter / transform / filter 造成的 containing block 偏移量
+        function getFixedContainingBlockOffset(element) {
+            let parent = element.parentElement;
+            while (parent && parent !== document.body && parent !== document.documentElement) {
+                const style = window.getComputedStyle(parent);
+                const transform = style.transform || style.webkitTransform;
+                const filter = style.filter || style.webkitFilter;
+                const backdropFilter = style.backdropFilter || style.webkitBackdropFilter;
+                const perspective = style.perspective || style.webkitPerspective;
+                const willChange = style.willChange || '';
+
+                const hasTransform = transform && transform !== 'none';
+                const hasFilter = filter && filter !== 'none';
+                const hasBackdrop = backdropFilter && backdropFilter !== 'none';
+                const hasPerspective = perspective && perspective !== 'none';
+                const hasWillChange = willChange.includes('transform') || willChange.includes('perspective') || willChange.includes('filter');
+
+                if (hasTransform || hasFilter || hasBackdrop || hasPerspective || hasWillChange) {
+                    const rect = parent.getBoundingClientRect();
+                    return { x: rect.left, y: rect.top };
+                }
+                parent = parent.parentElement;
+            }
+            return { x: 0, y: 0 };
+        }
+
+        // Floating tooltip smart positioning (支援 Mac/Safari/Windows 全平台智能自動展開與防邊界截斷)
         function positionFloatingTooltip(memberCell) {
             const tooltip = memberCell.querySelector('.matrix-floating-tooltip');
             if (!tooltip) return;
 
             const cellRect = memberCell.getBoundingClientRect();
-            const tooltipHeight = tooltip.offsetHeight || 240;
-            const tooltipWidth = tooltip.offsetWidth || 280;
+            const tooltipHeight = tooltip.getBoundingClientRect().height || tooltip.offsetHeight || 240;
+            const tooltipWidth = tooltip.getBoundingClientRect().width || tooltip.offsetWidth || 280;
 
-            // 水平位置：預設在成員欄右側，若右側空間不足則顯示在左側
-            let left = cellRect.right + 10;
-            if (left + tooltipWidth > window.innerWidth - 10) {
-                left = Math.max(10, cellRect.left - tooltipWidth - 10);
+            // 水平位置（相對於視窗）：預設在成員欄右側，若右側空間不足則顯示在左側
+            let viewLeft = cellRect.right + 10;
+            if (viewLeft + tooltipWidth > window.innerWidth - 10) {
+                viewLeft = Math.max(10, cellRect.left - tooltipWidth - 10);
             }
 
-            // 垂直位置智能判斷：
+            // 垂直位置智能判斷（相對於視窗）：
             // 若下方剩餘空間足夠容納卡片，則頂部對齊成員列頂部向下展開；
             // 若下方不足但上方足夠，則底部對齊成員列底部向上展開；
             // 若皆不足（卡片較長或螢幕視窗較扁），則垂直置中於該列
             const spaceBelow = window.innerHeight - cellRect.bottom;
             const spaceAbove = cellRect.top;
 
-            let top;
+            let viewTop;
             if (spaceBelow >= tooltipHeight + 10) {
-                top = cellRect.top;
+                viewTop = cellRect.top;
             } else if (spaceAbove >= tooltipHeight + 10) {
-                top = cellRect.bottom - tooltipHeight;
+                viewTop = cellRect.bottom - tooltipHeight;
             } else {
-                top = cellRect.top + (cellRect.height / 2) - (tooltipHeight / 2);
+                viewTop = cellRect.top + (cellRect.height / 2) - (tooltipHeight / 2);
             }
 
             // 確保卡片頂部與底部均完整保留在可視範圍內（邊距 10px）
             const maxTop = Math.max(10, window.innerHeight - tooltipHeight - 10);
-            top = Math.max(10, Math.min(top, maxTop));
+            viewTop = Math.max(10, Math.min(viewTop, maxTop));
 
-            tooltip.style.left = `${Math.round(left)}px`;
-            tooltip.style.top = `${Math.round(top)}px`;
+            // Mac / Safari 關鍵補償：若祖先元素因 WebKit 特性建立了 containing block，轉換回該座標系
+            const offset = getFixedContainingBlockOffset(tooltip);
+            const finalLeft = viewLeft - offset.x;
+            const finalTop = viewTop - offset.y;
+
+            tooltip.style.left = `${Math.round(finalLeft)}px`;
+            tooltip.style.top = `${Math.round(finalTop)}px`;
 
             // 箭頭指標智能指向成員列的垂直正中心
             const cellCenterY = cellRect.top + (cellRect.height / 2);
-            const arrowY = Math.max(12, Math.min(cellCenterY - top, tooltipHeight - 12));
+            const arrowY = Math.max(12, Math.min(cellCenterY - viewTop, tooltipHeight - 12));
             tooltip.style.setProperty('--arrow-top', `${Math.round(arrowY)}px`);
         }
 
+        // 追蹤當前懸停成員欄（解決 Mac / Safari querySelector(':hover') 在滾動時無效的問題）
+        let currentHoveredMemberCell = null;
+
         document.addEventListener('mouseover', (e) => {
             const memberCell = e.target.closest('.matrix-member-cell');
-            if (!memberCell) return;
-            positionFloatingTooltip(memberCell);
+            if (memberCell) {
+                currentHoveredMemberCell = memberCell;
+                positionFloatingTooltip(memberCell);
+            }
         });
 
-        // Reposition if user scrolls inside table while hovered
+        document.addEventListener('mouseout', (e) => {
+            const memberCell = e.target.closest('.matrix-member-cell');
+            if (memberCell && !memberCell.contains(e.relatedTarget)) {
+                if (currentHoveredMemberCell === memberCell) {
+                    currentHoveredMemberCell = null;
+                }
+            }
+        });
+
+        // 觸控板 / 滑鼠滾動時即時同步定位（支援 Mac 慣性滾動）
         window.addEventListener('scroll', () => {
-            const hoveredCell = document.querySelector('.matrix-member-cell:hover');
-            if (hoveredCell) positionFloatingTooltip(hoveredCell);
+            if (currentHoveredMemberCell && currentHoveredMemberCell.isConnected) {
+                positionFloatingTooltip(currentHoveredMemberCell);
+            }
         }, { passive: true, capture: true });
 
         // Toggle Boss Chart Popover (打王意願簡圖)
