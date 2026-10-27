@@ -3086,26 +3086,26 @@ document.addEventListener('DOMContentLoaded', () => {
             html += `
                 <div class="predraft-team-block">
                     <div class="predraft-team-title">
-                        <span>🐉 第一隊 (6人)</span>
+                        <span>🐉 A 隊 (6人)</span>
                         <span style="font-size: 0.74rem; color: #64748b; font-weight: 700;">第 1 ~ 6 席</span>
                     </div>
                     <div class="predraft-slots-grid-3x2">
             `;
             for (let i = 0; i < 6; i++) {
-                html += renderSinglePreDraftSlotHtml(i, i + 1, '隊1');
+                html += renderSinglePreDraftSlotHtml(i, i + 1, 'A隊');
             }
             html += `
                     </div>
                 </div>
                 <div class="predraft-team-block">
                     <div class="predraft-team-title">
-                        <span>🐉 第二隊 (6人)</span>
+                        <span>🐉 B 隊 (6人)</span>
                         <span style="font-size: 0.74rem; color: #64748b; font-weight: 700;">第 7 ~ 12 席</span>
                     </div>
                     <div class="predraft-slots-grid-3x2">
             `;
             for (let i = 6; i < 12; i++) {
-                html += renderSinglePreDraftSlotHtml(i, i - 5, '隊2');
+                html += renderSinglePreDraftSlotHtml(i, i - 5, 'B隊');
             }
             html += `
                     </div>
@@ -3895,7 +3895,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (isDragonKing) {
                 const team1Box = document.createElement('div');
-                team1Box.innerHTML = `<div style="font-size:0.8rem; font-weight:800; color:#7e22ce; margin-bottom:0.25rem;">第一隊 (6人)</div>`;
+                team1Box.innerHTML = `<div style="font-size:0.8rem; font-weight:800; color:#7e22ce; margin-bottom:0.25rem;">A 隊 (6人)</div>`;
                 const grid1 = document.createElement('div');
                 grid1.className = 'create-slots-grid-3x2';
                 for (let i = 0; i < 6; i++) {
@@ -3906,7 +3906,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const team2Box = document.createElement('div');
                 team2Box.style.marginTop = '0.5rem';
-                team2Box.innerHTML = `<div style="font-size:0.8rem; font-weight:800; color:#7e22ce; margin-bottom:0.25rem;">第二隊 (6人)</div>`;
+                team2Box.innerHTML = `<div style="font-size:0.8rem; font-weight:800; color:#7e22ce; margin-bottom:0.25rem;">B 隊 (6人)</div>`;
                 const grid2 = document.createElement('div');
                 grid2.className = 'create-slots-grid-3x2';
                 for (let i = 6; i < 12; i++) {
@@ -3933,7 +3933,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const activeHint = document.getElementById('roster-active-slot-hint');
             if (activeHint) {
                 const curNum = isDragonKing ? (createRaidState.activeSlotIndex < 6 ? createRaidState.activeSlotIndex + 1 : createRaidState.activeSlotIndex - 5) : createRaidState.activeSlotIndex + 1;
-                const curTeam = isDragonKing ? (createRaidState.activeSlotIndex < 6 ? '第一隊 ' : '第二隊 ') : '';
+                const curTeam = isDragonKing ? (createRaidState.activeSlotIndex < 6 ? 'A 隊 ' : 'B 隊 ') : '';
                 activeHint.textContent = `正在指定：${curTeam}席位 ${curNum}`;
             }
         }
@@ -4923,7 +4923,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const raid = raidsDB[raidId];
         const isDragonKing = raid && raid.boss && isDragonKingBoss(raid.boss);
-        const teamName = isDragonKing ? (currentJoinSlotIdx < 6 ? '第一隊 ' : '第二隊 ') : '';
+        const teamName = isDragonKing ? (currentJoinSlotIdx < 6 ? 'A 隊 ' : 'B 隊 ') : '';
         const slotNum = isDragonKing ? (currentJoinSlotIdx < 6 ? currentJoinSlotIdx + 1 : currentJoinSlotIdx - 5) : currentJoinSlotIdx + 1;
         const slotRole = (raid && raid.slotRoles && raid.slotRoles[currentJoinSlotIdx]) ? raid.slotRoles[currentJoinSlotIdx] : '';
         const roleInfo = getTacticalRoleInfo(slotRole);
@@ -5754,11 +5754,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 slotsHtml = `
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 0.85rem; margin-bottom: 1rem;">
                         <div>
-                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.45rem; font-size: 0.92rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.25rem;">第一隊</div>
+                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.45rem; font-size: 0.92rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.25rem;">A 隊</div>
                             <div style="display: flex; flex-direction: column; gap: 0.45rem;">${team1Html}</div>
                         </div>
                         <div>
-                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.45rem; font-size: 0.92rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.25rem;">第二隊</div>
+                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.45rem; font-size: 0.92rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.25rem;">B 隊</div>
                             <div style="display: flex; flex-direction: column; gap: 0.45rem;">${team2Html}</div>
                         </div>
                     </div>
@@ -6162,14 +6162,58 @@ document.addEventListener('DOMContentLoaded', () => {
             return '⚔️';
         };
 
-        // Determine maxSlots across all teams (6 for regular bosses, 12 if Dragon King)
-        let maxSlots = 6;
-        matchingTeams.forEach(t => {
-            if (isDragonKingBoss(t.boss)) maxSlots = Math.max(maxSlots, 12);
+        // 建立各時段分隊欄位 (若為龍王12人團，自動拆分為 A1 與 A2 兩欄並排顯示，維持每欄皆為6人高度)
+        const dayColumns = weekDays.map((wd, dIdx) => {
+            const teams = dayTeams[dIdx];
+            const cols = [];
+            let dkDayCount = 0;
+            teams.forEach(team => {
+                const actualTeamIdx = confirmedTeams.indexOf(team);
+                const isDk = isDragonKingBoss(team.boss);
+                if (isDk) {
+                    const dkLetter = String.fromCharCode(65 + dkDayCount); // A, B, C...
+                    dkDayCount++;
+                    cols.push({
+                        team: team,
+                        actualTeamIdx: actualTeamIdx,
+                        isDk: true,
+                        squadIdx: 0,
+                        squadLabel: `${dkLetter}1`,
+                        squadShort: `${dkLetter}1`,
+                        slotOffset: 0,
+                        isSecondSquad: false
+                    });
+                    cols.push({
+                        team: team,
+                        actualTeamIdx: actualTeamIdx,
+                        isDk: true,
+                        squadIdx: 1,
+                        squadLabel: `${dkLetter}2`,
+                        squadShort: `${dkLetter}2`,
+                        slotOffset: 6,
+                        isSecondSquad: true
+                    });
+                } else {
+                    cols.push({
+                        team: team,
+                        actualTeamIdx: actualTeamIdx,
+                        isDk: false,
+                        squadIdx: 0,
+                        squadLabel: '',
+                        squadShort: '',
+                        slotOffset: 0,
+                        isSecondSquad: false
+                    });
+                }
+            });
+            return cols;
         });
 
-        // Calculate total columns across the 7 days (days with 0 teams take 1 column, days with N teams take N columns)
-        const totalColumns = dayTeams.reduce((sum, teams) => sum + Math.max(1, teams.length), 0);
+        // 永遠維持每分隊 6 席高度 (龍王雙隊並排，不再拉長至 12 行)
+        const maxSlots = 6;
+
+        // 計算一週 7 天的所有分隊總欄數
+        const totalColumns = dayColumns.reduce((sum, cols) => sum + Math.max(1, cols.length), 0);
         const colWidthPct = (100 / totalColumns).toFixed(3);
 
         // Build colgroup so all columns share the exact same width without forcing overflow
@@ -6179,10 +6223,10 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         colgroupHtml += '</colgroup>';
 
-        // Header Row 1: Dates (with colspan for multi-team days)
+        // Header Row 1: Dates (with colspan for multi-team/multi-squad days)
         const headerDatesThs = weekDays.map((wd, dIdx) => {
-            const teams = dayTeams[dIdx];
-            const colSpan = Math.max(1, teams.length);
+            const cols = dayColumns[dIdx];
+            const colSpan = Math.max(1, cols.length);
             const isWeekend = wd.isWeekend || wd.isSpecialHoliday;
             let holBadge = '';
             if (wd.isSpecialHoliday) {
@@ -6190,22 +6234,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 holBadge = `<span class="matrix-holiday-corner-badge" style="background: #ef4444 !important; color: #ffffff !important;" title="${escapeHtml(wd.holidayName || '補假')}">${escapeHtml(badgeText)}</span>`;
             }
 
+            const distinctTeams = new Set(cols.map(c => c.team)).size;
             return `
                 <th colspan="${colSpan}" class="col-day ${isWeekend ? 'col-weekend' : ''}" style="position: relative;">
                     <span>${escapeHtml(wd.dateLabel)}</span>${holBadge}
-                    ${teams.length > 1 ? `<span style="font-size: 0.72rem; background: rgba(37,99,235,0.12); color: #2563eb; padding: 1px 4px; border-radius: 8px; margin-left: 3px; font-weight: 800;">${teams.length}團</span>` : ''}
+                    ${distinctTeams > 1 ? `<span style="font-size: 0.72rem; background: rgba(37,99,235,0.12); color: #2563eb; padding: 1px 4px; border-radius: 8px; margin-left: 3px; font-weight: 800;">${distinctTeams}團</span>` : ''}
                 </th>
             `;
         }).join('');
 
-        // Header Row 2: Raid (Boss 名稱與時間同一行，無 icon) + Channel & Dice (無鎖定按鈕)
+        const hasAnyDk = dayColumns.some(cols => cols.some(c => c.isDk));
+
+        // Header Row 2: Raid (Boss 名稱與時間同一行，龍王雙隊合併跨兩欄) + Channel & Dice
         const headerTeamsThs = weekDays.map((wd, dIdx) => {
             const teams = dayTeams[dIdx];
-            if (teams.length === 0) {
-                return `<th class="col-empty-team-header"><span style="color:#94a3b8; font-weight:normal;">無出團</span></th>`;
+            if (!teams || teams.length === 0) {
+                const rs = hasAnyDk ? 'rowspan="2"' : '';
+                return `<th ${rs} class="col-empty-team-header"><span style="color:#94a3b8; font-weight:normal;">無出團</span></th>`;
             }
             return teams.map((team) => {
                 const actualTeamIdx = confirmedTeams.indexOf(team);
+                const isDk = isDragonKingBoss(team.boss);
+                const thColSpan = isDk ? 'colspan="2"' : '';
+                const thRowSpan = (!isDk && hasAnyDk) ? 'rowspan="2"' : '';
                 const boss = normalizeBossName(team.boss || '');
                 const bossNick = getBossNickname(boss);
                 const gamesStr = team.gamesCount ? ` ${team.gamesCount}場` : '';
@@ -6218,7 +6269,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const fullTooltip = `${escapeHtml(boss)}${gamesStr} ${timeStr}${displayNote ? `\n📝 備註：${escapeHtml(displayNote)}` : ''}`;
 
-                // Channel value (無鎖定按鈕，有號碼就顯示)
+                // Channel value
                 const currentCh = team.finalChannel || (team.rolledChannels && team.rolledChannels[0]) || (team.channels && team.channels !== '未指定' ? parseInt(team.channels) : '') || (Math.floor(Math.random() * 800) + 1);
                 if (!team.finalChannel) {
                     team.finalChannel = currentCh;
@@ -6229,7 +6280,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 return `
-                    <th class="col-team-header" title="${fullTooltip}" style="vertical-align: top; padding: 0.35rem 2px;">
+                    <th ${thColSpan} ${thRowSpan} class="col-team-header" title="${fullTooltip}" style="vertical-align: top; padding: 0.35rem 2px;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 0.25rem; white-space: nowrap; line-height: 1.25;">
                             <span class="report-team-title" style="font-weight: 800; font-size: 0.82rem; color: #1e3a8a; white-space: nowrap;">
                                 ${bossNick}
@@ -6246,32 +6297,41 @@ document.addEventListener('DOMContentLoaded', () => {
             }).join('');
         }).join('');
 
-        // Body Rows: Slots 1 to maxSlots (No numbers 1.2.3, display Job, ID, Role)
+        // Header Row 3: Squad subheaders (A1 / A2) - 當週若有龍王雙隊，以獨立表格標題列呈現完整框線
+        let headerSquadsTr = '';
+        if (hasAnyDk) {
+            const headerSquadsThs = weekDays.map((wd, dIdx) => {
+                const cols = dayColumns[dIdx];
+                if (cols.length === 0) return '';
+                return cols.map(col => {
+                    if (!col.isDk) return '';
+                    return `<th class="col-squad-sub-header">${escapeHtml(col.squadLabel)}</th>`;
+                }).join('');
+            }).join('');
+            headerSquadsTr = `<tr class="report-header-squads">${headerSquadsThs}</tr>`;
+        }
+
+        // Body Rows: Fixed 6 slots per column (龍王雙隊並排，第一隊與第二隊左右各6席)
         let rowsHtml = '';
-        for (let slotIdx = 0; slotIdx < maxSlots; slotIdx++) {
+        for (let rowIdx = 0; rowIdx < 6; rowIdx++) {
             let rowCells = '';
 
             weekDays.forEach((wd, dIdx) => {
-                const teams = dayTeams[dIdx];
-                if (teams.length === 0) {
-                    if (slotIdx === 0) {
-                        rowCells += `<td rowspan="${maxSlots}" class="col-empty-cell"><span style="color:#cbd5e1; font-weight:500;">-</span></td>`;
+                const cols = dayColumns[dIdx];
+                if (cols.length === 0) {
+                    if (rowIdx === 0) {
+                        rowCells += `<td rowspan="6" class="col-empty-cell"><span style="color:#cbd5e1; font-weight:500;">-</span></td>`;
                     }
                     return;
                 }
 
-                teams.forEach(team => {
-                    const actualTeamIdx = confirmedTeams.indexOf(team);
+                cols.forEach(col => {
+                    const team = col.team;
+                    const actualTeamIdx = col.actualTeamIdx;
+                    const slotIdx = col.slotOffset + rowIdx;
                     const members = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
-                    const isDk = isDragonKingBoss(team.boss);
 
-                    // For 6-person teams, if slotIdx >= 6, show blank
-                    if (!isDk && slotIdx >= 6) {
-                        rowCells += `<td class="col-slot-cell" style="background:#f8fafc; opacity:0.35;">-</td>`;
-                        return;
-                    }
-
-                    // 檢查成員是否有指定 slotIndex，若有則依據 slotIndex 嚴格對應席位；若未排入則維持空位，絕不拿其他席位成員重複填補
+                    // 檢查成員是否有指定 slotIndex，若有則依據 slotIndex 嚴格對應席位
                     const hasExplicitSlotIndex = members.some(item => item && item.slotIndex !== undefined && item.slotIndex !== null);
                     let m = null;
                     if (hasExplicitSlotIndex) {
@@ -6279,7 +6339,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         m = members[slotIdx];
                     }
-                    const squadHeader = (isDk && slotIdx === 0) ? '<div class="squad-divider">第一隊</div>' : ((isDk && slotIdx === 6) ? '<div class="squad-divider">第二隊</div>' : '');
 
                     if (!m || !m.name) {
                         const reservedRole = (team.slotRoles && team.slotRoles[slotIdx]) ? team.slotRoles[slotIdx] : '';
@@ -6289,7 +6348,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         rowCells += `
                             <td class="col-slot-cell is-empty-slot" style="text-align: center; cursor: pointer;" onclick="if(typeof window.editConfirmedTeam==='function')window.editConfirmedTeam(confirmedTeams[${actualTeamIdx}])" title="席位空缺（點擊進入編輯新增成員）">
-                                ${squadHeader}
                                 <div class="slot-inner" style="align-items: center; justify-content: center;">
                                     <span class="slot-empty-text" style="color: #94a3b8; font-weight: 700;">-</span>
                                     ${cleanReservedRole ? `<div class="slot-role-row" style="justify-content: center; margin-top: 1px;">${roleBadge}</div>` : ''}
@@ -6315,14 +6373,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         rowCells += `
                             <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''}" title="${escapeHtml(memberFullInfo)}">
-                                ${squadHeader}
                                 <div class="slot-inner">
                                     <div class="slot-top-row" style="display: flex; align-items: center; gap: 2px; min-width: 0; width: 100%; overflow: hidden; white-space: nowrap;">
                                         ${jobTag}
                                         <span class="slot-member-name ${isMe ? 'is-me-name' : ''}" title="${escapeHtml(memberFullInfo)}">
-                                            ${escapeHtml(name)}
-                                            ${confirmedNotesBadge}
-                                            ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.6rem; font-weight:800; padding:0 3px; border-radius:4px; margin-left:1px;">我</small>' : ''}
+                                             ${escapeHtml(name)}
+                                             ${confirmedNotesBadge}
+                                             ${isMe ? '<small style="background:#22c55e; color:#fff; font-size:0.6rem; font-weight:800; padding:0 3px; border-radius:4px; margin-left:1px;">我</small>' : ''}
                                         </span>
                                     </div>
                                     ${cleanRoleTag ? `<div class="slot-role-row" style="margin-top: 1px; display: flex; align-items: center; width: 100%; overflow: hidden;">${roleBadge}</div>` : ''}
@@ -6336,27 +6393,35 @@ document.addEventListener('DOMContentLoaded', () => {
             rowsHtml += `<tr class="report-slot-row">${rowCells}</tr>`;
         }
 
-        // Footer Row: Squad capacity counts + Action buttons (複製/編輯/刪除 同一行無icon) OR Historical Drop Records (過期只要掉寶紀錄)
+        // Footer Row: Squad capacity counts + Action buttons (複製/編輯/刪除) OR Historical Drop Records
         const footerTds = weekDays.map((wd, dIdx) => {
-            const teams = dayTeams[dIdx];
-            if (teams.length === 0) {
+            const cols = dayColumns[dIdx];
+            if (cols.length === 0) {
                 return `<td class="col-empty-team-header" style="text-align:center; font-size:0.78rem; color:#94a3b8; font-weight:700;">-</td>`;
             }
-            return teams.map(team => {
-                const actualTeamIdx = confirmedTeams.indexOf(team);
+            return cols.map(col => {
+                const team = col.team;
+                const actualTeamIdx = col.actualTeamIdx;
                 const members = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
-                const maxCap = isDragonKingBoss(team.boss) ? 12 : 6;
                 const now = Date.now();
                 const teamTimestamp = getTeamTimestamp(team);
                 const isHistory = !!team.isHistorical || (teamTimestamp > 0 && now > teamTimestamp);
+
+                // 計算該分隊入座人數 (若為龍王，依據 slotOffset 0..5 或 6..11 計算)
+                let squadMemberCount = 0;
+                for (let r = 0; r < 6; r++) {
+                    const sIdx = col.slotOffset + r;
+                    const mem = members.find(item => item && (item.slotIndex !== undefined ? item.slotIndex : members.indexOf(item)) === sIdx);
+                    if (mem && mem.name) squadMemberCount++;
+                }
 
                 if (isHistory) {
                     return `
                         <td style="text-align:center; padding: 0.4rem 2px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
                             <div style="font-weight: 800; font-size: 0.8rem; color: #64748b; margin-bottom: 0.3rem; white-space: nowrap;">
-                                <span>👥 ${members.length} / ${maxCap} 人</span>
+                                <span>👥 ${squadMemberCount} / 6 人${col.isDk ? ` (${col.squadShort})` : ''}</span>
                             </div>
-                            <!-- 過期隊伍：不需要三個按鈕，只要掉寶紀錄 -->
+                            <!-- 掉寶紀錄：若是雙隊伍，由二隊或兩隊均可記錄 -->
                             <div class="report-table-drop-section" style="text-align: left; margin-top: 0.25rem;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                     <span class="report-table-drop-title" style="font-size: 0.72rem; font-weight: 800; color: #b45309;">掉寶紀錄</span>
@@ -6371,7 +6436,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `
                     <td style="text-align:center; padding: 0.4rem 2px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
                         <div style="font-weight: 800; font-size: 0.8rem; color: #2563eb; margin-bottom: 0.3rem; white-space: nowrap;">
-                            <span>👥 ${members.length} / ${maxCap} 人</span>
+                            <span>👥 ${squadMemberCount} / 6 人${col.isDk ? ` (${col.squadShort})` : ''}</span>
                         </div>
                         <!-- 複製、編輯、刪除 三個按鈕同一行，全寬自適應均分無浪費空間 -->
                         <div style="display: flex; justify-content: center; align-items: center; gap: 2px; width: 100%; box-sizing: border-box;">
@@ -6394,6 +6459,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     <tr class="report-header-teams">
                         ${headerTeamsThs}
                     </tr>
+                    ${headerSquadsTr}
                 </thead>
                 <tbody>
                     ${rowsHtml}
@@ -6412,8 +6478,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const idx = parseInt(e.currentTarget.dataset.teamIndex);
                 const team = confirmedTeams[idx];
                 if (!team) return;
-                const inputEl = container.querySelector(`.report-channel-input[data-team-index="${idx}"]`);
-                if (!inputEl) return;
+                const inputEls = container.querySelectorAll(`.report-channel-input[data-team-index="${idx}"]`);
+                if (inputEls.length === 0) return;
 
                 if (btn.dataset.timer) clearInterval(parseInt(btn.dataset.timer));
 
@@ -6422,12 +6488,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 let elapsed = 0;
                 const timer = setInterval(() => {
                     const randCh = Math.floor(Math.random() * 800) + 1;
-                    inputEl.value = randCh;
+                    inputEls.forEach(inp => inp.value = randCh);
                     elapsed += interval;
                     if (elapsed >= duration) {
                         clearInterval(timer);
                         btn.dataset.timer = "";
-                        const val = parseInt(inputEl.value);
+                        const val = parseInt(inputEls[0].value);
                         team.finalChannel = val;
                         team.channels = String(val);
                         team.rolledChannels = [val];
@@ -6449,6 +6515,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     team.finalChannel = val;
                     team.channels = String(val);
                     team.rolledChannels = [val];
+                    container.querySelectorAll(`.report-channel-input[data-team-index="${idx}"]`).forEach(inp => inp.value = val);
                     saveDB();
                 }
             };
@@ -6763,8 +6830,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 };
 
                 if (isDragonKing) {
-                    gridsWrapper.appendChild(createGrid(0, 6, '第一隊'));
-                    gridsWrapper.appendChild(createGrid(6, 6, '第二隊'));
+                    gridsWrapper.appendChild(createGrid(0, 6, 'A 隊'));
+                    gridsWrapper.appendChild(createGrid(6, 6, 'B 隊'));
                 } else {
                     gridsWrapper.appendChild(createGrid(0, 6, null));
                 }
