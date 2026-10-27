@@ -5621,14 +5621,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         container.innerHTML = '';
-        container.className = 'raids-grid-view';
-        container.style.display = '';
-        container.style.gap = '';
-        container.style.gridTemplateColumns = '';
+        container.className = 'raids-main-container';
+        container.style.display = 'flex';
+        container.style.flexDirection = 'column';
+        container.style.gap = '1rem';
+        container.style.width = '100%';
 
         if (activeRaids.length === 0 && expiredRaids.length === 0) {
             container.innerHTML = `
-                <div style="grid-column: 1 / -1; text-align: center; padding: 3.5rem 1.5rem; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed rgba(255,255,255,0.15);">
+                <div style="width: 100%; box-sizing: border-box; text-align: center; padding: 3.5rem 1.5rem; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed rgba(255,255,255,0.15);">
                     <div style="font-size: 3.5rem; margin-bottom: 0.8rem;">${currentBossInfo.icon}</div>
                     <h3 style="color: #ff9800; margin-bottom: 0.4rem; font-size: 1.25rem; font-weight: 700;">目前尚無【${currentBossInfo.name}】的待組隊伍</h3>
                     <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">想發起挑戰嗎？歡迎點擊下方按鈕立即建立新出團！</p>
@@ -5645,7 +5646,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (activeRaids.length === 0 && expiredRaids.length > 0) {
             const emptyBanner = document.createElement('div');
-            emptyBanner.style.gridColumn = '1 / -1';
+            emptyBanner.style.width = '100%';
+            emptyBanner.style.boxSizing = 'border-box';
             emptyBanner.style.textAlign = 'center';
             emptyBanner.style.padding = '2.5rem 1.5rem';
             emptyBanner.style.background = 'rgba(255,255,255,0.02)';
@@ -5696,49 +5698,49 @@ document.addEventListener('DOMContentLoaded', () => {
                     const mNormJob = normalizeJobName(m.job);
                     if (isExpired) {
                         return `
-                            <div style="background: rgba(255,255,255,0.03); padding: 0.35rem 0.5rem; border-radius: 6px; font-size: 0.84rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; border: 1px solid rgba(255,255,255,0.06); box-sizing: border-box;">
-                                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem;">
-                                    <div style="display: flex; align-items: center; gap: 0.3rem; min-width: 0; overflow: hidden; white-space: nowrap;">
-                                        <strong style="color: #94a3b8; font-size: 0.82rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
-                                        <span style="color: #cbd5e1; font-weight: 500; font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span>
-                                        <span style="color: #64748b; font-size: 0.72rem; flex-shrink: 0;">(Lv.${m.level})</span>
-                                        ${isActuallyCreator ? '<span style="color:#94a3b8; font-size:0.75rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
+                            <div style="background: rgba(255,255,255,0.03); padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid rgba(255,255,255,0.06); box-sizing: border-box;">
+                                <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.12rem;">
+                                    <div style="display: flex; align-items: center; gap: 0.25rem; min-width: 0; overflow: hidden; white-space: nowrap;">
+                                        <strong style="color: #94a3b8; font-size: 0.8rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
+                                        <span style="color: #cbd5e1; font-weight: 500; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span>
+                                        <span style="color: #64748b; font-size: 0.7rem; flex-shrink: 0;">(Lv.${m.level})</span>
+                                        ${isActuallyCreator ? '<span style="color:#94a3b8; font-size:0.72rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
                                     </div>
                                     ${roleBadgeHtml ? `<div>${roleBadgeHtml}</div>` : ''}
                                 </div>
-                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 50%; width: 18px; height: 18px; min-width: 18px; min-height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1;" title="移除此席位">✕</button>
+                                <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; border-radius: 50%; width: 17px; height: 17px; min-width: 17px; min-height: 17px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1;" title="移除此席位">✕</button>
                             </div>
                         `;
                     }
                     return `
-                        <div style="background: rgba(255,255,255,0.08); padding: 0.35rem 0.5rem; border-radius: 6px; font-size: 0.84rem; display: flex; justify-content: space-between; align-items: center; gap: 0.3rem; border: 1px solid rgba(255,255,255,0.12); box-sizing: border-box;">
-                            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.15rem;">
-                                <div style="display: flex; align-items: center; gap: 0.3rem; min-width: 0; overflow: hidden; white-space: nowrap;">
-                                    <strong style="color: var(--primary-color); font-size: 0.82rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
-                                    <span style="color: #fff; font-weight: 600; font-size: 0.84rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span>
-                                    <span style="color: var(--text-muted); font-size: 0.72rem; flex-shrink: 0;">(Lv.${m.level})</span>
-                                    ${isActuallyCreator ? '<span style="color:var(--primary-color); font-size:0.75rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
+                        <div style="background: rgba(255,255,255,0.08); padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid rgba(255,255,255,0.12); box-sizing: border-box;">
+                            <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.12rem;">
+                                <div style="display: flex; align-items: center; gap: 0.25rem; min-width: 0; overflow: hidden; white-space: nowrap;">
+                                    <strong style="color: var(--primary-color); font-size: 0.8rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
+                                    <span style="color: #fff; font-weight: 600; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span>
+                                    <span style="color: var(--text-muted); font-size: 0.7rem; flex-shrink: 0;">(Lv.${m.level})</span>
+                                    ${isActuallyCreator ? '<span style="color:var(--primary-color); font-size:0.72rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
                                 </div>
                                 ${roleBadgeHtml ? `<div>${roleBadgeHtml}</div>` : ''}
                             </div>
-                            <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 50%; width: 18px; height: 18px; min-width: 18px; min-height: 18px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1; transition: all 0.15s ease;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#f87171';" title="退出或移除此席位">✕</button>
+                            <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 50%; width: 17px; height: 17px; min-width: 17px; min-height: 17px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1; transition: all 0.15s ease;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#f87171';" title="退出或移除此席位">✕</button>
                         </div>
                     `;
                 } else {
                     if (isExpired) {
                         return `
-                            <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.5rem 0.5rem; border-radius: 6px; font-size: 0.82rem; color: #64748b; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">未入座 (已流團)</div>
+                            <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.38rem 0.4rem; border-radius: 6px; font-size: 0.78rem; color: #64748b; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">未入座 (已流團)</div>
                         `;
                     }
                     const slotRoleText = cleanSlotRole ? ` - ${cleanSlotRole}` : '';
                     return `
                         <div onclick="openJoinModal('${raid.id}', ${slotIdx})" 
-                             style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.45rem 0.5rem; border-radius: 6px; font-size: 0.82rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.15rem;" 
+                             style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.38rem 0.4rem; border-radius: 6px; font-size: 0.78rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;" 
                              onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" 
                              onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" 
                              title="點擊報名此位置 (第 ${slotNum} 位${slotRoleText})">
                             <div>➕ 點擊報名 (第 ${slotNum} 位)</div>
-                            ${cleanSlotRole ? `<span class="member-role-badge ${roleInfo.cssClass}" style="font-size: 0.7rem; padding: 0.08rem 0.4rem; border-radius: 4px; display: inline-block;">${escapeHtml(cleanSlotRole)}</span>` : ''}
+                            ${cleanSlotRole ? `<span class="member-role-badge ${roleInfo.cssClass}" style="font-size: 0.68rem; padding: 0.06rem 0.35rem; border-radius: 4px; display: inline-block;">${escapeHtml(cleanSlotRole)}</span>` : ''}
                         </div>
                     `;
                 }
@@ -5752,14 +5754,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 for (let i = 6; i < 12; i++) team2Html += renderSlot(i);
 
                 slotsHtml = `
-                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0.65rem; margin-bottom: 0.85rem;">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; margin-bottom: 0.45rem;">
                         <div>
-                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.4rem; font-size: 0.9rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.2rem;">A 隊</div>
-                            <div style="display: flex; flex-direction: column; gap: 0.35rem;">${team1Html}</div>
+                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.3rem; font-size: 0.85rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.15rem;">A 隊</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.22rem;">${team1Html}</div>
                         </div>
                         <div>
-                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.4rem; font-size: 0.9rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.2rem;">B 隊</div>
-                            <div style="display: flex; flex-direction: column; gap: 0.35rem;">${team2Html}</div>
+                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.3rem; font-size: 0.85rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.15rem;">B 隊</div>
+                            <div style="display: flex; flex-direction: column; gap: 0.22rem;">${team2Html}</div>
                         </div>
                     </div>
                 `;
@@ -5767,7 +5769,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 let listHtml = '';
                 for (let i = 0; i < 6; i++) listHtml += renderSlot(i);
                 slotsHtml = `
-                    <div style="display: flex; flex-direction: column; gap: 0.35rem; margin-bottom: 0.85rem;">
+                    <div style="display: flex; flex-direction: column; gap: 0.22rem; margin-bottom: 0.45rem;">
                         ${listHtml}
                     </div>
                 `;
@@ -5776,24 +5778,24 @@ document.addEventListener('DOMContentLoaded', () => {
             let actionsHtml = '';
             if (isExpired) {
                 actionsHtml = `
-                    <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: auto; padding-top: 0.65rem;">
-                        <div style="text-align: center; font-size: 0.8rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 0.4rem 0.25rem; font-weight: 600;">
+                    <div style="display: flex; flex-direction: column; gap: 0.25rem; margin-top: auto; padding-top: 0.4rem;">
+                        <div style="text-align: center; font-size: 0.76rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 5px; padding: 0.25rem 0.2rem; font-weight: 600;">
                             ⏳ 時段已過．已流團
                         </div>
-                        <div style="display: flex; gap: 0.35rem; align-items: center;">
-                            <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="以此隊伍名單重新開團 (複製)">📋</button>
-                            <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="修改時段重新編輯 (編輯)">✏️</button>
-                            <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid rgba(239,68,68,0.6); color: #ef4444; background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 1.05rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1;" title="提前手動刪除此流團紀錄 (刪除)">✕</button>
+                        <div style="display: flex; gap: 0.22rem; align-items: center;">
+                            <button onclick="window.copyRaidToCreate('${raid.id}')" style="flex: 1; min-width: 0; height: 30px; line-height: 30px; padding: 0; font-size: 0.88rem; font-weight: bold; background: rgba(249, 115, 22, 0.18); border: 1px solid rgba(249, 115, 22, 0.55); border-radius: 6px; cursor: pointer; color: #fb923c; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;" title="以此隊伍名單重新開團 (複製)">📋</button>
+                            <button onclick="window.editRaid('${raid.id}')" style="flex: 1; min-width: 0; height: 30px; line-height: 30px; padding: 0; font-size: 0.88rem; font-weight: bold; background: rgba(59, 130, 246, 0.18); border: 1px solid rgba(59, 130, 246, 0.55); border-radius: 6px; cursor: pointer; color: #60a5fa; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;" title="修改時段重新編輯 (編輯)">✏️</button>
+                            <button onclick="deleteRaid('${raid.id}')" style="flex: 1; min-width: 0; height: 30px; line-height: 30px; padding: 0; font-size: 0.88rem; font-weight: 800; background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.55); border-radius: 6px; cursor: pointer; color: #f87171; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box;" title="提前手動刪除此流團紀錄 (刪除)">✕</button>
                         </div>
                     </div>
                 `;
             } else {
                 actionsHtml = `
-                    <div style="display: flex; gap: 0.35rem; margin-top: auto; padding-top: 0.65rem; align-items: center;">
-                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex: 1; min-width: 0; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 6px; cursor: pointer; color: #fff; display: inline-flex; align-items: center; justify-content: center;" title="確認出團">✅</button>
-                        <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="複製原班人馬建立新出團 (複製)">📋</button>
-                        <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="編輯此出團隊伍設定與成員 (編輯)">✏️</button>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 1.05rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1;" title="刪除此出團紀錄 (刪除)">✕</button>
+                    <div style="display: flex; gap: 0.22rem; margin-top: auto; padding-top: 0.4rem; align-items: center;">
+                        <button onclick="confirmRaid('${raid.id}')" style="flex: 1; min-width: 0; height: 30px; line-height: 30px; padding: 0; font-size: 0.88rem; font-weight: bold; background: rgba(34, 197, 94, 0.2); border: 1px solid rgba(34, 197, 94, 0.55); border-radius: 6px; cursor: pointer; color: #4ade80; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; transition: all 0.15s ease;" title="確認出團">✅</button>
+                        <button onclick="window.copyRaidToCreate('${raid.id}')" style="flex: 1; min-width: 0; height: 30px; line-height: 30px; padding: 0; font-size: 0.88rem; font-weight: bold; background: rgba(249, 115, 22, 0.18); border: 1px solid rgba(249, 115, 22, 0.55); border-radius: 6px; cursor: pointer; color: #fb923c; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; transition: all 0.15s ease;" title="複製原班人馬建立新出團 (複製)">📋</button>
+                        <button onclick="window.editRaid('${raid.id}')" style="flex: 1; min-width: 0; height: 30px; line-height: 30px; padding: 0; font-size: 0.88rem; font-weight: bold; background: rgba(59, 130, 246, 0.18); border: 1px solid rgba(59, 130, 246, 0.55); border-radius: 6px; cursor: pointer; color: #60a5fa; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; transition: all 0.15s ease;" title="編輯此出團隊伍設定與成員 (編輯)">✏️</button>
+                        <button onclick="deleteRaid('${raid.id}')" style="flex: 1; min-width: 0; height: 30px; line-height: 30px; padding: 0; font-size: 0.88rem; font-weight: 800; background: rgba(239, 68, 68, 0.18); border: 1px solid rgba(239, 68, 68, 0.55); border-radius: 6px; cursor: pointer; color: #f87171; display: inline-flex; align-items: center; justify-content: center; box-sizing: border-box; transition: all 0.15s ease;" title="刪除此出團紀錄 (刪除)">✕</button>
                     </div>
                 `;
             }
@@ -5803,8 +5805,8 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.display = 'flex';
             card.style.flexDirection = 'column';
             card.style.boxSizing = 'border-box';
-            card.style.padding = '0.75rem 0.65rem';
-            card.style.borderRadius = '12px';
+            card.style.padding = '0.55rem 0.45rem';
+            card.style.borderRadius = '10px';
             if (isExpired) {
                 card.style.background = 'rgba(20, 15, 26, 0.65)';
                 card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
@@ -5816,34 +5818,34 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const bossTitleName = normalizeBossName(raid.boss);
             const titleHtml = isExpired
-                ? `<div style="display:flex; flex-direction: column; gap: 0.35rem; width: 100%;">
+                ? `<div style="display:flex; flex-direction: column; gap: 0.15rem; width: 100%;">
                      <div style="display:flex; justify-content: space-between; align-items: center;">
-                       <h3 style="margin:0; color:#94a3b8; font-size: 1.15rem; font-weight: 800; line-height: 1.25;">[${bossTitleName}]${raid.gamesCount || 7}場 <span style="color: #ef4444; font-size: 0.78rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); padding: 0.1rem 0.4rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.3); margin-left: 0.2rem;">(流團)</span></h3>
+                       <h3 style="margin:0; color:#94a3b8; font-size: 1.05rem; font-weight: 800; line-height: 1.2;">[${bossTitleName}]${raid.gamesCount || 7}場 <span style="color: #ef4444; font-size: 0.74rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); padding: 0.05rem 0.35rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.3); margin-left: 0.15rem;">(流團)</span></h3>
                      </div>
-                     <div style="font-weight:700; font-size: 1rem; color: #64748b; line-height: 1.25; text-decoration: line-through;" title="出團時間已過">${raid.time}</div>
+                     <div style="font-weight:700; font-size: 0.92rem; color: #64748b; line-height: 1.2; text-decoration: line-through;" title="出團時間已過">${raid.time}</div>
                    </div>`
-                : `<div style="display:flex; flex-direction: column; gap: 0.35rem; width: 100%;">
+                : `<div style="display:flex; flex-direction: column; gap: 0.15rem; width: 100%;">
                      <div style="display:flex; justify-content: space-between; align-items: center;">
-                       <h3 style="margin:0; color:var(--primary-color); font-size: 1.18rem; font-weight: 800; line-height: 1.25;">[${bossTitleName}]${raid.gamesCount || 7}場</h3>
+                       <h3 style="margin:0; color:var(--primary-color); font-size: 1.05rem; font-weight: 800; line-height: 1.2;">[${bossTitleName}]${raid.gamesCount || 7}場</h3>
                      </div>
-                     <div style="font-weight:700; font-size: 1rem; color: #fff; line-height: 1.25;">${raid.time}</div>
+                     <div style="font-weight:700; font-size: 0.92rem; color: #fff; line-height: 1.2;">${raid.time}</div>
                    </div>`;
 
             const noteBannerHtml = raid.note ? `
-                <div class="raid-note-banner" style="color: ${isExpired ? '#94a3b8' : '#fed7aa'}; margin-bottom: 0.75rem; padding: 0.4rem 0.65rem; font-size: 0.84rem;">
+                <div class="raid-note-banner" style="color: ${isExpired ? '#94a3b8' : '#fed7aa'}; margin-bottom: 0.35rem; padding: 0.3rem 0.5rem; font-size: 0.78rem;">
                     <strong style="color: var(--primary-color); white-space: nowrap;">📝 出團備註：</strong>
                     <span>${escapeHtml(raid.note)}</span>
                 </div>
             ` : '';
 
             card.innerHTML = `
-                <div style="margin-bottom: 0.75rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.08)' : 'var(--card-border)'}; padding-bottom: 0.55rem; min-height: 52px; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
+                <div style="margin-bottom: 0.35rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.08)' : 'var(--card-border)'}; padding-bottom: 0.3rem; min-height: 0; display: flex; flex-direction: column; justify-content: center; box-sizing: border-box;">
                     ${titleHtml}
                 </div>
                 ${noteBannerHtml}
-                <div style="margin-bottom: 0.75rem; color: ${isExpired ? '#64748b' : 'var(--text-muted)'}; font-size: 0.88rem; display: flex; justify-content: space-between; align-items: center; min-height: 22px; box-sizing: border-box;">
+                <div style="margin-bottom: 0.35rem; color: ${isExpired ? '#64748b' : 'var(--text-muted)'}; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; min-height: 0; box-sizing: border-box;">
                     <span>發起人：<strong style="color: ${isExpired ? '#94a3b8' : '#fff'};">${displayCreator}</strong></span>
-                    <span>成員：<strong style="color: ${isExpired ? '#94a3b8' : (isFull ? 'var(--danger-color)' : 'var(--success-color)')}; font-size: 0.95rem;">${members.length}</strong> / ${maxSlots}</span>
+                    <span>成員：<strong style="color: ${isExpired ? '#94a3b8' : (isFull ? 'var(--danger-color)' : 'var(--success-color)')}; font-size: 0.88rem;">${members.length}</strong> / ${maxSlots}</span>
                 </div>
                 ${slotsHtml}
                 ${actionsHtml}
@@ -5852,15 +5854,24 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Render active upcoming raids first
-        activeRaids.forEach(raid => {
-            container.appendChild(buildRaidCard(raid, false));
-        });
+        if (activeRaids.length > 0) {
+            let activeUnits = 0;
+            activeRaids.forEach(r => activeUnits += isDragonKingBoss(r.boss) ? 2 : 1);
+            const activeCols = (activeUnits >= 5) ? 5 : 4;
+            const activeGrid = document.createElement('div');
+            activeGrid.className = `raids-grid-view cols-${activeCols}`;
+            activeRaids.forEach(raid => {
+                activeGrid.appendChild(buildRaidCard(raid, false));
+            });
+            container.appendChild(activeGrid);
+        }
 
         // Render expired raids at the very bottom (最下欄)
         if (expiredRaids.length > 0) {
             const expiredDivider = document.createElement('div');
-            expiredDivider.style.gridColumn = '1 / -1';
-            expiredDivider.style.marginTop = '1.5rem';
+            expiredDivider.style.width = '100%';
+            expiredDivider.style.boxSizing = 'border-box';
+            expiredDivider.style.marginTop = '1.2rem';
             expiredDivider.style.paddingTop = '1rem';
             expiredDivider.style.borderTop = '1px dashed rgba(255, 255, 255, 0.15)';
             expiredDivider.style.display = 'flex';
@@ -5877,9 +5888,15 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             container.appendChild(expiredDivider);
 
+            let expiredUnits = 0;
+            expiredRaids.forEach(r => expiredUnits += isDragonKingBoss(r.boss) ? 2 : 1);
+            const expiredCols = (expiredUnits >= 5) ? 5 : 4;
+            const expiredGrid = document.createElement('div');
+            expiredGrid.className = `raids-grid-view cols-${expiredCols}`;
             expiredRaids.forEach(raid => {
-                container.appendChild(buildRaidCard(raid, true));
+                expiredGrid.appendChild(buildRaidCard(raid, true));
             });
+            container.appendChild(expiredGrid);
         }
     }
 
@@ -9435,8 +9452,13 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         // Combine into full spreadsheet table
+        const minTableWidth = 82 + columns.length * 115;
         container.innerHTML = `
-            <table class="smart-matrix-table">
+            <table class="smart-matrix-table" style="width: 100%; min-width: ${minTableWidth}px;">
+                <colgroup>
+                    <col style="width: 82px;">
+                    ${columns.map(() => '<col>').join('')}
+                </colgroup>
                 <tbody>
                     <!-- 1. 最上方：時段日期表頭 (雙隊時跨兩欄合併) -->
                     ${middleDateRow}
