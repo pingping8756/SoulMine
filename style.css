@@ -1056,11 +1056,23 @@ body::after {
     }
 }
 
-/* 5-Column Recruitment Teams Grid (Vertical Cards) */
+/* 5-Column Recruitment Teams Grid (Vertical Cards) - 緊湊適配版 */
 .raids-grid-view {
     display: grid;
     grid-template-columns: repeat(5, minmax(0, 1fr));
-    gap: 0.75rem;
+    gap: 0.65rem;
+    max-width: 1360px;
+    margin: 0 auto;
+}
+.raid-recruit-card {
+    max-width: 255px;
+    width: 100%;
+    margin: 0 auto;
+    box-sizing: border-box;
+}
+.dragon-recruit-card {
+    grid-column: span 2;
+    max-width: 520px !important;
 }
 @media (max-width: 1400px) {
     .raids-grid-view {
@@ -1080,6 +1092,16 @@ body::after {
 @media (max-width: 560px) {
     .raids-grid-view {
         grid-template-columns: 1fr;
+        justify-items: center;
+        gap: 0.75rem;
+    }
+    .raid-recruit-card {
+        max-width: 290px !important; /* 手機版窄化卡片寬度，左右適度緊湊不浮誇撐滿 */
+        padding: 0.75rem 0.6rem !important;
+    }
+    .dragon-recruit-card {
+        grid-column: span 1 !important;
+        max-width: 310px !important;
     }
 }
 
@@ -3999,7 +4021,7 @@ body::after {
 /* Confirmed Raid Weekly Report Table (當週已確認出團名單明細 - 極簡緊湊一頁式) */
 .confirmed-report-table {
     width: 100%;
-    min-width: 860px;
+    min-width: 560px;
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
