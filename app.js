@@ -152,11 +152,13 @@ function isHardPapulatusBoss(bossName) {
 function getNextTuesdayReset(timestamp) {
     if (!timestamp) return 0;
     const d = new Date(timestamp);
-    const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0, 0, 0);
-    while (target.getDay() !== 2 || target.getTime() <= timestamp) {
-        target.setDate(target.getDate() + 1);
+    const tue = getTuesdayOfWeek(d);
+    // 出團看板週期重置時間：每週一晚上 21:30
+    const monReset = new Date(tue.getFullYear(), tue.getMonth(), tue.getDate() + 6, 21, 30, 0, 0);
+    if (monReset.getTime() <= timestamp) {
+        return timestamp + 1000;
     }
-    return target.getTime();
+    return monReset.getTime();
 }
 
 // --- 12 職業單一字簡稱正規化：火、聖、英、弓、弩、鏢、刀、槍、拳、毒、冰、主 ---
@@ -658,30 +660,29 @@ document.addEventListener('DOMContentLoaded', () => {
         return options;
     }
 
-    // 報表週次選項：調查週次在前，本週出團（尚未超過時間者）移到下拉選項最下面，超過時間自動隱藏
+    // 報表週次選項：調查週次在前，本週/近期出團保留在下拉選項最下方供查看與排班
     function getReportWeekOptions() {
         const activeTue = getActiveSurveyTuesday();
         activeTue.setHours(0, 0, 0, 0);
         const prevTue = new Date(activeTue.getTime() - 7 * 86400000);
-        const prevMonEnd = new Date(prevTue.getFullYear(), prevTue.getMonth(), prevTue.getDate() + 6, 23, 59, 59, 999);
+        const prevMon = new Date(prevTue.getTime() + 6 * 86400000);
+        const prevWeekId = formatDateISO(prevTue);
         const now = new Date();
+        const monEnd = new Date(prevTue.getFullYear(), prevTue.getMonth(), prevTue.getDate() + 6, 21, 30, 0, 0);
+        const isStillOngoing = (now <= monEnd);
 
         // 1. 先放調查中的週次（以本期調查為首）
         const options = [...getSurveyWeekOptions()];
 
-        // 2. 本週出團：移至下拉選項最下面；超過時間（週一 23:59 後）則自動隱藏
-        if (now <= prevMonEnd) {
-            const prevMon = new Date(prevTue.getTime() + 6 * 86400000);
-            const prevWeekId = formatDateISO(prevTue);
-            options.push({
-                weekId: prevWeekId,
-                tueDate: prevTue,
-                label: `📅 ${prevTue.getMonth() + 1}/${prevTue.getDate()}(二) ～ ${prevMon.getMonth() + 1}/${prevMon.getDate()}(一) 【本週進行中】`,
-                shortLabel: `${prevTue.getMonth() + 1}/${prevTue.getDate()}(二) ~ ${prevMon.getMonth() + 1}/${prevMon.getDate()}(一)`,
-                isOngoing: true,
-                isDefault: false
-            });
-        }
+        // 2. 本週出團：永遠保留在選單供全週排班與報表查看
+        options.push({
+            weekId: prevWeekId,
+            tueDate: prevTue,
+            label: `📅 ${prevTue.getMonth() + 1}/${prevTue.getDate()}(二) ～ ${prevMon.getMonth() + 1}/${prevMon.getDate()}(一) ${isStillOngoing ? '【本週進行中】' : '【上週/本週出團】'}`,
+            shortLabel: `${prevTue.getMonth() + 1}/${prevTue.getDate()}(二) ~ ${prevMon.getMonth() + 1}/${prevMon.getDate()}(一)`,
+            isOngoing: isStillOngoing,
+            isDefault: false
+        });
 
         return options;
     }
@@ -5467,24 +5468,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const now = Date.now();
         const rawRaids = Object.values(raidsDB).filter(r => !r.isConfirmed);
 
-        // Auto-cleanup: remove raids that have passed the next Tuesday reset cycle
+        // 載入未確認出團隊伍 (過期時段隊伍標記為 isExpired，顯示於流團區，絕不自動刪除資料庫隊伍)
         const allRaids = [];
         rawRaids.forEach(r => {
             const raidTime = getTeamTimestamp(r);
-            const tuesdayReset = getNextTuesdayReset(raidTime);
-            if (tuesdayReset > 0 && now >= tuesdayReset) {
-                // Next Tuesday cycle has arrived: auto prune from database
-                if (r.id) {
-                    db.ref(`raids/${r.id}`).remove();
-                }
-            } else {
-                const isExpired = raidTime > 0 && now > raidTime;
-                allRaids.push({
-                    ...r,
-                    scheduledTimeMs: raidTime,
-                    isExpired: isExpired
-                });
-            }
+            const isExpired = raidTime > 0 && now > raidTime;
+            allRaids.push({
+                ...r,
+                scheduledTimeMs: raidTime,
+                isExpired: isExpired
+            });
         });
 
         const allActiveRaids = allRaids.filter(r => !r.isExpired);
@@ -5784,23 +5777,23 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isExpired) {
                 actionsHtml = `
                     <div style="display: flex; flex-direction: column; gap: 0.45rem; margin-top: auto; padding-top: 0.8rem;">
-                        <div style="text-align: center; font-size: 0.82rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 0.5rem; font-weight: 600;">
+                        <div style="text-align: center; font-size: 0.82rem; color: #ef4444; background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 6px; padding: 0.45rem 0.3rem; font-weight: 600;">
                             ⏳ 時段已過．已流團
                         </div>
                         <div style="display: flex; gap: 0.35rem; align-items: center;">
-                            <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 6px; padding: 0.5rem 0.15rem; font-size: 0.84rem; font-weight: bold; cursor: pointer; text-align: center; white-space: nowrap;" title="以此隊伍名單重新開團">複製</button>
-                            <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 6px; padding: 0.5rem 0.15rem; font-size: 0.84rem; font-weight: bold; cursor: pointer; text-align: center; white-space: nowrap;" title="修改時段重新編輯">編輯</button>
-                            <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid rgba(239,68,68,0.5); color: #ef4444; background: transparent; border-radius: 6px; padding: 0.5rem 0.15rem; font-size: 0.84rem; font-weight: bold; cursor: pointer; text-align: center; white-space: nowrap;" title="提前手動刪除此流團紀錄">刪除</button>
+                            <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="以此隊伍名單重新開團 (複製)">📋</button>
+                            <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="修改時段重新編輯 (編輯)">✏️</button>
+                            <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid rgba(239,68,68,0.6); color: #ef4444; background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 1.05rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1;" title="提前手動刪除此流團紀錄 (刪除)">✕</button>
                         </div>
                     </div>
                 `;
             } else {
                 actionsHtml = `
                     <div style="display: flex; gap: 0.35rem; margin-top: auto; padding-top: 0.8rem; align-items: center;">
-                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex: 1; min-width: 0; padding: 0.5rem 0.15rem; font-size: 0.84rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 6px; cursor: pointer; color: #fff; text-align: center; white-space: nowrap;" title="確認出團">確認</button>
-                        <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 6px; padding: 0.5rem 0.15rem; font-size: 0.84rem; font-weight: bold; cursor: pointer; text-align: center; white-space: nowrap;" title="複製原班人馬建立新出團">複製</button>
-                        <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 6px; padding: 0.5rem 0.15rem; font-size: 0.84rem; font-weight: bold; cursor: pointer; text-align: center; white-space: nowrap;" title="編輯此出團隊伍設定與成員">編輯</button>
-                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 6px; padding: 0.5rem 0.15rem; font-size: 0.84rem; font-weight: bold; cursor: pointer; text-align: center; white-space: nowrap;" title="刪除此出團紀錄">刪除</button>
+                        <button onclick="confirmRaid('${raid.id}')" class="btn-primary" style="flex: 1; min-width: 0; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; background: var(--primary-color); border: none; border-radius: 6px; cursor: pointer; color: #fff; display: inline-flex; align-items: center; justify-content: center;" title="確認出團">✅</button>
+                        <button onclick="window.copyRaidToCreate('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="複製原班人馬建立新出團 (複製)">📋</button>
+                        <button onclick="window.editRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid #3b82f6; color: #60a5fa; background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 0.95rem; font-weight: bold; cursor: pointer; display: inline-flex; align-items: center; justify-content: center;" title="編輯此出團隊伍設定與成員 (編輯)">✏️</button>
+                        <button onclick="deleteRaid('${raid.id}')" class="btn-secondary" style="flex: 1; min-width: 0; border: 1px solid var(--danger-color); color: var(--danger-color); background: transparent; border-radius: 6px; padding: 0.45rem 0.1rem; font-size: 1.05rem; font-weight: 800; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; line-height: 1;" title="刪除此出團紀錄 (刪除)">✕</button>
                     </div>
                 `;
             }
@@ -5810,7 +5803,7 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.display = 'flex';
             card.style.flexDirection = 'column';
             card.style.boxSizing = 'border-box';
-            card.style.padding = '1.15rem 1rem';
+            card.style.padding = '1rem 0.8rem';
             card.style.borderRadius = '12px';
             if (isExpired) {
                 card.style.background = 'rgba(20, 15, 26, 0.65)';
@@ -5879,7 +5872,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 <div style="display: flex; align-items: center; gap: 0.5rem; color: #94a3b8; font-weight: 600;">
                     <span style="font-size: 1.1rem;">⚠️</span>
                     <span>逾期未出團 (流團紀錄)</span>
-                    <span style="font-size: 0.82rem; color: #64748b; font-weight: normal;">— 招募時段已過，將於下個週二 00:00 週期重置時自動移除</span>
+                    <span style="font-size: 0.82rem; color: #64748b; font-weight: normal;">— 招募時段已過，將於每週一 21:30 週期重置時自動移除</span>
                 </div>
             `;
             container.appendChild(expiredDivider);
@@ -5931,6 +5924,19 @@ document.addEventListener('DOMContentLoaded', () => {
         return null;
     }
 
+    function getCurrentRaidTuesday(now = new Date()) {
+        const isPastMon2130 = (now.getDay() === 1 && (now.getHours() > 21 || (now.getHours() === 21 && now.getMinutes() >= 30)));
+        if (isPastMon2130) {
+            // 週一 21:30 後，出團看板自動切換推進至新的一週 (明天週二)
+            const nextTue = new Date(now);
+            nextTue.setDate(now.getDate() + 1);
+            nextTue.setHours(0, 0, 0, 0);
+            return nextTue;
+        }
+        return getTuesdayOfWeek(now);
+    }
+    window.getCurrentRaidTuesday = getCurrentRaidTuesday;
+
     function getConfirmedReportWeekOptions() {
         const weekTeamsMap = new Map();
 
@@ -5960,30 +5966,22 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const now = new Date();
-        const curTue = getTuesdayOfWeek(now);
+        const curTue = getCurrentRaidTuesday(now);
+        const curWeekId = formatDateISO(curTue);
 
-        // If no confirmed teams exist at all, provide fallback for current ongoing week
-        if (weekTeamsMap.size === 0) {
-            const curWeekId = formatDateISO(curTue);
-            const curMon = new Date(curTue.getTime() + 6 * 86400000);
-            return [{
-                weekId: curWeekId,
-                tueDate: curTue,
-                teamsCount: 0,
-                isOngoing: true,
-                isExpired: false,
-                label: `📅 ${curTue.getMonth() + 1}/${curTue.getDate()}(二) ～ ${curMon.getMonth() + 1}/${curMon.getDate()}(一) 【本週進行中】`,
-                shortLabel: `${curTue.getMonth() + 1}/${curTue.getDate()}(二) ~ ${curMon.getMonth() + 1}/${curMon.getDate()}(一)`
-            }];
+        // 確保目前當週 (進行中) 必定出現在選項中 (每週一 21:30 自動切換至新一週)
+        if (!weekTeamsMap.has(curWeekId)) {
+            weekTeamsMap.set(curWeekId, { tueDate: curTue, teams: [] });
         }
 
         const allWeeks = [];
         weekTeamsMap.forEach((data, weekId) => {
             const tue = data.tueDate;
             const mon = new Date(tue.getTime() + 6 * 86400000);
-            const monEnd = new Date(tue.getFullYear(), tue.getMonth(), tue.getDate() + 6, 23, 59, 59, 999);
-            const isExpired = now > monEnd;
-            const isOngoing = now >= tue && now <= monEnd;
+            const monEnd = new Date(tue.getFullYear(), tue.getMonth(), tue.getDate() + 6, 21, 30, 0, 0);
+            const isCurrentWeek = (weekId === curWeekId);
+            const isExpired = (!isCurrentWeek) && (now >= monEnd);
+            const isOngoing = isCurrentWeek;
             const teamsCount = data.teams.length;
 
             let tag = '';
@@ -6025,8 +6023,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const weekOptions = getConfirmedReportWeekOptions();
         if (!currentConfirmedReportWeekId || !weekOptions.some(o => o.weekId === currentConfirmedReportWeekId)) {
+            const ongoingWithTeams = weekOptions.find(o => o.isOngoing && o.teamsCount > 0);
+            const anyWithTeams = weekOptions.find(o => o.teamsCount > 0);
             const ongoingOpt = weekOptions.find(o => o.isOngoing);
-            currentConfirmedReportWeekId = ongoingOpt ? ongoingOpt.weekId : (weekOptions[0] ? weekOptions[0].weekId : '');
+            currentConfirmedReportWeekId = ongoingWithTeams ? ongoingWithTeams.weekId : (anyWithTeams ? anyWithTeams.weekId : (ongoingOpt ? ongoingOpt.weekId : (weekOptions[0] ? weekOptions[0].weekId : '')));
         }
 
         const html = weekOptions.map(o => `
@@ -6068,9 +6068,11 @@ document.addEventListener('DOMContentLoaded', () => {
         initConfirmedReportWeekSelect();
 
         const weekOptions = getConfirmedReportWeekOptions();
-        if (!currentConfirmedReportWeekId) {
+        if (!currentConfirmedReportWeekId || !weekOptions.some(o => o.weekId === currentConfirmedReportWeekId)) {
+            const ongoingWithTeams = weekOptions.find(o => o.isOngoing && o.teamsCount > 0);
+            const anyWithTeams = weekOptions.find(o => o.teamsCount > 0);
             const ongoingOpt = weekOptions.find(o => o.isOngoing);
-            currentConfirmedReportWeekId = ongoingOpt ? ongoingOpt.weekId : (weekOptions[0] ? weekOptions[0].weekId : '');
+            currentConfirmedReportWeekId = ongoingWithTeams ? ongoingWithTeams.weekId : (anyWithTeams ? anyWithTeams.weekId : (ongoingOpt ? ongoingOpt.weekId : (weekOptions[0] ? weekOptions[0].weekId : '')));
         }
 
         const weekDays = getWeekDaysDetails(currentConfirmedReportWeekId);
@@ -8221,23 +8223,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function getSmartSlotBoss(slotKey, squadIdx = 0) {
         if (!smartSchedState || !smartSchedState.bossesByDaySlot) return "克雷塞爾";
-        const keyWithSquad = `${slotKey}_sq${squadIdx}`;
+        const sq = parseInt(squadIdx, 10) || 0;
+        const keyWithSquad = `${slotKey}_sq${sq}`;
         if (smartSchedState.bossesByDaySlot[keyWithSquad]) {
             return smartSchedState.bossesByDaySlot[keyWithSquad];
         }
-        if (squadIdx === 0 && smartSchedState.bossesByDaySlot[slotKey]) {
+        if (sq === 0 && smartSchedState.bossesByDaySlot[slotKey]) {
             return smartSchedState.bossesByDaySlot[slotKey];
         }
-        if (squadIdx === 1) {
+        if (sq === 1) {
             const aBoss = smartSchedState.bossesByDaySlot[slotKey] || smartSchedState.bossesByDaySlot[`${slotKey}_sq0`];
             if (isDragonKingBoss(aBoss)) return aBoss;
-            return "克雷塞爾";
         }
-        return smartSchedState.bossesByDaySlot[slotKey] || "克雷塞爾";
+        return "克雷塞爾";
     }
     window.getSmartSlotBoss = getSmartSlotBoss;
 
-    // 時段預設時間與自訂時間 (下午 14:00，晚上 20:00~21:30，支援 A/B 分隊各自獨立時間)
+    // 時段預設時間與自訂時間 (支援 A/B/C/D 分隊各自獨立時間，龍王雙隊自動同時間)
     function getSmartSlotTime(slotKey, squadIdx = 0) {
         const sq = parseInt(squadIdx, 10) || 0;
         if (smartSchedState && smartSchedState.timesByDaySlot) {
@@ -8252,9 +8254,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sq === 1) {
             return (slotKey && slotKey.includes('_午')) ? '15:00' : '21:00';
         }
+        if (sq === 2) {
+            return (slotKey && slotKey.includes('_午')) ? '15:30' : '21:30';
+        }
         return (slotKey && slotKey.includes('_午')) ? '14:00' : '20:00';
     }
     window.getSmartSlotTime = getSmartSlotTime;
+
+    // 依使用者需求簡短命名分隊：例如 A、B1、B2、C (字數最精簡，防字太多排版太擠)
+    function getSmartSquadLabel(slotKey, squadIdx) {
+        const sqIdx = parseInt(squadIdx, 10) || 0;
+        const squads = smartSchedState?.squadsByDaySlot?.[slotKey] || [];
+        const squadCount = Math.max(1, squads.length);
+        if (squadCount <= 1) return '';
+
+        const squadLabels = [];
+        const LETTERS = ['A', 'B', 'C', 'D', 'E', 'F'];
+        let letterIdx = 0;
+        for (let sq = 0; sq < squadCount; sq++) {
+            const b = getSmartSlotBoss(slotKey, sq);
+            const isDk = isDragonKingBoss(b);
+            const curLetter = LETTERS[letterIdx] || `T${letterIdx + 1}`;
+            if (isDk) {
+                squadLabels[sq] = `${curLetter}1`;
+                if (sq + 1 < squadCount && isDragonKingBoss(getSmartSlotBoss(slotKey, sq + 1))) {
+                    squadLabels[sq + 1] = `${curLetter}2`;
+                    sq++;
+                }
+                letterIdx++;
+            } else {
+                squadLabels[sq] = curLetter;
+                letterIdx++;
+            }
+        }
+        return squadLabels[sqIdx] || `${sqIdx + 1}`;
+    }
+    window.getSmartSquadLabel = getSmartSquadLabel;
 
     window.changeSmartSlotTime = function(slotKey, squadIdx, timeVal) {
         if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
@@ -8269,6 +8304,19 @@ document.addEventListener('DOMContentLoaded', () => {
         smartSchedState.timesByDaySlot[`${slotKey}_sq${sq}`] = val;
         if (sq === 0) {
             smartSchedState.timesByDaySlot[slotKey] = val;
+        }
+        // 若為龍王雙隊，自動同步前後連帶的龍王分隊時間
+        const thisBoss = getSmartSlotBoss(slotKey, sq);
+        if (isDragonKingBoss(thisBoss)) {
+            const nextBoss = getSmartSlotBoss(slotKey, sq + 1);
+            if (isDragonKingBoss(nextBoss)) {
+                smartSchedState.timesByDaySlot[`${slotKey}_sq${sq + 1}`] = val;
+            } else if (sq > 0) {
+                const prevBoss = getSmartSlotBoss(slotKey, sq - 1);
+                if (isDragonKingBoss(prevBoss)) {
+                    smartSchedState.timesByDaySlot[`${slotKey}_sq${sq - 1}`] = val;
+                }
+            }
         }
         markSmartScheduleModified();
         renderSmartSchedule();
@@ -8920,7 +8968,7 @@ document.addEventListener('DOMContentLoaded', () => {
         // Flatten all active slots across the 7 days (週二 ~ 週一)
         // 依照需求：
         // 1. 不足 6 人的時段不列出 (若已有手動排入成員則保留)
-        // 2. 如果 Boss 是龍王 (或開雙隊)，B隊是在日期下方往右新增一欄 (A隊一欄、B隊一欄)
+        // 2. 如果 Boss 是龍王 (或開多隊)，分隊是在日期下方往右新增欄位 (A隊、B隊、C隊...)
         const columns = [];
         days.forEach(d => {
             d.slots.forEach(slotDef => {
@@ -8932,11 +8980,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     return; // 不足 6 人且未排人，不列出此時段欄位
                 }
 
-                const currentBossA = getSmartSlotBoss(slotDef.key, 0);
-                const isDkA = isDragonKingBoss(currentBossA);
-                let squadCount = assignedSquads.length;
-                if (isDkA) squadCount = Math.max(squadCount, 2);
-                else squadCount = Math.max(squadCount, 1);
+                // 檢查此時段隊伍數：
+                // 1. 至少保留目前已有的分隊數
+                // 2. 若任何分隊為闇黑龍王，龍王需佔 2 個分隊 (6人 + 6人 = 12人)
+                let squadCount = Math.max(1, assignedSquads.length);
+                const initLen = assignedSquads.length;
+                for (let sq = 0; sq < initLen; sq++) {
+                    const b = getSmartSlotBoss(slotDef.key, sq);
+                    if (isDragonKingBoss(b)) {
+                        if (squadCount < sq + 2) {
+                            squadCount = sq + 2;
+                        }
+                        // 確保配對隊伍亦設為龍王與同時間
+                        if (!smartSchedState.bossesByDaySlot) smartSchedState.bossesByDaySlot = {};
+                        if (!smartSchedState.bossesByDaySlot[`${slotDef.key}_sq${sq + 1}`]) {
+                            smartSchedState.bossesByDaySlot[`${slotDef.key}_sq${sq + 1}`] = b;
+                        }
+                        if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
+                        if (!smartSchedState.timesByDaySlot[`${slotDef.key}_sq${sq + 1}`]) {
+                            smartSchedState.timesByDaySlot[`${slotDef.key}_sq${sq + 1}`] = getSmartSlotTime(slotDef.key, sq);
+                        }
+                        sq++; // 跳過配對的第二隊
+                    }
+                }
+                squadCount = Math.min(6, Math.max(1, squadCount));
 
                 // 確保 smartSchedState 隊伍陣列有足夠長度
                 if (!smartSchedState.squadsByDaySlot[slotDef.key]) {
@@ -8948,18 +9015,24 @@ document.addEventListener('DOMContentLoaded', () => {
                     );
                 }
 
-                // 每一分隊獨立為一欄 (A隊一欄、B隊一欄往右新增)
+                // 每一分隊獨立為一欄 (A、B1、B2 簡潔標籤防字數過多)
                 for (let squadIdx = 0; squadIdx < squadCount; squadIdx++) {
                     const squadBoss = getSmartSlotBoss(slotDef.key, squadIdx);
+                    const isDk = isDragonKingBoss(squadBoss);
+                    const label = squadCount > 1 ? getSmartSquadLabel(slotDef.key, squadIdx) : '';
+                    const baseLetter = (label[0] || 'a').toLowerCase();
+                    const tagClass = `tag-${baseLetter}`;
+
                     columns.push({
                         dayDef: d,
                         slotDef: slotDef,
                         slotKey: slotDef.key,
                         squadIdx: squadIdx,
                         squadCount: squadCount,
-                        squadLabel: squadCount > 1 ? (squadIdx === 0 ? 'A隊' : 'B隊') : '',
+                        squadLabel: label,
+                        squadTagClass: tagClass,
                         boss: squadBoss,
-                        isDk: isDragonKingBoss(squadBoss),
+                        isDk: isDk,
                         label: slotDef.label,
                         dateLabel: d.dateLabel,
                         shortDate: d.shortDate,
@@ -8979,7 +9052,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // ==========================================
-        // 1. DATE HEADER (最上排時段表頭，雙隊時以 colspan="2" 合併日期)
+        // 1. DATE HEADER (最上排時段表頭，多隊時以 colspan 合併日期)
         // ==========================================
         const uniqueSlots = [];
         columns.forEach(col => {
@@ -9008,20 +9081,24 @@ document.addEventListener('DOMContentLoaded', () => {
             const isHoli = s.isWeekend || s.isSpecialHoliday;
             const holiBadge = s.isSpecialHoliday ? `<span style="background: #ef4444; color: #fff; font-size: 0.68rem; padding: 0 0.3rem; border-radius: 3px; margin-left: 2px;">${escapeHtml(s.holidayName ? s.holidayName.slice(0, 2) : '補')}</span>` : '';
 
-            // 右上角按鈕：若為 1 隊顯示「+」以新增第二隊；若已為 2 隊顯示「✕」以移除第二隊
-            const squadBtn = s.colspan === 1
-                ? `<button type="button" class="smart-slot-add-squad-btn" onclick="window.addSmartSlotSquadB('${escapeHtml(s.slotKey)}')" title="＋ 在此時段往右新增第二隊，可打不同突襲與時間">+</button>`
-                : `<button type="button" class="smart-slot-remove-squad-btn" onclick="window.removeSmartSlotSquadB('${escapeHtml(s.slotKey)}')" title="✕ 移除第二隊">✕</button>`;
+            // 右上角按鈕：支援 + 新增隊伍 (最多 6 隊) 與 ✕ 移除最後一隊 (若超過 1 隊)
+            const addBtn = s.colspan < 6
+                ? `<button type="button" class="smart-slot-add-squad-btn" onclick="window.addSmartSlotSquad('${escapeHtml(s.slotKey)}')" title="＋ 在此時段往右新增分隊，可排不同突襲與時間">+</button>`
+                : '';
+            const removeBtn = s.colspan > 1
+                ? `<button type="button" class="smart-slot-remove-squad-btn" onclick="window.removeSmartSquad('${escapeHtml(s.slotKey)}')" title="✕ 移除最後一隊">✕</button>`
+                : '';
 
             const isAfternoon = (s.slotDef && s.slotDef.period === '午');
             const periodLabel = isAfternoon ? ' (下午)' : '';
 
             return `
                 <th colspan="${s.colspan}" class="${isHoli ? 'smart-matrix-date-weekend' : ''}" style="text-align: center; position: relative; vertical-align: middle;">
-                    <div style="position: absolute; top: 4px; right: 4px; z-index: 2;">
-                        ${squadBtn}
+                    <div style="position: absolute; top: 4px; right: 4px; z-index: 2; display: inline-flex; align-items: center; gap: 3px;">
+                        ${removeBtn}
+                        ${addBtn}
                     </div>
-                    <div style="font-size: 0.92rem; font-weight: 900; padding: 0 22px 0 6px;">${escapeHtml(s.shortDate)} (${escapeHtml(s.dayName)})${periodLabel} ${holiBadge}</div>
+                    <div style="font-size: 0.92rem; font-weight: 900; padding: 0 34px 0 6px;">${escapeHtml(s.shortDate)} (${escapeHtml(s.dayName)})${periodLabel} ${holiBadge}</div>
                 </th>
             `;
         }).join('');
@@ -9047,10 +9124,11 @@ document.addEventListener('DOMContentLoaded', () => {
             return `
                 <td>
                     <div class="smart-matrix-time-wrap">
-                        ${col.squadLabel ? `<span class="smart-squad-tag ${col.squadIdx === 1 ? 'tag-b' : 'tag-a'}">${escapeHtml(col.squadLabel)}</span>` : ''}
+                        ${col.squadLabel ? `<span class="smart-squad-tag ${col.squadTagClass || 'tag-a'}">${escapeHtml(col.squadLabel)}</span>` : ''}
                         <select class="smart-matrix-time-select" onchange="window.changeSmartSlotTime('${escapeHtml(col.slotKey)}', ${col.squadIdx}, this.value)" title="選擇出團時間">
                             ${timeOptions.map(t => `<option value="${t}" ${currentTime === t ? 'selected' : ''}>${t}</option>`).join('')}
                         </select>
+                        ${col.squadCount > 1 ? `<button type="button" class="smart-col-remove-btn" onclick="window.removeSmartSquad('${escapeHtml(col.slotKey)}', ${col.squadIdx})" title="✕ 移除【${escapeHtml(col.squadLabel || '此隊')}】">✕</button>` : ''}
                     </div>
                 </td>
             `;
@@ -9192,17 +9270,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 let cellMarker = '';
                 if (isAssignedHere) {
-                    const tag = col.squadLabel ? `${col.squadLabel}排定` : '已排入';
+                    const tag = col.squadLabel ? col.squadLabel : '已排';
                     cellMarker = `<span class="smart-avail-assigned-marker" title="已安排在此隊出團！點擊上方席位可取消">✓ ${escapeHtml(tag)}</span>`;
                 } else if (isChecked) {
-                    const icon = col.squadLabel ? (col.squadIdx === 0 ? '🅰️' : '🅱️') : '➕';
                     const otherHint = isAssignedOtherSquad ? '（在另一隊亦有排班）' : '';
                     cellMarker = `
                         <div class="smart-avail-clickable-cell ${isAssignedOtherSquad ? 'avail-other-assigned' : ''}"
                              onclick="window.clickSmartAvailMember('${escapeHtml(r.name)}', '${escapeHtml(col.slotKey)}', ${col.squadIdx})"
                              title="點擊選擇出戰角色，排入 ${col.squadLabel || '隊伍'}（${isScrollYes ? '可吃券' : '不吃券'}）${otherHint}${r.notes ? `\n📝 備註：${escapeHtml(r.notes)}` : ''}">
                             <span class="smart-avail-name-text ${isScrollYes ? 'smart-member-name-scroll' : 'smart-member-name-noscroll'}" style="color: ${nameColor} !important;">${escapeHtml(r.name)}</span>
-                            <span class="smart-avail-add-icon">${icon}</span>
+                            <span class="smart-avail-add-icon" style="font-weight:900;">${col.squadLabel || '➕'}</span>
                         </div>
                     `;
                 } else {
@@ -9331,23 +9408,38 @@ document.addEventListener('DOMContentLoaded', () => {
             smartSchedState.bossesByDaySlot[slotKey] = bossName;
         }
 
-        const currentSquads = smartSchedState.squadsByDaySlot[slotKey] || [];
-        // If dragon king on squad A, automatically ensure 2 squads of 6 = 12 slots (column A and column B)
-        if (sqIdx === 0 && isDragonKingBoss(bossName)) {
-            while (currentSquads.length < 2) {
-                currentSquads.push(Array.from({ length: 6 }, () => ({ name: '', job: '', level: '', roleTag: '' })));
-            }
-            if (!smartSchedState.bossesByDaySlot[`${slotKey}_sq1`]) {
-                smartSchedState.bossesByDaySlot[`${slotKey}_sq1`] = bossName;
-            }
-            smartSchedState.squadsByDaySlot[slotKey] = currentSquads;
+        if (!smartSchedState.squadsByDaySlot[slotKey]) {
+            smartSchedState.squadsByDaySlot[slotKey] = [
+                Array.from({ length: 6 }, () => ({ name: '', job: '', level: '', roleTag: '' }))
+            ];
         }
+        const currentSquads = smartSchedState.squadsByDaySlot[slotKey];
+
+        // 若選擇闇黑龍王：龍王為 12 人團，必須擁有兩隊席位 (6人 + 6人 = 12人)
+        if (isDragonKingBoss(bossName)) {
+            // 檢查前一分隊是否已經是龍王 (若是，則當前隊伍已是配對的二隊，無需再往右新增分隊)
+            const prevBoss = (sqIdx > 0) ? getSmartSlotBoss(slotKey, sqIdx - 1) : null;
+            const isAlreadyPaired = prevBoss && isDragonKingBoss(prevBoss);
+            if (!isAlreadyPaired) {
+                // 確保當前分隊與其配對分隊皆存在
+                while (currentSquads.length <= sqIdx + 1) {
+                    currentSquads.push(Array.from({ length: 6 }, () => ({ name: '', job: '', level: '', roleTag: '' })));
+                }
+                // 配對的第二分隊亦設定為闇黑龍王，並預設同步出團時間
+                smartSchedState.bossesByDaySlot[`${slotKey}_sq${sqIdx + 1}`] = bossName;
+                if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
+                const currentTime = getSmartSlotTime(slotKey, sqIdx);
+                smartSchedState.timesByDaySlot[`${slotKey}_sq${sqIdx + 1}`] = currentTime;
+            }
+        }
+        smartSchedState.squadsByDaySlot[slotKey] = currentSquads;
+
         markSmartScheduleModified();
         renderSmartSchedule();
     };
 
-    // 在排班時段右上角點擊「+」新增 B 隊 (第二隊，可打不同突襲與時間)
-    window.addSmartSlotSquadB = function(slotKey) {
+    // 在排班時段右上角點擊「+」新增分隊 (可排不同突襲與時間)
+    window.addSmartSlotSquad = function(slotKey) {
         if (!canAccessSmartSchedule()) {
             alert('全週排班為管理員與授權專屬功能，請先登入！');
             return;
@@ -9358,73 +9450,71 @@ document.addEventListener('DOMContentLoaded', () => {
             ];
         }
         const currentSquads = smartSchedState.squadsByDaySlot[slotKey];
-        while (currentSquads.length < 2) {
-            currentSquads.push(Array.from({ length: 6 }, () => ({ name: '', job: '', level: '', roleTag: '' })));
+        if (currentSquads.length >= 6) {
+            alert('單一時段最多支援建立 6 支分隊！');
+            return;
         }
-        // Initialize Boss for Squad B if not set
-        if (!smartSchedState.bossesByDaySlot[`${slotKey}_sq1`]) {
-            const aBoss = getSmartSlotBoss(slotKey, 0);
-            smartSchedState.bossesByDaySlot[`${slotKey}_sq1`] = aBoss || "克雷塞爾";
-        }
-        // Initialize Time for Squad B if not set (預設比 A 隊晚 30~60 分鐘或排 21:00/21:30)
+        const newSqIdx = currentSquads.length;
+        currentSquads.push(Array.from({ length: 6 }, () => ({ name: '', job: '', level: '', roleTag: '' })));
+
+        // 初始化新分隊的 Boss
+        if (!smartSchedState.bossesByDaySlot) smartSchedState.bossesByDaySlot = {};
+        smartSchedState.bossesByDaySlot[`${slotKey}_sq${newSqIdx}`] = "克雷塞爾";
+
+        // 初始化新分隊的出團時間 (預設比上一隊稍晚或標準時間)
         if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
-        if (!smartSchedState.timesByDaySlot[`${slotKey}_sq1`]) {
-            const aTime = getSmartSlotTime(slotKey, 0);
-            let bTime = '21:00';
-            if (slotKey.includes('_午')) {
-                bTime = (aTime === '14:00') ? '14:30' : '15:00';
-            } else {
-                if (aTime === '20:00') bTime = '20:30';
-                else if (aTime === '20:30') bTime = '21:00';
-                else if (aTime === '21:00') bTime = '21:30';
-                else if (aTime === '21:30') bTime = '22:00';
-                else bTime = '21:30';
-            }
-            smartSchedState.timesByDaySlot[`${slotKey}_sq1`] = bTime;
-        }
+        const prevTime = getSmartSlotTime(slotKey, newSqIdx - 1);
+        let newTime = prevTime;
+        if (prevTime === '20:00') newTime = '20:30';
+        else if (prevTime === '20:30') newTime = '21:00';
+        else if (prevTime === '21:00') newTime = '21:30';
+        else if (prevTime === '21:30') newTime = '22:00';
+        else if (prevTime === '14:00') newTime = '14:30';
+        else if (prevTime === '14:30') newTime = '15:00';
+        smartSchedState.timesByDaySlot[`${slotKey}_sq${newSqIdx}`] = newTime;
+
         markSmartScheduleModified();
         renderSmartSchedule();
     };
+    window.addSmartSlotSquadB = window.addSmartSlotSquad;
+    window.addSmartSquad = window.addSmartSlotSquad;
 
-    // 移除 B 隊 (第二隊)
-    window.removeSmartSlotSquadB = function(slotKey) {
+    // 移除分隊
+    window.removeSmartSquad = function(slotKey, squadIdx) {
         if (!canAccessSmartSchedule()) {
             alert('全週排班為管理員與授權專屬功能，請先登入！');
             return;
         }
         const currentSquads = smartSchedState.squadsByDaySlot[slotKey] || [];
-        if (currentSquads.length < 2) return;
-        const squadB = currentSquads[1];
-        const hasAssigned = squadB && squadB.some(c => c && c.name);
+        if (currentSquads.length <= 1) {
+            alert('每個時段至少保留一隊！');
+            return;
+        }
+        const targetIdx = (typeof squadIdx === 'number') ? squadIdx : currentSquads.length - 1;
+        if (targetIdx < 0 || targetIdx >= currentSquads.length) return;
+
+        const targetSq = currentSquads[targetIdx];
+        const hasAssigned = targetSq && targetSq.some(c => c && c.name);
+        const sqName = getSmartSquadLabel(slotKey, targetIdx) || `${targetIdx + 1}`;
         if (hasAssigned) {
-            if (!confirm(`確定要移除此時段的 B 隊嗎？已排入 B 隊的成員將退回下方名冊。`)) {
+            if (!confirm(`確定要移除【${sqName}】嗎？已排入該隊的成員將退回下方名冊。`)) {
                 return;
             }
         }
-        currentSquads.splice(1, 1);
+        currentSquads.splice(targetIdx, 1);
+
+        // 清理並平移 bosses 與 times 鍵值
         if (smartSchedState.bossesByDaySlot) {
-            delete smartSchedState.bossesByDaySlot[`${slotKey}_sq1`];
+            delete smartSchedState.bossesByDaySlot[`${slotKey}_sq${targetIdx}`];
         }
         if (smartSchedState.timesByDaySlot) {
-            delete smartSchedState.timesByDaySlot[`${slotKey}_sq1`];
+            delete smartSchedState.timesByDaySlot[`${slotKey}_sq${targetIdx}`];
         }
         markSmartScheduleModified();
         renderSmartSchedule();
     };
-
-    window.addSmartSquad = window.addSmartSlotSquadB;
-    window.removeSmartSquad = function(slotKey, squadIdx) {
-        if (squadIdx === 1) {
-            window.removeSmartSlotSquadB(slotKey);
-        } else {
-            if (confirm('確定要移除此分隊嗎？隊伍內的成員席位將被清空。')) {
-                if (smartSchedState.squadsByDaySlot[slotKey]) {
-                    smartSchedState.squadsByDaySlot[slotKey].splice(squadIdx, 1);
-                    markSmartScheduleModified();
-                    renderSmartSchedule();
-                }
-            }
-        }
+    window.removeSmartSlotSquadB = function(slotKey) {
+        window.removeSmartSquad(slotKey, 1);
     };
 
     // 取消上方席位：點一下自動往下跑 (清空席位並返回名冊)
@@ -9437,7 +9527,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderSmartSchedule();
     };
 
-    // 點選下方成員可打時間：跑出綁定角色，選擇後自動往上排 (可指定排入 A 隊或 B 隊)
+    // 點選下方成員可打時間：跑出綁定角色，選擇後自動往上排 (可指定排入 A、B1、B2...)
     window.clickSmartAvailMember = function(memberName, slotKey, targetSquadIdx = 0) {
         if (!canAccessSmartSchedule()) {
             alert('全週排班為管理員與授權專屬功能，請先登入！');
@@ -9449,7 +9539,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const targetSq = squads[targetSquadIdx] || [];
         const isAlreadyInThisSquad = targetSq.some(c => c && c.name && c.name.toLowerCase() === memberName.toLowerCase());
         if (isAlreadyInThisSquad) {
-            const sqLabel = targetSquadIdx === 1 ? 'B隊' : 'A隊';
+            const sqLabel = getSmartSquadLabel(slotKey, targetSquadIdx) || `${targetSquadIdx + 1}`;
             alert(`成員【${memberName}】已經在此【${sqLabel}】中了！若要換人請先點擊上方席位取消。`);
             return;
         }
@@ -9482,7 +9572,7 @@ document.addEventListener('DOMContentLoaded', () => {
             : 0;
 
         let placed = false;
-        // 1. 優先嘗試排入指定的目標分隊 (例如 A隊 或 B隊)
+        // 1. 優先嘗試排入指定的目標分隊
         const targetSq = currentSquads[preferredSqIdx];
         if (targetSq) {
             for (let slIdx = 0; slIdx < 6; slIdx++) {
@@ -9500,10 +9590,44 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. 若指定分隊已滿
+        // 2. 若指定分隊已滿，且該分隊為龍王雙隊之一，自動檢查另一隊是否有空位可排入 (保證 12 人席位順暢入座)
         if (!placed) {
-            const sqName = preferredSqIdx === 1 ? 'B隊' : 'A隊';
-            alert(`【${slotKey}】的 ${sqName} 席位已滿 (6人)！請先取消該隊其他成員席位。`);
+            const thisBoss = getSmartSlotBoss(slotKey, preferredSqIdx);
+            if (isDragonKingBoss(thisBoss)) {
+                let pairedIdx = -1;
+                const nextBoss = (preferredSqIdx + 1 < currentSquads.length) ? getSmartSlotBoss(slotKey, preferredSqIdx + 1) : null;
+                const prevBoss = (preferredSqIdx > 0) ? getSmartSlotBoss(slotKey, preferredSqIdx - 1) : null;
+                if (nextBoss && isDragonKingBoss(nextBoss)) pairedIdx = preferredSqIdx + 1;
+                else if (prevBoss && isDragonKingBoss(prevBoss)) pairedIdx = preferredSqIdx - 1;
+
+                if (pairedIdx >= 0 && currentSquads[pairedIdx]) {
+                    const pairedSq = currentSquads[pairedIdx];
+                    for (let slIdx = 0; slIdx < 6; slIdx++) {
+                        if (!pairedSq[slIdx].name) {
+                            const autoRole = roleTag || getSmartRoleTagForJob(job);
+                            pairedSq[slIdx] = {
+                                name: memberName,
+                                job: job || '打手',
+                                level: level || 120,
+                                roleTag: autoRole
+                            };
+                            placed = true;
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. 若仍無法排入
+        if (!placed) {
+            const thisBoss = getSmartSlotBoss(slotKey, preferredSqIdx);
+            if (isDragonKingBoss(thisBoss)) {
+                alert(`【${slotKey}】的龍王隊伍席位已滿 (12人)！請先取消其他成員席位。`);
+            } else {
+                const sqName = getSmartSquadLabel(slotKey, preferredSqIdx) || `${preferredSqIdx + 1}`;
+                alert(`【${slotKey}】的 ${sqName} 席位已滿 (6人)！請先取消該隊其他成員席位。`);
+            }
             return;
         }
 
@@ -9519,7 +9643,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const boss = getSmartSlotBoss(slotKey, targetSquadIdx);
         const sqTime = getSmartSlotTime(slotKey, targetSquadIdx);
-        const sqName = (typeof targetSquadIdx === 'number' && targetSquadIdx === 1) ? ' ｜ 隊伍：B隊' : (typeof targetSquadIdx === 'number' ? ' ｜ 隊伍：A隊' : '');
+        const sqLabel = getSmartSquadLabel(slotKey, targetSquadIdx);
+        const sqName = sqLabel ? ` ｜ 隊伍：${sqLabel}` : '';
 
         const memberNotes = getSurveyNotesByMemberOrChar(memberName);
         const memberNotesBadge = renderMemberNotesBadge(memberNotes, memberName);
@@ -9642,7 +9767,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.promptSmartEmptySlotTip = function(slotKey, squadIdx) {
-        const sqText = (typeof squadIdx === 'number' && squadIdx === 1) ? '【B隊】' : '【A隊】';
+        const sqLabel = getSmartSquadLabel(slotKey, squadIdx);
+        const sqText = sqLabel ? `【${sqLabel}】` : '';
         alert(`💡 請直接在下方【調查名冊】點擊該時段有空的成員，即可自動排入上方${sqText}空位！`);
     };
 
@@ -9824,7 +9950,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (filled.length > 0) {
                         totalTeams++;
                         const squadBoss = getSmartSlotBoss(slotKey, sqIdx);
-                        const squadName = squads.length > 1 ? (sqIdx === 0 ? 'A隊' : 'B隊') : '隊伍';
+                        const sqLabel = getSmartSquadLabel(slotKey, sqIdx);
+                        const squadName = sqLabel ? `[${sqLabel}]` : '隊伍';
                         const slotTime = getSmartSlotTime(slotKey, sqIdx);
                         text += `\n📅 ${slotKey} ${slotTime}【${squadBoss}】${squadName} (${filled.length}/6人)：\n`;
                         filled.forEach((c, i) => {
@@ -9848,25 +9975,70 @@ document.addEventListener('DOMContentLoaded', () => {
         const weekId = getSmartSchedActiveWeekId();
         const days = getWeekDaysDetails(weekId);
 
-        // Collect all non-empty squads
+        // 收集所有已排入成員的隊伍 (若為 12 人龍王團，自動合併前後兩隊為一場 12 人出團)
         const teamsToPublish = [];
         days.forEach(d => {
             d.slots.forEach(slotDef => {
                 const slotKey = slotDef.key;
                 const squads = smartSchedState.squadsByDaySlot[slotKey] || [];
+                const squadCount = squads.length;
+                if (squadCount === 0) return;
 
-                squads.forEach((squad, sqIdx) => {
-                    const validMembers = squad.filter(c => c && c.name);
-                    if (validMembers.length > 0) {
-                        const squadBoss = getSmartSlotBoss(slotKey, sqIdx);
-                        const isDk = isDragonKingBoss(squadBoss);
-                        const defaultGames = (SMART_BOSS_OPTIONS.find(o => o.val === squadBoss)?.defaultGames) || (isDk ? 3 : 7);
-                        const squadLetter = (sqIdx === 0 && squads.length > 1) ? ' (A隊)' : ((sqIdx === 1) ? ' (B隊)' : '');
-                        const squadTime = getSmartSlotTime(slotKey, sqIdx);
+                const processedSquadIndices = new Set();
+
+                for (let sqIdx = 0; sqIdx < squadCount; sqIdx++) {
+                    if (processedSquadIndices.has(sqIdx)) continue;
+
+                    const squadBoss = getSmartSlotBoss(slotKey, sqIdx);
+                    const isDk = isDragonKingBoss(squadBoss);
+                    const squadTime = getSmartSlotTime(slotKey, sqIdx);
+                    const defaultGames = (SMART_BOSS_OPTIONS.find(o => o.val === squadBoss)?.defaultGames) || (isDk ? 3 : 7);
+
+                    if (isDk) {
+                        // 檢查下一隊是否亦為同時間的龍王隊伍
+                        const nextSqIdx = sqIdx + 1;
+                        let pairedSq = null;
+                        if (nextSqIdx < squadCount && isDragonKingBoss(getSmartSlotBoss(slotKey, nextSqIdx)) && getSmartSlotTime(slotKey, nextSqIdx) === squadTime) {
+                            pairedSq = squads[nextSqIdx];
+                            processedSquadIndices.add(nextSqIdx);
+                        }
+                        processedSquadIndices.add(sqIdx);
+
+                        const squad1Members = (squads[sqIdx] || []).filter(c => c && c.name);
+                        const squad2Members = (pairedSq || []).filter(c => c && c.name);
+
+                        if (squad1Members.length === 0 && squad2Members.length === 0) {
+                            continue; // 龍王無成員，不發布
+                        }
+
+                        // 合併 12 人龍王成員：一隊佔 slotIndex 0~5，二隊佔 slotIndex 6~11
+                        const combinedMembers = [];
+                        (squads[sqIdx] || []).forEach((c, idx) => {
+                            if (c && c.name) {
+                                combinedMembers.push({ ...c, targetSlotIndex: idx });
+                            }
+                        });
+                        if (pairedSq) {
+                            pairedSq.forEach((c, idx) => {
+                                if (c && c.name) {
+                                    combinedMembers.push({ ...c, targetSlotIndex: 6 + idx });
+                                }
+                            });
+                        }
+
+                        let squadLetter = '';
+                        const lbl1 = getSmartSquadLabel(slotKey, sqIdx);
+                        const lbl2 = pairedSq ? getSmartSquadLabel(slotKey, nextSqIdx) : '';
+                        if (lbl1 && lbl2) {
+                            squadLetter = ` (${lbl1}+${lbl2})`;
+                        } else if (lbl1) {
+                            squadLetter = ` (${lbl1})`;
+                        }
+
                         teamsToPublish.push({
                             boss: squadBoss,
                             gamesCount: defaultGames,
-                            maxPlayers: isDk ? 12 : 6,
+                            maxPlayers: 12,
                             slotKey: slotKey,
                             squadIdx: sqIdx,
                             squadTime: squadTime,
@@ -9874,10 +10046,37 @@ document.addEventListener('DOMContentLoaded', () => {
                             dateObj: d.dateObj,
                             period: slotDef.period,
                             squadLetter: squadLetter,
-                            members: validMembers
+                            members: combinedMembers
+                        });
+                    } else {
+                        processedSquadIndices.add(sqIdx);
+                        const validMembers = (squads[sqIdx] || []).filter(c => c && c.name);
+                        if (validMembers.length === 0) continue;
+
+                        const lbl = getSmartSquadLabel(slotKey, sqIdx);
+                        const squadLetter = lbl ? ` (${lbl})` : '';
+                        const membersWithIndex = [];
+                        (squads[sqIdx] || []).forEach((c, idx) => {
+                            if (c && c.name) {
+                                membersWithIndex.push({ ...c, targetSlotIndex: idx });
+                            }
+                        });
+
+                        teamsToPublish.push({
+                            boss: squadBoss,
+                            gamesCount: defaultGames,
+                            maxPlayers: 6,
+                            slotKey: slotKey,
+                            squadIdx: sqIdx,
+                            squadTime: squadTime,
+                            dateStr: d.dateStr,
+                            dateObj: d.dateObj,
+                            period: slotDef.period,
+                            squadLetter: squadLetter,
+                            members: membersWithIndex
                         });
                     }
-                });
+                }
             });
         });
 
@@ -9909,12 +10108,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const standardDateStr = `${y}-${String(m).padStart(2, '0')}-${String(dt).padStart(2, '0')}`;
 
                 const slotRolesMap = {};
-                const finalMembers = team.members.map((m, idx) => {
+                const finalMembers = team.members.map((m, mIdx) => {
+                    const slotPos = (typeof m.targetSlotIndex === 'number') ? m.targetSlotIndex : mIdx;
                     const isThisCreator = Boolean(m.name && creatorName && m.name.toLowerCase() === creatorName.toLowerCase());
                     const roleTag = stripRoleIcon(m.roleTag || getSmartRoleTagForJob(normalizeJobName(m.job)));
-                    slotRolesMap[idx] = roleTag;
+                    slotRolesMap[slotPos] = roleTag;
                     return {
-                        slotIndex: idx,
+                        slotIndex: slotPos,
                         name: m.name,
                         job: normalizeJobName(m.job || ''),
                         level: m.level || 120,
