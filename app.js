@@ -213,51 +213,63 @@ function getHighContrastJobColor(job) {
 }
 
 // --- Character Roster (Ordered by 力職 ➔ 敏職 ➔ 法職) ---
-const CURRENT_ROSTER_VERSION = 6;
+const CURRENT_ROSTER_VERSION = 7;
 const DEFAULT_CHARACTER_ROSTER = [
-    // --- 力職 (11位: 火 ➔ 聖 ➔ 英) ---
+    // --- 力職 (14位: 火 ➔ 聖 ➔ 英) ---
     { id: "Eric", job: "火", level: 180, category: "力職" },
+    { id: "rose", job: "火", level: 180, category: "力職" },
     { id: "Steve", job: "火", level: 177, category: "力職" },
+    { id: "John", job: "火", level: 167, category: "力職" },
     { id: "大鎖", job: "火", level: 165, category: "力職" },
     { id: "Ohni", job: "火", level: 163, category: "力職" },
     { id: "長吉毛毛娃", job: "火", level: 158, category: "力職" },
     { id: "汪德", job: "火", level: 147, category: "力職" },
     { id: "漢堡王", job: "火", level: 145, category: "力職" },
     { id: "小茵", job: "聖", level: 162, category: "力職" },
+    { id: "阿翔", job: "聖", level: 151, category: "力職" },
     { id: "小皮", job: "聖", level: 140, category: "力職" },
     { id: "Eric", job: "英", level: 168, category: "力職" },
     { id: "毛毛蟲", job: "英", level: 152, category: "力職" },
 
-    // --- 敏職 (19位: 弩/弓 ➔ 刀/鏢 ➔ 槍/拳) ---
+    // --- 敏職 (25位: 弩/弓 ➔ 刀/鏢 ➔ 槍/拳) ---
     { id: "IE", job: "弩", level: 175, category: "敏職" },
     { id: "毛毛蟲", job: "弩", level: 168, category: "敏職" },
     { id: "Steve", job: "弩", level: 166, category: "敏職" },
+    { id: "BBG", job: "弓", level: 175, category: "敏職" },
     { id: "小茵", job: "弓", level: 174, category: "敏職" },
     { id: "小皮", job: "弓", level: 160, category: "敏職" },
     { id: "阿甘", job: "弓", level: 153, category: "敏職" },
     { id: "Lumi", job: "弓", level: 138, category: "敏職" },
     { id: "阿仁", job: "刀", level: 180, category: "敏職" },
+    { id: "John", job: "刀", level: 170, category: "敏職" },
     { id: "Bagel", job: "刀", level: 163, category: "敏職" },
     { id: "derder", job: "刀", level: 151, category: "敏職" },
     { id: "阿偉", job: "刀", level: 149, category: "敏職" },
     { id: "阿甘", job: "鏢", level: 174, category: "敏職" },
+    { id: "John", job: "鏢", level: 169, category: "敏職" },
     { id: "Steve", job: "鏢", level: 166, category: "敏職" },
     { id: "Eric", job: "鏢", level: 163, category: "敏職" },
+    { id: "阿翔", job: "鏢", level: 154, category: "敏職" },
     { id: "Bagel", job: "鏢", level: 121, category: "敏職" },
     { id: "derder", job: "鏢", level: 118, category: "敏職" },
     { id: "汪德", job: "槍", level: 170, category: "敏職" },
+    { id: "阿翔", job: "拳", level: 170, category: "敏職" },
     { id: "阿仁", job: "拳", level: 167, category: "敏職" },
+    { id: "Tim", job: "拳", level: 167, category: "敏職" },
     { id: "小皮", job: "拳", level: 140, category: "敏職" },
 
-    // --- 法職 (14位: 毒 ➔ 冰 ➔ 主) ---
+    // --- 法職 (17位: 毒 ➔ 冰 ➔ 主) ---
     { id: "Bagel", job: "毒", level: 174, category: "法職" },
     { id: "Steve", job: "毒", level: 148, category: "法職" },
+    { id: "Tim", job: "毒", level: 132, category: "法職" },
     { id: "Eric", job: "冰", level: 169, category: "法職" },
     { id: "CC", job: "冰", level: 164, category: "法職" },
     { id: "小龜", job: "主", level: 174, category: "法職" },
+    { id: "阿翔", job: "主", level: 172, category: "法職" },
     { id: "CC", job: "主", level: 165, category: "法職" },
     { id: "Ohni", job: "主", level: 162, category: "法職" },
     { id: "Lumi", job: "主", level: 155, category: "法職" },
+    { id: "Tim", job: "主", level: 141, category: "法職" },
     { id: "Bagel", job: "主", level: 137, category: "法職" },
     { id: "Steve", job: "主", level: 132, category: "法職" },
     { id: "Eric", job: "主", level: 132, category: "法職" },
@@ -282,7 +294,12 @@ let MEMBER_NAME_ALIASES = {
     'DER': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
     'To偷哭ku': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
     'To偷哭kU': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
-    '偷哭': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭']
+    '偷哭': ['derder', 'DerDer', 'DER', 'To偷哭ku', 'To偷哭kU', '偷哭'],
+    '阿翔': ['阿翔'],
+    'Tim': ['Tim', 'tim'],
+    'John': ['John', 'john'],
+    'rose': ['rose', 'Rose'],
+    'BBG': ['BBG', 'bbg']
 };
 
 function bindMemberAlias(surveyName, charId) {
