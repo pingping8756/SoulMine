@@ -207,7 +207,8 @@ html, body {
 .glass-card h2 {
     margin-bottom: 0.5rem;
     font-size: 1.5rem;
-    color: #c2410c;
+    color: #9a3412;
+    font-weight: 800;
 }
 
 .subtitle {
@@ -902,8 +903,8 @@ button {
 
 /* Boss Category Selection Styles */
 .boss-category-card {
-    background: rgba(26, 15, 43, 0.82);
-    border: 1px solid var(--card-border);
+    background: #f6f0e6;
+    border: 1.5px solid #e4d5c1;
     border-radius: 14px;
     padding: 1.15rem 1rem;
     cursor: pointer;
@@ -913,12 +914,13 @@ button {
     justify-content: space-between;
     position: relative;
     overflow: hidden;
+    box-shadow: 0 4px 14px rgba(120, 53, 15, 0.05);
 }
 .boss-category-card:hover {
     transform: translateY(-4px);
-    border-color: var(--primary-color);
-    box-shadow: 0 8px 25px rgba(255, 117, 24, 0.25);
-    background: rgba(36, 21, 62, 0.95);
+    border-color: #ea580c;
+    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.16);
+    background: #fff8ee;
 }
 .boss-badge-count {
     display: inline-flex;
@@ -930,33 +932,33 @@ button {
     font-weight: 700;
 }
 .boss-badge-active {
-    background: rgba(74, 222, 128, 0.18);
-    color: #4ade80;
-    border: 1px solid rgba(74, 222, 128, 0.35);
+    background: #ffffff;
+    color: #15803d;
+    border: 1.5px solid #86efac;
 }
 .boss-badge-zero {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-muted);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #ffffff;
+    color: #64748b;
+    border: 1.5px solid #cbd5e1;
 }
 .btn-back-boss {
     display: inline-flex;
     align-items: center;
     gap: 0.45rem;
-    background: rgba(255, 117, 24, 0.1);
-    border: 1px solid rgba(255, 117, 24, 0.4);
-    color: #ff9800;
+    background: rgba(234, 88, 12, 0.1);
+    border: 1.5px solid var(--primary-color);
+    color: var(--primary-color);
     padding: 0.45rem 1rem;
     border-radius: 8px;
     font-size: 0.92rem;
-    font-weight: 600;
+    font-weight: 700;
     cursor: pointer;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    transition: all 0.2s;
 }
 .btn-back-boss:hover {
-    background: rgba(255, 117, 24, 0.2);
-    border-color: #ff9800;
-    color: #ffa726;
+    background: rgba(234, 88, 12, 0.2);
+    border-color: var(--primary-hover);
+    color: var(--primary-hover);
 }
 
 /* 4-Column Boss Category Grid */
@@ -1756,7 +1758,7 @@ button {
 .survey-h-title {
     margin: 0;
     font-size: 1.25rem;
-    color: #0f172a;
+    color: #9a3412;
     font-weight: 900;
     letter-spacing: 0.5px;
     display: inline-flex;
@@ -4366,7 +4368,7 @@ button {
     margin: 0;
     font-size: 1.3rem;
     font-weight: 900;
-    color: #0f172a;
+    color: #9a3412;
     display: flex;
     align-items: center;
     gap: 0.45rem;
@@ -5302,7 +5304,7 @@ button {
 }
 
 /* ========================================================
-   Global Floating Heart Widget (全站懸浮愛心互動組件)
+   Global Floating Maple Leaf Widget (全站懸浮楓葉互動組件)
    ======================================================== */
 .global-heart-container {
     position: fixed;
@@ -5317,24 +5319,33 @@ button {
 }
 
 .global-heart-btn {
-    display: flex;
+    display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 7px;
     background: #ffffff;
-    border: 2px solid #fda4af;
+    border: 2px solid #fdba74;
     border-radius: 9999px;
     padding: 7px 14px 7px 11px;
-    box-shadow: 0 8px 24px rgba(244, 63, 94, 0.22);
+    box-shadow: 0 8px 24px rgba(234, 88, 12, 0.2);
     cursor: pointer;
     outline: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
     transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.2s ease, border-color 0.2s ease;
     position: relative;
 }
 
 .global-heart-btn:hover {
     transform: translateY(-2px) scale(1.05);
-    border-color: #f43f5e;
-    box-shadow: 0 12px 28px rgba(244, 63, 94, 0.32);
+    border-color: #ea580c;
+    box-shadow: 0 12px 28px rgba(234, 88, 12, 0.32);
 }
 
 .global-heart-btn:active {
@@ -5354,9 +5365,14 @@ button {
 .heart-icon-anim {
     font-size: 1.25rem;
     line-height: 1;
-    display: inline-block;
-    filter: drop-shadow(0 2px 4px rgba(244, 63, 94, 0.3));
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    filter: drop-shadow(0 2px 4px rgba(234, 88, 12, 0.3));
     transition: transform 0.15s ease;
+    font-family: -apple-system, BlinkMacSystemFont, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .global-heart-btn:hover .heart-icon-anim {
@@ -5366,9 +5382,12 @@ button {
 .heart-counter-text {
     font-size: 0.92rem;
     font-weight: 900;
-    color: #e11d48;
+    color: #c2410c;
     letter-spacing: 0.3px;
     font-variant-numeric: tabular-nums;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Noto Sans TC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 /* Floating +1 Particle */
@@ -5377,11 +5396,14 @@ button {
     pointer-events: none;
     font-weight: 900;
     font-size: 0.95rem;
-    color: #f43f5e;
-    text-shadow: 0 2px 6px rgba(255, 255, 255, 0.9), 0 0 10px rgba(244, 63, 94, 0.4);
+    color: #c2410c;
+    text-shadow: 0 2px 6px rgba(255, 255, 255, 0.9), 0 0 10px rgba(234, 88, 12, 0.4);
     animation: heartFloatAnim 0.75s ease-out forwards;
     white-space: nowrap;
     z-index: 10000;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 @keyframes heartFloatAnim {
@@ -5406,13 +5428,16 @@ button {
     right: 0;
     width: 260px;
     background: #ffffff;
-    border: 2px solid #fecdd3;
+    border: 2px solid #fed7aa;
     border-radius: 14px;
-    box-shadow: 0 12px 36px rgba(225, 29, 72, 0.18), 0 2px 8px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 12px 36px rgba(180, 83, 9, 0.16), 0 2px 8px rgba(0, 0, 0, 0.05);
     padding: 0.65rem 0.85rem;
     box-sizing: border-box;
     animation: bubblePopIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     transform-origin: bottom right;
+    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Noto Sans TC", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 .heart-speech-bubble::after {
@@ -5423,8 +5448,8 @@ button {
     width: 12px;
     height: 12px;
     background: #ffffff;
-    border-right: 2px solid #fecdd3;
-    border-bottom: 2px solid #fecdd3;
+    border-right: 2px solid #fed7aa;
+    border-bottom: 2px solid #fed7aa;
     transform: rotate(45deg);
 }
 
@@ -5444,10 +5469,10 @@ button {
     align-items: center;
     gap: 5px;
     font-size: 0.8rem;
-    color: #e11d48;
+    color: #c2410c;
     margin-bottom: 4px;
     padding-bottom: 3px;
-    border-bottom: 1px dashed #ffe4e6;
+    border-bottom: 1px dashed #fed7aa;
 }
 
 .bubble-header strong {
@@ -5465,7 +5490,7 @@ button {
     padding: 0 2px;
 }
 .bubble-close-btn:hover {
-    color: #e11d48;
+    color: #c2410c;
 }
 
 .bubble-body {

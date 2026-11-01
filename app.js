@@ -5508,9 +5508,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
                         <div>
                             <h2 style="margin: 0; font-size: 1.5rem; display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;">
-                                <span style="color: #ff9800; font-weight: 700;">📋 突襲王專區</span>
-                                <span style="font-size: 0.88rem; color: #ff9800; font-weight: 600; background: rgba(255, 152, 0, 0.12); border: 1px solid rgba(255, 152, 0, 0.3); padding: 0.2rem 0.65rem; border-radius: 16px;">(共 ${allActiveRaids.length} 組待組隊伍)</span>
-                                <button type="button" onclick="window.selectBossCategory('ALL')" class="btn-secondary" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; border-radius: 8px; border: 1.5px solid var(--primary-color); background: rgba(255, 117, 24, 0.12); color: var(--primary-color); font-weight: 700; cursor: pointer;" title="直接查看所有 Boss 的待組隊伍">
+                                <span style="color: #9a3412; font-weight: 900;">📋 突襲王專區</span>
+                                <span style="font-size: 0.88rem; color: #c2410c; font-weight: 700; background: #fff7ed; border: 1.5px solid #fed7aa; padding: 0.2rem 0.65rem; border-radius: 16px;">(共 ${allActiveRaids.length} 組待組隊伍)</span>
+                                <button type="button" onclick="window.selectBossCategory('ALL')" class="btn-secondary" style="font-size: 0.85rem; padding: 0.35rem 0.85rem; border-radius: 8px; border: 1.5px solid var(--primary-color); background: rgba(234, 88, 12, 0.1); color: var(--primary-color); font-weight: 700; cursor: pointer;" title="直接查看所有 Boss 的待組隊伍">
                                     👀 查看全部待組隊伍 (${allActiveRaids.length})
                                 </button>
                             </h2>
@@ -5547,7 +5547,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (activeCount > 0) {
                     badgeHtml = `<span class="boss-badge-count boss-badge-active">🟢 待組隊伍：${activeCount} 組</span>`;
                 } else if (expiredBossRaids.length > 0) {
-                    badgeHtml = `<span class="boss-badge-count boss-badge-zero" style="color: #94a3b8;">⚪ 暫無待組 (流團 ${expiredBossRaids.length} 組)</span>`;
+                    badgeHtml = `<span class="boss-badge-count boss-badge-zero" style="color: #991b1b; background: #fef2f2; border: 1.5px solid #fecaca;">⚪ 暫無待組 (流團 ${expiredBossRaids.length} 組)</span>`;
                 } else {
                     badgeHtml = `<span class="boss-badge-count boss-badge-zero">⚪ 暫無待組隊伍</span>`;
                 }
@@ -5555,9 +5555,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 let upcomingHtml = '';
                 if (activeCount > 0 && activeBossRaids[0].time) {
                     upcomingHtml = `
-                        <div style="margin-top: 0.65rem; background: rgba(0, 0, 0, 0.3); padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid rgba(255,255,255,0.06); gap: 0.3rem;">
-                            <span style="color: var(--text-muted); white-space: nowrap;">最近：</span>
-                            <strong style="color: #fff; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${activeBossRaids[0].time}</strong>
+                        <div style="margin-top: 0.65rem; background: #fff7ed; padding: 0.45rem 0.65rem; border-radius: 8px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; border: 1px solid #fed7aa; gap: 0.3rem;">
+                            <span style="color: #9a3412; font-weight: 700; white-space: nowrap;">最近：</span>
+                            <strong style="color: #c2410c; font-size: 0.82rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${activeBossRaids[0].time}</strong>
                         </div>
                     `;
                 }
@@ -5568,7 +5568,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             <div style="display: flex; align-items: center; gap: 0.65rem;">
                                 <span style="font-size: 2rem; line-height: 1;">${b.icon}</span>
                                 <div>
-                                    <h3 style="margin: 0; font-size: 1.22rem; color: #fff; font-weight: 700; white-space: nowrap;">${b.name}</h3>
+                                    <h3 style="margin: 0; font-size: 1.25rem; color: #2b2118; font-weight: 800; white-space: nowrap;">${b.name}</h3>
                                 </div>
                             </div>
                         </div>
@@ -5577,8 +5577,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                         ${upcomingHtml}
                     </div>
-                    <div style="margin-top: 1.2rem; display: flex; justify-content: flex-end; align-items: center; border-top: 1px solid rgba(255,255,255,0.06); padding-top: 0.7rem;">
-                        <button type="button" onclick="event.stopPropagation(); window.selectBossCategory('${escapeHtml(b.name)}')" style="background: none; border: none; color: var(--primary-color); font-weight: 700; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0;">
+                    <div style="margin-top: 1.2rem; display: flex; justify-content: flex-end; align-items: center; border-top: 1.5px solid #f3e8dc; padding-top: 0.7rem;">
+                        <button type="button" onclick="event.stopPropagation(); window.selectBossCategory('${escapeHtml(b.name)}')" style="background: none; border: none; color: #c2410c; font-weight: 800; font-size: 0.95rem; cursor: pointer; display: flex; align-items: center; gap: 0.3rem; padding: 0.2rem 0;">
                             進入查看隊伍 ➔
                         </button>
                     </div>
@@ -5620,10 +5620,10 @@ document.addEventListener('DOMContentLoaded', () => {
                             </button>
                             <div style="display: flex; align-items: center; gap: 0.45rem; flex-shrink: 0;">
                                 <span style="font-size: 1.5rem; line-height: 1;">${currentBossInfo.icon}</span>
-                                <h2 style="margin: 0; font-size: 1.3rem; color: #ff9800; font-weight: 700; white-space: nowrap;">
+                                <h2 style="margin: 0; font-size: 1.3rem; color: #9a3412; font-weight: 900; white-space: nowrap;">
                                     【${currentBossInfo.name}】待組隊伍
                                 </h2>
-                                <span style="background: rgba(255, 152, 0, 0.12); color: #ff9800; border: 1px solid rgba(255, 152, 0, 0.3); padding: 0.15rem 0.55rem; border-radius: 14px; font-size: 0.82rem; font-weight: 600; white-space: nowrap;">
+                                <span style="background: #fff7ed; color: #c2410c; border: 1.5px solid #fed7aa; padding: 0.15rem 0.55rem; border-radius: 14px; font-size: 0.82rem; font-weight: 700; white-space: nowrap;">
                                     ${countBadge}
                                 </span>
                             </div>
@@ -5648,10 +5648,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (activeRaids.length === 0 && expiredRaids.length === 0) {
             container.innerHTML = `
-                <div style="width: 100%; box-sizing: border-box; text-align: center; padding: 3.5rem 1.5rem; background: rgba(255,255,255,0.02); border-radius: 14px; border: 1px dashed rgba(255,255,255,0.15);">
+                <div style="width: 100%; box-sizing: border-box; text-align: center; padding: 3.5rem 1.5rem; background: #f6f0e6; border-radius: 14px; border: 1.5px dashed #d5c4af;">
                     <div style="font-size: 3.5rem; margin-bottom: 0.8rem;">${currentBossInfo.icon}</div>
-                    <h3 style="color: #ff9800; margin-bottom: 0.4rem; font-size: 1.25rem; font-weight: 700;">目前尚無【${currentBossInfo.name}】的待組隊伍</h3>
-                    <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.5rem;">想發起挑戰嗎？歡迎點擊下方按鈕立即建立新出團！</p>
+                    <h3 style="color: #9a3412; margin-bottom: 0.4rem; font-size: 1.25rem; font-weight: 800;">目前尚無【${currentBossInfo.name}】的待組隊伍</h3>
+                    <p style="color: #786558; font-size: 0.95rem; margin-bottom: 1.5rem;">想發起挑戰嗎？歡迎點擊下方按鈕立即建立新出團！</p>
                     <div style="display: flex; gap: 0.6rem; align-items: center; justify-content: center; flex-wrap: wrap;">
                         ${getCreateLoginButtonHtml()}
                         <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1rem; padding: 0.65rem 1.6rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
@@ -5669,14 +5669,14 @@ document.addEventListener('DOMContentLoaded', () => {
             emptyBanner.style.boxSizing = 'border-box';
             emptyBanner.style.textAlign = 'center';
             emptyBanner.style.padding = '2.5rem 1.5rem';
-            emptyBanner.style.background = 'rgba(255,255,255,0.02)';
+            emptyBanner.style.background = '#f6f0e6';
             emptyBanner.style.borderRadius = '14px';
-            emptyBanner.style.border = '1px dashed rgba(255,255,255,0.15)';
+            emptyBanner.style.border = '1.5px dashed #d5c4af';
             emptyBanner.style.marginBottom = '0.5rem';
             emptyBanner.innerHTML = `
                 <div style="font-size: 2.8rem; margin-bottom: 0.5rem;">${currentBossInfo.icon}</div>
-                <h3 style="color: #ff9800; margin-bottom: 0.4rem; font-size: 1.25rem; font-weight: 700;">目前尚無【${currentBossInfo.name}】的有效待組隊伍</h3>
-                <p style="color: #64748b; font-size: 0.95rem; margin-bottom: 1.2rem;">下方僅有過期流團紀錄，歡迎立即建立新出團！</p>
+                <h3 style="color: #9a3412; margin-bottom: 0.4rem; font-size: 1.25rem; font-weight: 800;">目前尚無【${currentBossInfo.name}】的有效待組隊伍</h3>
+                <p style="color: #786558; font-size: 0.95rem; margin-bottom: 1.2rem;">下方僅有過期流團紀錄，歡迎立即建立新出團！</p>
                 <div style="display: flex; gap: 0.6rem; align-items: center; justify-content: center; flex-wrap: wrap;">
                     ${getCreateLoginButtonHtml()}
                     <button onclick="openCreateModalForBoss('${currentBossInfo.name}')" class="btn-primary" style="font-size: 1rem; padding: 0.65rem 1.6rem; background: var(--success-color); border: none; border-radius: 8px; color: #111; font-weight: 700; cursor: pointer;">
@@ -5732,31 +5732,31 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     }
                     return `
-                        <div style="background: rgba(255,255,255,0.08); padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid rgba(255,255,255,0.12); box-sizing: border-box;">
+                        <div style="background: #fdfaf7; padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid #ebd9c8; box-sizing: border-box;">
                             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.12rem;">
                                 <div style="display: flex; align-items: center; gap: 0.25rem; min-width: 0; overflow: hidden; white-space: nowrap;">
-                                    <strong style="color: var(--primary-color); font-size: 0.8rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
-                                    <span style="color: #fff; font-weight: 600; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span>
-                                    <span style="color: var(--text-muted); font-size: 0.7rem; flex-shrink: 0;">(Lv.${m.level})</span>
-                                    ${isActuallyCreator ? '<span style="color:var(--primary-color); font-size:0.72rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
+                                    <strong style="color: #c2410c; font-size: 0.8rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
+                                    <span style="color: #2b2118; font-weight: 700; font-size: 0.82rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${m.name}</span>
+                                    <span style="color: #786558; font-size: 0.7rem; flex-shrink: 0;">(Lv.${m.level})</span>
+                                    ${isActuallyCreator ? '<span style="color:#c2410c; font-size:0.72rem; flex-shrink: 0;" title="團長">👑</span>' : ''}
                                 </div>
                                 ${roleBadgeHtml ? `<div>${roleBadgeHtml}</div>` : ''}
                             </div>
-                            <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(239, 68, 68, 0.15); border: 1px solid rgba(239, 68, 68, 0.35); color: #f87171; border-radius: 50%; width: 17px; height: 17px; min-width: 17px; min-height: 17px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1; transition: all 0.15s ease;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.15)'; this.style.color='#f87171';" title="退出或移除此席位">✕</button>
+                            <button onclick="leaveRaid('${raid.id}', '${m.name}')" style="background: rgba(239, 68, 68, 0.12); border: 1px solid rgba(239, 68, 68, 0.3); color: #dc2626; border-radius: 50%; width: 17px; height: 17px; min-width: 17px; min-height: 17px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.68rem; font-weight: 800; cursor: pointer; flex-shrink: 0; padding: 0; line-height: 1; transition: all 0.15s ease;" onmouseover="this.style.background='#ef4444'; this.style.color='#fff';" onmouseout="this.style.background='rgba(239, 68, 68, 0.12)'; this.style.color='#dc2626';" title="退出或移除此席位">✕</button>
                         </div>
                     `;
                 } else {
                     if (isExpired) {
                         return `
-                            <div style="border: 1px dashed rgba(255,255,255,0.1); background: rgba(0, 0, 0, 0.2); padding: 0.38rem 0.4rem; border-radius: 6px; font-size: 0.78rem; color: #64748b; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">未入座 (已流團)</div>
+                            <div style="border: 1px dashed #cbd5e1; background: #f8fafc; padding: 0.38rem 0.4rem; border-radius: 6px; font-size: 0.78rem; color: #64748b; text-align: center; box-sizing: border-box; display: flex; align-items: center; justify-content: center;">未入座 (已流團)</div>
                         `;
                     }
                     const slotRoleText = cleanSlotRole ? ` - ${cleanSlotRole}` : '';
                     return `
                         <div onclick="openJoinModal('${raid.id}', ${slotIdx})" 
-                             style="cursor: pointer; border: 1.5px dashed var(--primary-color); background: rgba(255, 117, 24, 0.08); padding: 0.38rem 0.4rem; border-radius: 6px; font-size: 0.78rem; color: var(--primary-color); text-align: center; font-weight: 700; transition: all 0.2s; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;" 
-                             onmouseover="this.style.background='rgba(255, 117, 24, 0.18)'" 
-                             onmouseout="this.style.background='rgba(255, 117, 24, 0.08)'" 
+                             style="cursor: pointer; border: 1.5px dashed #ea580c; background: #fff7ed; padding: 0.38rem 0.4rem; border-radius: 6px; font-size: 0.78rem; color: #c2410c; text-align: center; font-weight: 700; transition: all 0.2s; box-sizing: border-box; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.1rem;" 
+                             onmouseover="this.style.background='#ffedd5'" 
+                             onmouseout="this.style.background='#fff7ed'" 
                              title="點擊報名此位置 (第 ${slotNum} 位${slotRoleText})">
                             <div>➕ 點擊報名 (第 ${slotNum} 位)</div>
                             ${cleanSlotRole ? `<span class="member-role-badge ${roleInfo.cssClass}" style="font-size: 0.68rem; padding: 0.06rem 0.35rem; border-radius: 4px; display: inline-block;">${escapeHtml(cleanSlotRole)}</span>` : ''}
@@ -5775,11 +5775,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 slotsHtml = `
                     <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.5rem; margin-bottom: 0.45rem;">
                         <div>
-                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.3rem; font-size: 0.85rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.15rem;">A 隊</div>
+                            <div style="color: ${isExpired ? '#94a3b8' : '#9a3412'}; font-weight: 800; margin-bottom: 0.3rem; font-size: 0.85rem; border-bottom: 1.5px solid ${isExpired ? '#e2e8f0' : '#fed7aa'}; padding-bottom: 0.15rem;">A 隊</div>
                             <div style="display: flex; flex-direction: column; gap: 0.22rem;">${team1Html}</div>
                         </div>
                         <div>
-                            <div style="color: ${isExpired ? '#94a3b8' : 'var(--primary-color)'}; font-weight: bold; margin-bottom: 0.3rem; font-size: 0.85rem; border-bottom: 1px solid ${isExpired ? 'rgba(255,255,255,0.1)' : 'rgba(255,117,24,0.3)'}; padding-bottom: 0.15rem;">B 隊</div>
+                            <div style="color: ${isExpired ? '#94a3b8' : '#9a3412'}; font-weight: 800; margin-bottom: 0.3rem; font-size: 0.85rem; border-bottom: 1.5px solid ${isExpired ? '#e2e8f0' : '#fed7aa'}; padding-bottom: 0.15rem;">B 隊</div>
                             <div style="display: flex; flex-direction: column; gap: 0.22rem;">${team2Html}</div>
                         </div>
                     </div>
@@ -5827,27 +5827,29 @@ document.addEventListener('DOMContentLoaded', () => {
             card.style.padding = '0.55rem 0.45rem';
             card.style.borderRadius = '10px';
             if (isExpired) {
-                card.style.background = 'rgba(20, 15, 26, 0.65)';
-                card.style.borderColor = 'rgba(255, 255, 255, 0.08)';
-                card.style.opacity = '0.72';
+                card.style.background = '#f8fafc';
+                card.style.border = '1.5px solid #cbd5e1';
+                card.style.opacity = '0.78';
                 card.style.filter = 'grayscale(35%)';
             } else {
-                card.style.background = 'rgba(26, 15, 43, 0.78)';
+                card.style.background = '#f6f0e6';
+                card.style.border = '1.5px solid #e4d5c1';
+                card.style.boxShadow = '0 4px 14px rgba(120, 53, 15, 0.06)';
             }
 
             const bossTitleName = normalizeBossName(raid.boss);
             const titleHtml = isExpired
                 ? `<div style="display:flex; flex-direction: column; gap: 0.15rem; width: 100%;">
                      <div style="display:flex; justify-content: space-between; align-items: center;">
-                       <h3 style="margin:0; color:#94a3b8; font-size: 1.05rem; font-weight: 800; line-height: 1.2;">[${bossTitleName}]${raid.gamesCount || 7}場 <span style="color: #ef4444; font-size: 0.74rem; font-weight: bold; background: rgba(239, 68, 68, 0.15); padding: 0.05rem 0.35rem; border-radius: 4px; border: 1px solid rgba(239, 68, 68, 0.3); margin-left: 0.15rem;">(流團)</span></h3>
+                        <h3 style="margin:0; color:#64748b; font-size: 1.05rem; font-weight: 800; line-height: 1.2;">[${bossTitleName}]${raid.gamesCount || 7}場 <span style="color: #ef4444; font-size: 0.74rem; font-weight: bold; background: #fee2e2; padding: 0.05rem 0.35rem; border-radius: 4px; border: 1px solid #fca5a5; margin-left: 0.15rem;">(流團)</span></h3>
                      </div>
-                     <div style="font-weight:700; font-size: 0.92rem; color: #64748b; line-height: 1.2; text-decoration: line-through;" title="出團時間已過">${raid.time}</div>
+                     <div style="font-weight:700; font-size: 0.92rem; color: #94a3b8; line-height: 1.2; text-decoration: line-through;" title="出團時間已過">${raid.time}</div>
                    </div>`
                 : `<div style="display:flex; flex-direction: column; gap: 0.15rem; width: 100%;">
                      <div style="display:flex; justify-content: space-between; align-items: center;">
-                       <h3 style="margin:0; color:var(--primary-color); font-size: 1.05rem; font-weight: 800; line-height: 1.2;">[${bossTitleName}]${raid.gamesCount || 7}場</h3>
+                        <h3 style="margin:0; color:#9a3412; font-size: 1.05rem; font-weight: 800; line-height: 1.2;">[${bossTitleName}]${raid.gamesCount || 7}場</h3>
                      </div>
-                     <div style="font-weight:700; font-size: 0.92rem; color: #fff; line-height: 1.2;">${raid.time}</div>
+                     <div style="font-weight:800; font-size: 0.92rem; color: #c2410c; line-height: 1.2;">${raid.time}</div>
                    </div>`;
 
             const noteBannerHtml = raid.note ? `
@@ -6748,8 +6750,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const card = document.createElement('div');
                 card.className = 'glass-card';
-                card.style.background = isHistory ? 'var(--bg-color)' : 'var(--card-bg)';
-                card.style.border = '1px solid var(--card-border)';
+                card.style.background = isHistory ? '#eae2d4' : '#f6f0e6';
+                card.style.border = '1.5px solid #e4d5c1';
                 card.style.borderRadius = '12px';
                 card.style.padding = '1.5rem';
                 card.style.opacity = isHistory ? '0.85' : '1';
@@ -6768,7 +6770,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 header.innerHTML = `
                     <div style="display: flex; align-items: baseline; flex-wrap: wrap; gap: 0.3rem 0.6rem; width: 100%;">
-                        <h3 style="color: var(--primary-color); margin: 0; font-size: 1.15rem; font-weight: 800; line-height: 1.4;">[${bossName}]${team.gamesCount || 7}場 ${timeDisplay}</h3>
+                        <h3 style="color: #9a3412; margin: 0; font-size: 1.15rem; font-weight: 800; line-height: 1.4;">[${bossName}]${team.gamesCount || 7}場 ${timeDisplay}</h3>
                         ${channelInfo}
                     </div>
                 `;
@@ -10507,7 +10509,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { icon: '🤣', text: '衝 10% 卷沒過是正常的；要是過了，你今晚睡得著嗎？' },
         { icon: '🪦', text: '打王最遙遠的距離：不是王血量剩 1%，而是墓碑掉下來時王死了。' },
         { icon: '❄️', text: '什麼職業最不怕冷？冰雷，因為他早就被凍習慣了。' },
-        { icon: '🎲', text: '聽說點滿 100 下愛心，下次打困拉掉寶率會提升 0.00001% 喔！(純屬虛構)' },
+        { icon: '🍁', text: '聽說點滿 100 下楓葉，下次打困拉掉寶率會提升 0.00001% 喔！(純屬虛構)' },
         { icon: '🦉', text: '今天不熬夜打王，只熬夜等隊友回訊息。' },
         { icon: '🍗', text: '如果有一天我變強了，那一定是公會大腿借我的力量。' },
         { icon: '📜', text: '衝卷千萬別猶豫，猶豫就會敗北，果斷就會...白白浪費一張卷。' },
@@ -10665,10 +10667,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // 隨機出現「+1」或「功德+1」
             const floatingOptions = [
-                '+1 ❤️',
+                '+1 🍁',
                 '+1',
-                '+1 💕',
-                '功德+1 ❤️',
+                '+1 🍂',
+                '功德+1 🍁',
                 '功德+1 🪵',
                 '功德+1 ✨',
                 '功德+1'

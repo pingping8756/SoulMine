@@ -6,7 +6,7 @@
     <title>🍁 SoulMine 組隊系統 🍂</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=312">
+    <link rel="stylesheet" href="style.css?v=316">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -28,7 +28,7 @@
             <!-- Modal Header -->
             <div style="flex-shrink: 0;">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.3rem;">
-                    <h2 style="margin: 0; font-size: 1.35rem; color: #0f172a; font-weight: 800;">👥 報名入座出團</h2>
+                    <h2 style="margin: 0; font-size: 1.35rem; color: #9a3412; font-weight: 800;">👥 報名入座出團</h2>
                     <button type="button" id="btn-close-join-x" style="background: none; border: none; color: #64748b; font-size: 1.6rem; cursor: pointer; line-height: 1; padding: 0.2rem 0.5rem;">&times;</button>
                 </div>
                 <p id="join-slot-desc" style="color: #475569; font-size: 0.88rem; font-weight: 600; margin: 0 0 0.8rem 0;">點擊角色卡即可直接入座。</p>
@@ -311,7 +311,7 @@
         <div class="glass-card modal-content" style="max-width: 780px; width: 95%; max-height: 92vh; overflow-y: auto; padding: 1.2rem; display: flex; flex-direction: column; flex-wrap: nowrap !important; box-sizing: border-box; background: #ffffff !important; border: 1.5px solid #cbd5e1; box-shadow: 0 25px 60px rgba(0, 0, 0, 0.35); color: #0f172a; border-radius: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; border-bottom: 1.5px solid #e2e8f0; padding-bottom: 0.45rem; flex-wrap: wrap; gap: 0.5rem;">
                 <div style="display: flex; align-items: center; gap: 0.45rem; flex-wrap: wrap;">
-                    <h2 style="margin: 0; font-size: 1.25rem; color: #0f172a; font-weight: 800; display: flex; align-items: center; gap: 0.35rem;">
+                    <h2 style="margin: 0; font-size: 1.25rem; color: #9a3412; font-weight: 800; display: flex; align-items: center; gap: 0.35rem;">
                         <span>🎴 角色卡資料庫管理</span>
                     </h2>
                     <span style="font-size: 0.75rem; background: #ffedd5; color: #c2410c; border: 1px solid #fed7aa; padding: 0.12rem 0.45rem; border-radius: 10px; font-weight: 800;">管理員</span>
@@ -924,10 +924,10 @@
             <!-- Tab 2: Confirmed Raids -->
             <section id="tab-status" class="tab-content">
                 <!-- 1. 當週已確認出團名單明細 表格 (直接融合在出團看板頂部) -->
-                <div class="glass-card" style="margin-bottom: 1.5rem; background: #ffffff; border: 1.5px solid #cbd5e1;">
+                <div class="glass-card" style="margin-bottom: 1.5rem; background: #f6f0e6; border: 1.5px solid #e4d5c1;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.6rem;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-                            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 900; color: #0f172a; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; flex-shrink: 0;">
+                            <h2 style="margin: 0; font-size: 1.25rem; font-weight: 900; color: #9a3412; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; flex-shrink: 0;">
                                 <span>📊 當週已確認出團名單明細</span>
                             </h2>
                             <!-- 藍色週次選擇：同一行、不換行、自動隨內容包覆不超出 -->
@@ -1073,9 +1073,9 @@
             </div>
         </div>
 
-        <!-- Heart Button -->
-        <button type="button" id="btn-global-heart" class="global-heart-btn">
-            <span class="heart-icon-anim">❤️</span>
+        <!-- Maple Leaf Interactive Button (秋日楓葉加持按鈕) -->
+        <button type="button" id="btn-global-heart" class="global-heart-btn" title="點擊楓葉加持！" aria-label="點擊楓葉加持">
+            <span class="heart-icon-anim">🍁</span>
             <span id="global-heart-counter" class="heart-counter-text">0</span>
         </button>
     </div>
@@ -1083,6 +1083,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=312" defer></script>
+    <script src="app.js?v=316" defer></script>
 </body>
 </html>
