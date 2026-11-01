@@ -1093,6 +1093,7 @@ document.addEventListener('DOMContentLoaded', () => {
             setupChangelogForm();
             setupChangelogEditModal();
             setupGlobalHeartWidget();
+            initMapleLeaves();
             updateUI();
         } catch (e) {
             console.error("FATAL ERROR IN INITAPP:", e);
@@ -1134,6 +1135,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (v === o) return true;
         if (o.includes('龍王') && v.includes('龍王')) return true;
         if (o === '爺爺' && (v.includes('阿卡') || v.includes('爺爺') || v.includes('伊農'))) return true;
+        if (o === '蝴蝶' && (v.includes('蝴蝶') || v.includes('畢奈亞') || v.includes('艾畢') || v.includes('露希'))) return true;
         if ((o.includes('補') || o.includes('缺')) && (v.includes('補') || v.includes('缺'))) return true;
         return false;
     }
@@ -1143,9 +1145,9 @@ document.addEventListener('DOMContentLoaded', () => {
         '普拉',
         '困拉',
         '炎魔',
-        '跟活動',
-        '龍王(跟大拿一起湊)',
+        '蝴蝶',
         '爺爺',
+        '龍王(跟大拿一起湊)',
         '缺哪裡補哪裡'
     ];
 
@@ -10491,7 +10493,7 @@ document.addEventListener('DOMContentLoaded', () => {
         { icon: '☕', text: '辛苦了！謝謝你為公會出團出一份力～' },
         { icon: '🍀', text: '今天也是閃閃發光的一天，衝卷必過 100%！' },
         { icon: '💪', text: '深呼吸～你是隊伍裡不可或缺的大腿！' },
-        { icon: '👻', text: '生活再忙，也別忘了跟公會夥伴一起打王耍廢！' },
+        { icon: '🍁', text: '生活再忙，也別忘了跟公會夥伴一起打王耍廢！' },
         { icon: '🍵', text: '打王累了嗎？喝口水、伸個懶腰再出發吧！' },
         { icon: '❤️', text: '不論今天戰況如何，有你在的公會就是最棒的公會！' },
         { icon: '🔥', text: '失敗沒關係，下週重置又是好漢一條！' },
@@ -10729,6 +10731,57 @@ document.addEventListener('DOMContentLoaded', () => {
             // 當使用者即將關閉或重新整理分頁時，立即將尚未送出的點擊送出
             window.addEventListener('beforeunload', flushLikesToFirebase);
         };
+    }
+
+    // ========================================================
+    // Autumn Falling Maple Leaves Animated Background (秋日落楓飄落)
+    // ========================================================
+    function initMapleLeaves() {
+        try {
+            const container = document.getElementById('maple-leaves-bg');
+            if (!container) return;
+            container.innerHTML = '';
+            const isMobile = window.innerWidth <= 680;
+            const leafCount = isMobile ? 12 : 24;
+            const leafIcons = ['🍁', '🍂', '🍁', '🍁', '🍂'];
+            const leafShadows = [
+                'drop-shadow(0 0 8px rgba(234, 88, 12, 0.45))',
+                'drop-shadow(0 0 10px rgba(225, 29, 72, 0.4))',
+                'drop-shadow(0 0 6px rgba(245, 158, 11, 0.45))',
+                'drop-shadow(0 0 8px rgba(180, 83, 9, 0.35))'
+            ];
+
+            for (let i = 0; i < leafCount; i++) {
+                const leaf = document.createElement('div');
+                leaf.className = 'maple-leaf';
+                leaf.textContent = leafIcons[Math.floor(Math.random() * leafIcons.length)];
+                const leftPos = Math.random() * 100;
+                const size = 16 + Math.random() * 20; // 16px ~ 36px
+                const duration = 10 + Math.random() * 14; // 10s ~ 24s (自然柔和漫飄)
+                const delay = -Math.random() * duration; // 負 delay 讓楓葉在頁面一載入時就均勻分佈在全螢幕各高度
+                const drift = (Math.random() - 0.5) * 160; // -80px ~ +80px 輕微隨風擺動
+                const rot = 180 + Math.random() * 360;
+                const flip = Math.random() > 0.5 ? 360 : 180;
+                const maxOp = 0.4 + Math.random() * 0.45; // 0.40 ~ 0.85 在淺咖大地背景上自然分明又柔和
+                const scale = 0.8 + Math.random() * 0.4;
+                const shadow = leafShadows[Math.floor(Math.random() * leafShadows.length)];
+
+                leaf.style.left = `${leftPos}%`;
+                leaf.style.fontSize = `${size}px`;
+                leaf.style.animationDuration = `${duration}s`;
+                leaf.style.animationDelay = `${delay}s`;
+                leaf.style.filter = shadow;
+                leaf.style.setProperty('--leaf-drift', `${drift}px`);
+                leaf.style.setProperty('--leaf-rot', `${rot}deg`);
+                leaf.style.setProperty('--leaf-flip', `${flip}deg`);
+                leaf.style.setProperty('--leaf-max-op', `${maxOp}`);
+                leaf.style.setProperty('--leaf-scale', `${scale}`);
+
+                container.appendChild(leaf);
+            }
+        } catch (e) {
+            console.warn("Failed to init maple leaves:", e);
+        }
     }
 
     // --- Run App Initialization safely after all definitions ---
