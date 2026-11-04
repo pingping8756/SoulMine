@@ -6438,6 +6438,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `<td class="col-empty-team-header" style="text-align:center; font-size:0.78rem; color:#94a3b8; font-weight:700;">-</td>`;
             }
             return cols.map(col => {
+                if (col.isDk && col.isSecondSquad) {
+                    // 龍王為同一團，第二分隊欄位省略，由第一分隊以 colspan="2" 合併呈現
+                    return '';
+                }
+
                 const team = col.team;
                 const actualTeamIdx = col.actualTeamIdx;
                 const members = team.members ? (Array.isArray(team.members) ? team.members : Object.values(team.members)) : [];
@@ -6445,7 +6450,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 const teamTimestamp = getTeamTimestamp(team);
                 const isHistory = !!team.isHistorical || (teamTimestamp > 0 && now > teamTimestamp);
 
-                // 計算該分隊入座人數 (若為龍王，依據 slotOffset 0..5 或 6..11 計算)
+                if (col.isDk) {
+                    // 龍王雙隊合併 (12人團，跨 A1 / A2 兩欄)
+                    const hasExplicitSlotIndex = members.some(item => item && item.slotIndex !== undefined && item.slotIndex !== null);
+                    let squad1Count = 0;
+                    for (let r = 0; r < 6; r++) {
+                        const mem = hasExplicitSlotIndex ? members.find(item => item && item.slotIndex === r) : members[r];
+                        if (mem && mem.name) squad1Count++;
+                    }
+                    let squad2Count = 0;
+                    for (let r = 6; r < 12; r++) {
+                        const mem = hasExplicitSlotIndex ? members.find(item => item && item.slotIndex === r) : members[r];
+                        if (mem && mem.name) squad2Count++;
+                    }
+                    const totalDkCount = squad1Count + squad2Count;
+                    const squad1Label = col.squadShort || 'A1';
+                    const squad2Label = col.squadShort ? col.squadShort.replace('1', '2') : 'A2';
+
+                    if (isHistory) {
+                        return `
+                            <td colspan="2" style="text-align:center; padding: 0.35rem 3px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
+                                <div style="font-weight: 800; font-size: 0.76rem; color: #64748b; margin-bottom: 0.25rem; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                    <span>👥 ${totalDkCount}/12</span>
+                                    <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">(${squad1Label}: ${squad1Count} / ${squad2Label}: ${squad2Count})</span>
+                                </div>
+                                <!-- 掉寶紀錄：龍王兩隊合併為單一掉寶紀錄區塊 -->
+                                <div class="report-table-drop-section" style="text-align: left; margin-top: 0.25rem;">
+                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
+                                        <span class="report-table-drop-title" style="font-size: 0.72rem; font-weight: 800; color: #b45309;">掉寶紀錄</span>
+                                        <button type="button" class="btn-table-save-drop" data-team-index="${actualTeamIdx}" style="font-size: 0.7rem; padding: 1px 6px; background: #16a34a; color: #ffffff; border: none; border-radius: 3px; cursor: pointer; font-weight: 700;">儲存</button>
+                                    </div>
+                                    <textarea class="report-table-drop-input" data-team-index="${actualTeamIdx}" placeholder="輸入掉寶紀錄..." style="width: 100%; height: 38px; font-size: 0.72rem; padding: 2px 3px; border: 1px solid #cbd5e1; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #ffffff; color: #1e293b; font-family: inherit;">${escapeHtml(team.drops || '')}</textarea>
+                                </div>
+                            </td>
+                        `;
+                    }
+
+                    return `
+                        <td colspan="2" style="text-align:center; padding: 0.35rem 3px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
+                            <div style="font-weight: 800; font-size: 0.76rem; color: #2563eb; margin-bottom: 0.25rem; white-space: nowrap; display: flex; align-items: center; justify-content: center; gap: 4px;">
+                                <span>👥 ${totalDkCount}/12</span>
+                                <span style="font-size: 0.72rem; color: #64748b; font-weight: 700;">(${squad1Label}: ${squad1Count} / ${squad2Label}: ${squad2Count})</span>
+                            </div>
+                            <!-- 龍王三按鈕合併為一組置中 -->
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; max-width: 130px; margin: 0 auto;">
+                                <button type="button" class="btn-table-copy-team" data-team-index="${actualTeamIdx}" title="複製原班人馬建立新出團 (複製)" style="flex: 1; min-width: 0; font-size: 0.8rem; padding: 2px 2px; border-radius: 3px; background: #2563eb; color: #ffffff; border: none; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">📋</button>
+                                <button type="button" class="btn-table-edit-team" data-team-index="${actualTeamIdx}" title="編輯調整成員站位與戰術定位 (編輯)" style="flex: 1; min-width: 0; font-size: 0.8rem; padding: 2px 2px; border-radius: 3px; background: #ffffff; color: #2563eb; border: 1px solid #3b82f6; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">✏️</button>
+                                <button type="button" class="btn-table-delete-team" data-team-index="${actualTeamIdx}" title="刪除出團紀錄 (刪除)" style="flex: 1; min-width: 0; font-size: 0.85rem; padding: 2px 2px; border-radius: 3px; background: #ffffff; color: #dc2626; border: 1px solid #f87171; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">✕</button>
+                            </div>
+                        </td>
+                    `;
+                }
+
+                // 計算該分隊入座人數 (6人一般隊伍)
                 let squadMemberCount = 0;
                 for (let r = 0; r < 6; r++) {
                     const sIdx = col.slotOffset + r;
@@ -6457,9 +6514,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     return `
                         <td style="text-align:center; padding: 0.35rem 2px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
                             <div style="font-weight: 800; font-size: 0.76rem; color: #64748b; margin-bottom: 0.25rem; white-space: nowrap;">
-                                <span>👥 ${squadMemberCount}/6${col.isDk ? ` (${col.squadShort})` : ''}</span>
+                                <span>👥 ${squadMemberCount}/6</span>
                             </div>
-                            <!-- 掉寶紀錄：若是雙隊伍，由二隊或兩隊均可記錄 -->
                             <div class="report-table-drop-section" style="text-align: left; margin-top: 0.25rem;">
                                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2px;">
                                     <span class="report-table-drop-title" style="font-size: 0.72rem; font-weight: 800; color: #b45309;">掉寶紀錄</span>
@@ -6474,7 +6530,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `
                     <td style="text-align:center; padding: 0.35rem 2px; background:#f8fafc; border: 1px solid #cbd5e1; vertical-align: top;">
                         <div style="font-weight: 800; font-size: 0.76rem; color: #2563eb; margin-bottom: 0.25rem; white-space: nowrap;">
-                            <span>👥 ${squadMemberCount}/6${col.isDk ? ` (${col.squadShort})` : ''}</span>
+                            <span>👥 ${squadMemberCount}/6</span>
                         </div>
                         <!-- 複製、編輯、刪除 三個按鈕改為精巧圖示，大幅縮小左右所需寬度 -->
                         <div style="display: flex; justify-content: center; align-items: center; gap: 2px; width: 100%; box-sizing: border-box;">
