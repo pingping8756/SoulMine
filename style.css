@@ -4772,8 +4772,10 @@ button {
 
 .smart-matrix-boss-select {
     width: 100%;
-    padding: 0.22rem 0.25rem;
-    font-size: 0.82rem;
+    height: 24px;
+    line-height: 22px;
+    padding: 0 4px;
+    font-size: 0.8rem;
     font-weight: 800;
     border-radius: 6px;
     border: 1.5px solid #cbd5e1;
@@ -4786,6 +4788,54 @@ button {
 .smart-matrix-boss-select:focus {
     border-color: #7c3aed;
     outline: none;
+}
+
+.smart-matrix-games-select {
+    height: 24px;
+    line-height: 22px;
+    padding: 0 4px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: #c2410c;
+    background: #fff7ed;
+    border: 1.5px solid #fed7aa;
+    border-radius: 6px;
+    cursor: pointer;
+    outline: none;
+    text-align: center;
+    box-sizing: border-box;
+    white-space: nowrap;
+}
+.smart-matrix-games-select:hover {
+    border-color: #f97316;
+    background: #ffedd5;
+}
+.smart-matrix-games-select:focus {
+    border-color: #ea580c;
+    box-shadow: 0 0 0 2px rgba(234, 88, 12, 0.2);
+}
+
+.btn-table-position-map {
+    transition: all 0.15s ease;
+}
+.btn-table-position-map:hover {
+    background: #dbeafe !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+    transform: translateY(-1px);
+}
+
+.smart-matrix-squad-row td {
+    background: #f8fafc;
+    padding: 0.2rem 0.25rem;
+    border-bottom: 2px solid #cbd5e1;
+    text-align: center;
+}
+.smart-matrix-squad-row .sticky-col {
+    background: #e2e8f0;
+    font-size: 0.8rem;
+    color: #475569;
+    font-weight: 800;
 }
 
 .smart-matrix-boss-static {
@@ -5163,6 +5213,14 @@ button {
         height: 23px !important;
         font-size: 0.72rem !important;
         padding: 0 0.1rem !important;
+    }
+    .smart-matrix-games-select {
+        height: 23px !important;
+        font-size: 0.72rem !important;
+        padding: 0 0.15rem !important;
+    }
+    .smart-matrix-squad-row td {
+        padding: 0.1rem 0.15rem !important;
     }
 
     /* 席位每行高度大幅緊湊 (從 42px 縮短為 27px) */

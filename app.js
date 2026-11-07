@@ -501,6 +501,7 @@ document.addEventListener('DOMContentLoaded', () => {
         bossesByDaySlot: {}, // { [slotKey]: "克雷塞爾", [slotKey_sq0]: "...", [slotKey_sq1]: "..." }
         squadsByDaySlot: {}, // { [slotKey]: [ squad0(6 slots), squad1(6 slots)... ] }
         timesByDaySlot: {},  // { [slotKey]: "20:00" | "20:30" | "21:00" | "21:30" }
+        gamesByDaySlot: {},  // { [slotKey]: 3 | 4... }
         selectedMemberName: null, // Highlight available slots for this member
         activePickerSlot: null // { slotKey, squadIdx, slotIdx }
     };
@@ -6299,6 +6300,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const bossNick = getBossNickname(boss);
                 const gamesStr = team.gamesCount ? ` ${team.gamesCount}場` : '';
                 const timeStr = team.timeText ? (team.timeText.match(/\d{1,2}:\d{2}/) ? team.timeText.match(/\d{1,2}:\d{2}/)[0] : '') : '';
+                const dkGamesCount = isDk ? (team.gamesCount || 3) : null;
+                const dkGamesBadge = isDk ? `<span style="font-weight: 800; font-size: 0.78rem; color: #b45309; background: #fef3c7; padding: 1px 4px; border-radius: 4px; border: 1px solid #fde68a; white-space: nowrap; flex-shrink: 0; line-height: 1.2;">${dkGamesCount}場</span>` : '';
 
                 // 檢查備註：若為自動生成的全週排班備註則不顯示
                 const rawNote = (team.note || '').trim();
@@ -6324,10 +6327,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                 ${bossNick}
                             </span>
                             ${timeStr ? `<span style="font-weight: 800; font-size: 0.78rem; color: #ea580c; background: #fff7ed; padding: 1px 4px; border-radius: 4px; border: 1px solid #fed7aa; white-space: nowrap; flex-shrink: 0; line-height: 1.2;">${timeStr}</span>` : ''}
+                            ${dkGamesBadge}
                         </div>
                         <div class="report-channel-box" style="margin-top: 0.3rem; display: flex; align-items: center; justify-content: center; gap: 0.2rem;">
                             <input type="number" min="1" max="800" class="report-channel-input" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" style="width: 44px; padding: 1px 2px; font-size: 0.82rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 800; color: #1e293b; background: #ffffff;">
                             <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" title="隨機骰頻道" style="padding: 1px 3px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2;">🎲</button>
+                            ${isDk ? `
+                                <a href="https://bulashiterminal.github.io/horntail-party-position-planner/" target="_blank" rel="noopener noreferrer" class="btn-table-position-map" title="站位圖規劃(開新分頁)" style="padding: 1px 3px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">🗺️</a>
+                            ` : ''}
                         </div>
                         ${displayNote ? `<div class="report-team-note" title="📝 備註：${escapeHtml(displayNote)}" style="cursor: help;">📝 ${escapeHtml(displayNote)}</div>` : ''}
                     </th>
@@ -6974,14 +6981,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     function renderChannelUI() {
                         channelSection.innerHTML = '';
+                        const isDkTeam = isDragonKingBoss(team.boss);
+                        const posMapBtnHtml = isDkTeam ? `
+                            <a href="https://bulashiterminal.github.io/horntail-party-position-planner/" target="_blank" rel="noopener noreferrer" class="btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 1rem; text-decoration: none; display: inline-flex; align-items: center; justify-content: center; line-height: 1.2;" title="站位圖規劃(開新分頁)">🗺️</a>
+                        ` : '';
+
                         if (team.finalChannel) {
                             channelSection.innerHTML = `
-                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
                                     <span style="font-weight: 600; color: var(--primary-color);">最終頻道: <span style="color:var(--text-main);">${team.finalChannel}</span></span>
-                                    <button class="btn-secondary" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">重新選擇頻道</button>
+                                    <div style="display: flex; gap: 0.4rem; align-items: center;">
+                                        ${posMapBtnHtml}
+                                        <button class="btn-secondary reselect-ch-btn" style="padding: 0.3rem 0.6rem; font-size: 0.85rem;">重新選擇頻道</button>
+                                    </div>
                                 </div>
                             `;
-                            channelSection.querySelector('button').onclick = () => {
+                            channelSection.querySelector('.reselect-ch-btn').onclick = () => {
                                 team.finalChannel = null;
                                 saveDB();
                                 renderConfirmedTeams();
@@ -6995,10 +7010,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             channelSection.innerHTML = `
                                 <div style="margin-bottom: 0.8rem; font-weight: 600; font-size: 0.9rem; color: var(--text-main);">頻道選擇</div>
-                                <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                                     <input type="number" min="1" max="800" class="channel-input" value="${singleChannel}" style="width: 85px; padding: 0.4rem; font-size: 1rem; border: 1px solid var(--card-border); border-radius: 4px; text-align: center; color: #4a4559; background: #fff;">
                                     <button class="btn-secondary reroll-btn" style="padding: 0.4rem 0.8rem; font-size: 1rem;" title="隨機骰頻道">🎲</button>
                                     <button class="btn-primary select-btn" style="padding: 0.4rem 1rem; font-size: 0.9rem;">鎖定</button>
+                                    ${posMapBtnHtml}
                                 </div>
                             `;
 
@@ -8249,10 +8265,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const bosses = smartSchedState.bossesByDaySlot || {};
         const squads = smartSchedState.squadsByDaySlot || {};
         const times = smartSchedState.timesByDaySlot || {};
+        const games = smartSchedState.gamesByDaySlot || {};
 
         let serializedJson = '';
         try {
-            serializedJson = JSON.stringify({ bossesByDaySlot: bosses, squadsByDaySlot: squads, timesByDaySlot: times });
+            serializedJson = JSON.stringify({ bossesByDaySlot: bosses, squadsByDaySlot: squads, timesByDaySlot: times, gamesByDaySlot: games });
         } catch(jsonErr) {
             console.error("Failed to serialize smart schedule draft:", jsonErr);
         }
@@ -8278,6 +8295,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 bossesByDaySlot: bosses,
                 squadsByDaySlot: squads,
                 timesByDaySlot: times,
+                gamesByDaySlot: games,
                 draftJson: serializedJson,
                 updatedAt: draftData.updatedAt,
                 updatedBy: draftData.updatedBy
@@ -8354,22 +8372,26 @@ document.addEventListener('DOMContentLoaded', () => {
             let loadedBosses = null;
             let loadedSquads = null;
             let loadedTimes = null;
+            let loadedGames = null;
             if (draft.draftJson) {
                 try {
                     const parsed = JSON.parse(draft.draftJson);
                     loadedBosses = parsed.bossesByDaySlot;
                     loadedSquads = parsed.squadsByDaySlot;
                     loadedTimes = parsed.timesByDaySlot;
+                    loadedGames = parsed.gamesByDaySlot;
                 } catch(e) {}
             }
             if (!loadedBosses) loadedBosses = draft.bossesByDaySlot;
             if (!loadedSquads) loadedSquads = draft.squadsByDaySlot;
             if (!loadedTimes) loadedTimes = draft.timesByDaySlot;
+            if (!loadedGames) loadedGames = draft.gamesByDaySlot;
 
-            if (loadedBosses || loadedSquads || loadedTimes) {
+            if (loadedBosses || loadedSquads || loadedTimes || loadedGames) {
                 smartSchedState.bossesByDaySlot = Object.assign({}, loadedBosses || {});
                 smartSchedState.squadsByDaySlot = Object.assign({}, loadedSquads || {});
                 smartSchedState.timesByDaySlot = Object.assign({}, loadedTimes || {});
+                smartSchedState.gamesByDaySlot = Object.assign({}, loadedGames || {});
                 smartSchedState.lastLoadedWeekId = weekId;
                 smartSchedState.loadedUpdatedAt = draft.updatedAt || Date.now();
                 const timeStr = draft.updatedAt ? new Date(draft.updatedAt).toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }) : '';
@@ -8381,6 +8403,7 @@ document.addEventListener('DOMContentLoaded', () => {
         smartSchedState.bossesByDaySlot = {};
         smartSchedState.squadsByDaySlot = {};
         smartSchedState.timesByDaySlot = {};
+        smartSchedState.gamesByDaySlot = {};
         smartSchedState.lastLoadedWeekId = weekId;
         smartSchedState.loadedUpdatedAt = 0;
         updateSmartSchedSyncStatus('idle', '尚未排班');
@@ -8483,6 +8506,34 @@ document.addEventListener('DOMContentLoaded', () => {
                     smartSchedState.timesByDaySlot[`${slotKey}_sq${sq - 1}`] = val;
                 }
             }
+        }
+        markSmartScheduleModified();
+        renderSmartSchedule();
+    };
+
+    function getSmartSlotGames(slotKey, squadIdx = 0) {
+        const sq = parseInt(squadIdx, 10) || 0;
+        if (smartSchedState && smartSchedState.gamesByDaySlot) {
+            const keyWithSq = `${slotKey}_sq${sq}`;
+            if (smartSchedState.gamesByDaySlot[keyWithSq] !== undefined) {
+                return parseInt(smartSchedState.gamesByDaySlot[keyWithSq], 10) || 3;
+            }
+            if (sq === 0 && smartSchedState.gamesByDaySlot[slotKey] !== undefined) {
+                return parseInt(smartSchedState.gamesByDaySlot[slotKey], 10) || 3;
+            }
+        }
+        return 3;
+    }
+    window.getSmartSlotGames = getSmartSlotGames;
+
+    window.changeSmartSlotGames = function(slotKey, squadIdx, gamesVal) {
+        if (!smartSchedState.gamesByDaySlot) smartSchedState.gamesByDaySlot = {};
+        const sq = parseInt(squadIdx, 10) || 0;
+        const val = parseInt(gamesVal, 10) || 3;
+        smartSchedState.gamesByDaySlot[`${slotKey}_sq${sq}`] = val;
+        smartSchedState.gamesByDaySlot[`${slotKey}_sq${sq + 1}`] = val;
+        if (sq === 0) {
+            smartSchedState.gamesByDaySlot[slotKey] = val;
         }
         markSmartScheduleModified();
         renderSmartSchedule();
@@ -9276,10 +9327,26 @@ document.addEventListener('DOMContentLoaded', () => {
             </tr>
         `;
 
+        function isDkPairFirst(i) {
+            if (i >= columns.length - 1) return false;
+            const c = columns[i];
+            const next = columns[i + 1];
+            return c.isDk && next.isDk && c.slotKey === next.slotKey && next.squadIdx === c.squadIdx + 1 && !isDkPairSecond(i);
+        }
+
+        function isDkPairSecond(i) {
+            if (i <= 0) return false;
+            const c = columns[i];
+            const prev = columns[i - 1];
+            return c.isDk && prev.isDk && c.slotKey === prev.slotKey && c.squadIdx === prev.squadIdx + 1 && !isDkPairSecond(i - 1);
+        }
+
         // ==========================================
-        // 1.5. TIME SELECTOR (各分隊獨立時間下拉選擇)
+        // 1.5. TIME SELECTOR (各分隊時間下拉選擇，龍王雙隊合併為單一選擇)
         // ==========================================
-        const middleTimeTds = columns.map(col => {
+        const middleTimeTds = columns.map((col, colIdx) => {
+            if (isDkPairSecond(colIdx)) return '';
+            const isPairFirst = isDkPairFirst(colIdx);
             const isAfternoon = (col.slotDef && col.slotDef.period === '午');
             const currentTime = getSmartSlotTime(col.slotKey, col.squadIdx);
             const defaultOptions = isAfternoon
@@ -9287,14 +9354,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 : ['19:30', '20:00', '20:30', '21:00', '21:30', '22:00', '22:30', '23:00'];
             const timeOptions = defaultOptions.includes(currentTime) ? defaultOptions : [currentTime, ...defaultOptions].sort();
 
+            const raidLetter = col.squadLabel ? col.squadLabel.replace(/\d+$/, '') : '';
+            const tagLabel = isPairFirst 
+                ? (raidLetter ? `${raidLetter} 團 (12人)` : '12人團')
+                : (col.squadLabel || '');
+
+            const removeBtn = isPairFirst
+                ? `<button type="button" class="smart-col-remove-btn" onclick="window.removeSmartSquadPair('${escapeHtml(col.slotKey)}', ${col.squadIdx})" title="✕ 移除整團龍王">✕</button>`
+                : (col.squadCount > 1 ? `<button type="button" class="smart-col-remove-btn" onclick="window.removeSmartSquad('${escapeHtml(col.slotKey)}', ${col.squadIdx})" title="✕ 移除【${escapeHtml(col.squadLabel || '此隊')}】">✕</button>` : '');
+
             return `
-                <td>
-                    <div class="smart-matrix-time-wrap">
-                        ${col.squadLabel ? `<span class="smart-squad-tag ${col.squadTagClass || 'tag-a'}">${escapeHtml(col.squadLabel)}</span>` : ''}
+                <td ${isPairFirst ? 'colspan="2"' : ''}>
+                    <div class="smart-matrix-time-wrap" style="${isPairFirst ? 'justify-content: center; gap: 4px;' : ''}">
+                        ${tagLabel ? `<span class="smart-squad-tag ${col.squadTagClass || 'tag-a'}">${escapeHtml(tagLabel)}</span>` : ''}
                         <select class="smart-matrix-time-select" onchange="window.changeSmartSlotTime('${escapeHtml(col.slotKey)}', ${col.squadIdx}, this.value)" title="選擇出團時間">
                             ${timeOptions.map(t => `<option value="${t}" ${currentTime === t ? 'selected' : ''}>${t}</option>`).join('')}
                         </select>
-                        ${col.squadCount > 1 ? `<button type="button" class="smart-col-remove-btn" onclick="window.removeSmartSquad('${escapeHtml(col.slotKey)}', ${col.squadIdx})" title="✕ 移除【${escapeHtml(col.squadLabel || '此隊')}】">✕</button>` : ''}
+                        ${removeBtn}
                     </div>
                 </td>
             `;
@@ -9308,21 +9384,36 @@ document.addEventListener('DOMContentLoaded', () => {
         `;
 
         // ==========================================
-        // 2. BOSS SELECTOR (最上排 Boss 下拉選單，極簡版面無多餘標籤)
+        // 2. BOSS SELECTOR (Boss 下拉選單，龍王雙隊合併為單一選擇，並支援場次選擇)
         // ==========================================
-        const middleBossTds = columns.map(col => {
+        const middleBossTds = columns.map((col, colIdx) => {
+            if (isDkPairSecond(colIdx)) return '';
+            const isPairFirst = isDkPairFirst(colIdx);
             const currentBoss = getSmartSlotBoss(col.slotKey, col.squadIdx);
+            const currentGames = getSmartSlotGames(col.slotKey, col.squadIdx);
 
             const bossSelectOptions = SMART_BOSS_OPTIONS.map(opt => {
                 const isSel = (opt.val === currentBoss);
                 return `<option value="${escapeHtml(opt.val)}" ${isSel ? 'selected' : ''}>${escapeHtml(opt.label)}</option>`;
             }).join('');
 
+            const isDkSlot = isPairFirst || isDragonKingBoss(currentBoss);
+            const gamesSelectHtml = isDkSlot ? `
+                <select class="smart-matrix-games-select" style="flex: 1 1 50%; width: 50%; min-width: 0; max-width: 50%; box-sizing: border-box;" onchange="window.changeSmartSlotGames('${escapeHtml(col.slotKey)}', ${col.squadIdx}, this.value)" title="選擇龍王出團場次">
+                    <option value="3" ${currentGames === 3 ? 'selected' : ''}>3 場</option>
+                    <option value="4" ${currentGames === 4 ? 'selected' : ''}>4 場</option>
+                    <option value="7" ${currentGames === 7 ? 'selected' : ''}>7 場</option>
+                </select>
+            ` : '';
+
             return `
-                <td>
-                    <select class="smart-matrix-boss-select" onchange="window.changeSmartSlotBoss('${escapeHtml(col.slotKey)}', ${col.squadIdx}, this.value)" title="選擇突襲 Boss">
-                        ${bossSelectOptions}
-                    </select>
+                <td ${isPairFirst ? 'colspan="2"' : ''}>
+                    <div style="display: flex; gap: 0.35rem; align-items: center; justify-content: center; width: 100%; box-sizing: border-box; padding: 1px 3px;">
+                        <select class="smart-matrix-boss-select" style="${isDkSlot ? 'flex: 1 1 50%; width: 50%; max-width: 50%;' : 'width: 100%;'} min-width: 0; box-sizing: border-box;" onchange="window.changeSmartSlotBoss('${escapeHtml(col.slotKey)}', ${col.squadIdx}, this.value)" title="選擇突襲 Boss">
+                            ${bossSelectOptions}
+                        </select>
+                        ${gamesSelectHtml}
+                    </div>
                 </td>
             `;
         }).join('');
@@ -9544,9 +9635,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tbody>
                     <!-- 1. 最上方：時段日期表頭 (雙隊時跨兩欄合併) -->
                     ${middleDateRow}
-                    <!-- 2. 時間列：各分隊獨立時間下拉選擇 -->
+                    <!-- 2. 時間列：各分隊時間下拉選擇 (龍王合併為單一選擇) -->
                     ${middleTimeRow}
-                    <!-- 3. 最上方：Boss 下拉選擇 (龍王時右側新增 B 隊欄) -->
+                    <!-- 3. 最上方：Boss 下拉選擇 (龍王合併為單一選擇，並支援場次選擇) -->
                     ${middleBossRow}
                     <!-- 4. 上方：已排入出團隊伍席位 (固定 6 席高度，ID與職業對調鎖定欄寬) -->
                     ${topRowsHtml}
@@ -9601,10 +9692,74 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!smartSchedState.timesByDaySlot) smartSchedState.timesByDaySlot = {};
                 const currentTime = getSmartSlotTime(slotKey, sqIdx);
                 smartSchedState.timesByDaySlot[`${slotKey}_sq${sqIdx + 1}`] = currentTime;
+                if (!smartSchedState.gamesByDaySlot) smartSchedState.gamesByDaySlot = {};
+                if (!smartSchedState.gamesByDaySlot[`${slotKey}_sq${sqIdx}`]) {
+                    smartSchedState.gamesByDaySlot[`${slotKey}_sq${sqIdx}`] = 3;
+                    smartSchedState.gamesByDaySlot[`${slotKey}_sq${sqIdx + 1}`] = 3;
+                }
+            }
+        } else {
+            // 若由龍王改為其他 Boss，且後一分隊亦曾被配對為龍王，則同步改為非龍王防殘留
+            const nextBoss = getSmartSlotBoss(slotKey, sqIdx + 1);
+            if (isDragonKingBoss(nextBoss)) {
+                smartSchedState.bossesByDaySlot[`${slotKey}_sq${sqIdx + 1}`] = bossName;
             }
         }
         smartSchedState.squadsByDaySlot[slotKey] = currentSquads;
 
+        markSmartScheduleModified();
+        renderSmartSchedule();
+    };
+
+    // 移除 12 人雙分隊龍王整團
+    window.removeSmartSquadPair = function(slotKey, squadIdx = 0) {
+        if (!canAccessSmartSchedule()) {
+            alert('全週排班為管理員與授權專屬功能，請先登入！');
+            return;
+        }
+        const currentSquads = smartSchedState.squadsByDaySlot[slotKey] || [];
+        const sqIdx = parseInt(squadIdx, 10) || 0;
+        const sq1 = currentSquads[sqIdx];
+        const sq2 = currentSquads[sqIdx + 1];
+        const hasAssigned = (sq1 && sq1.some(c => c && c.name)) || (sq2 && sq2.some(c => c && c.name));
+        const sqLabel = (getSmartSquadLabel(slotKey, sqIdx) || '').replace(/\d+$/, '') || '此';
+        if (hasAssigned) {
+            if (!confirm(`確定要移除【${sqLabel} 團龍王 (12人)】嗎？已排入該隊的成員將退回下方名冊。`)) {
+                return;
+            }
+        }
+        if (currentSquads.length <= 2) {
+            smartSchedState.squadsByDaySlot[slotKey] = [
+                Array.from({ length: 6 }, () => ({ name: '', job: '', level: '', roleTag: '' }))
+            ];
+            if (smartSchedState.bossesByDaySlot) {
+                smartSchedState.bossesByDaySlot[`${slotKey}_sq0`] = "克雷塞爾";
+                smartSchedState.bossesByDaySlot[slotKey] = "克雷塞爾";
+                delete smartSchedState.bossesByDaySlot[`${slotKey}_sq1`];
+            }
+            if (smartSchedState.timesByDaySlot) {
+                delete smartSchedState.timesByDaySlot[`${slotKey}_sq1`];
+            }
+            if (smartSchedState.gamesByDaySlot) {
+                delete smartSchedState.gamesByDaySlot[`${slotKey}_sq0`];
+                delete smartSchedState.gamesByDaySlot[`${slotKey}_sq1`];
+                delete smartSchedState.gamesByDaySlot[slotKey];
+            }
+        } else {
+            currentSquads.splice(sqIdx, 2);
+            if (smartSchedState.bossesByDaySlot) {
+                delete smartSchedState.bossesByDaySlot[`${slotKey}_sq${sqIdx}`];
+                delete smartSchedState.bossesByDaySlot[`${slotKey}_sq${sqIdx + 1}`];
+            }
+            if (smartSchedState.timesByDaySlot) {
+                delete smartSchedState.timesByDaySlot[`${slotKey}_sq${sqIdx}`];
+                delete smartSchedState.timesByDaySlot[`${slotKey}_sq${sqIdx + 1}`];
+            }
+            if (smartSchedState.gamesByDaySlot) {
+                delete smartSchedState.gamesByDaySlot[`${slotKey}_sq${sqIdx}`];
+                delete smartSchedState.gamesByDaySlot[`${slotKey}_sq${sqIdx + 1}`];
+            }
+        }
         markSmartScheduleModified();
         renderSmartSchedule();
     };
@@ -10124,7 +10279,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         const sqLabel = getSmartSquadLabel(slotKey, sqIdx);
                         const squadName = sqLabel ? `[${sqLabel}]` : '隊伍';
                         const slotTime = getSmartSlotTime(slotKey, sqIdx);
-                        text += `\n📅 ${slotKey} ${slotTime}【${squadBoss}】${squadName} (${filled.length}/6人)：\n`;
+                        const gamesStr = isDragonKingBoss(squadBoss) ? ` ${getSmartSlotGames(slotKey, sqIdx)}場` : '';
+                        text += `\n📅 ${slotKey} ${slotTime}【${squadBoss}${gamesStr}】${squadName} (${filled.length}/6人)：\n`;
                         filled.forEach((c, i) => {
                             text += `${i + 1}. ${c.name} (${normalizeJobName(c.job)} Lv.${c.level}) [${stripRoleIcon(c.roleTag) || '打手'}]\n`;
                         });
@@ -10163,7 +10319,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const squadBoss = getSmartSlotBoss(slotKey, sqIdx);
                     const isDk = isDragonKingBoss(squadBoss);
                     const squadTime = getSmartSlotTime(slotKey, sqIdx);
-                    const defaultGames = (SMART_BOSS_OPTIONS.find(o => o.val === squadBoss)?.defaultGames) || (isDk ? 3 : 7);
+                    const defaultGames = isDk ? (getSmartSlotGames(slotKey, sqIdx) || 3) : ((SMART_BOSS_OPTIONS.find(o => o.val === squadBoss)?.defaultGames) || 7);
 
                     if (isDk) {
                         // 檢查下一隊是否亦為同時間的龍王隊伍
