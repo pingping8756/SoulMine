@@ -7123,6 +7123,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const lower = u.toLowerCase();
         if (lower === 'lumi') return 'Lumi';
         if (lower === 'eric') return 'Eric';
+        if (lower === 'dana') return 'Dana';
         if (lower === 'ohni' || lower === '阿甘') return '阿甘';
         return u;
     }
@@ -7199,7 +7200,7 @@ document.addEventListener('DOMContentLoaded', () => {
             authorInput.value = isLumi() ? 'Lumi' : (currentAdmin || '管理員');
         }
 
-        // 4. Survey Admin Actions (All Admins: Lumi, Eric, Ohni can manage)
+        // 4. Survey Admin Actions (All Admins: Lumi, Eric, Ohni, Dana can manage)
         const surveyAdmin = document.getElementById('survey-admin-actions');
         if (surveyAdmin) {
             surveyAdmin.style.display = isAdmin() ? 'block' : 'none';
@@ -7365,8 +7366,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const lowerPass = pass.toLowerCase();
                 if ((lowerName === 'lumi' && lowerPass === 'lumi') ||
                     (lowerName === 'eric' && lowerPass === 'eric') ||
+                    (lowerName === 'dana' && lowerPass === 'dana') ||
                     ((lowerName === 'ohni' || lowerName === '阿甘') && (lowerPass === 'ohni' || lowerPass === '阿甘'))) {
-                    const adminName = (lowerName === 'eric') ? 'Eric' : ((lowerName === 'lumi') ? 'Lumi' : '阿甘');
+                    const adminName = (lowerName === 'eric') ? 'Eric' : ((lowerName === 'dana') ? 'Dana' : ((lowerName === 'lumi') ? 'Lumi' : '阿甘'));
                     setAdmin(adminName);
                     closeGeneralLoginModal();
                     alert(`🎉 歡迎管理員 ${adminName} 登入！`);
@@ -7459,6 +7461,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (clean === 'eric') {
                         setAdmin('Eric');
                         alert('🎉 歡迎管理員 Eric 登入！已啟用出團與角色卡資料庫管理權限。');
+                    } else if (clean === 'dana') {
+                        setAdmin('Dana');
+                        alert('🎉 歡迎管理員 Dana 登入！已啟用出團與角色卡資料庫管理權限。');
                     } else if (clean === 'ohni' || clean === '阿甘') {
                         setAdmin('阿甘');
                         alert('🎉 歡迎管理員 阿甘 登入！已啟用出團與角色卡資料庫管理權限。');
