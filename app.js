@@ -851,10 +851,10 @@ document.addEventListener('DOMContentLoaded', () => {
     window.canCreateTeam = canCreateTeam;
 
     function getCurrentEffectiveUser() {
+        if (isAdmin()) {
+            return getAdminUser() || '管理員';
+        }
         return getLoggedInUser() || 
-               (isAdmin() ? (getAdminUser() || '管理員') : '') || 
-               localStorage.getItem('soulmine_admin_user') || 
-               sessionStorage.getItem('artale_admin_user') || 
                localStorage.getItem('soulmine_logged_user') || 
                sessionStorage.getItem('artale_session') || 
                '';
@@ -942,56 +942,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Auto-repair creator for Bagel's raids if accidentally overwritten to Lumi
-        Object.values(raidsDB).forEach(r => {
-            if (r && r.creator === 'Lumi') {
-                const rMembers = Array.isArray(r.members) ? r.members : [];
-                const hasBagel = rMembers.some(m => m && m.name && m.name.toLowerCase() === 'bagel');
-                const isBagelNote = r.note && (r.note.includes('主教掛繩清球') || r.note.includes('121鏢') || r.note.includes('阿甘'));
-                if (hasBagel || isBagelNote) {
-                    r.creator = 'Bagel';
-                    if (rMembers[0] && rMembers[0].name === 'Bagel') {
-                        rMembers[0].isCreator = true;
-                    }
-                    rMembers.forEach(m => {
-                        if (m && m.name && m.name.toLowerCase() === 'lumi') {
-                            m.isCreator = false;
-                        }
-                    });
-                    if (typeof db !== 'undefined' && db && db.ref && r.id) {
-                        db.ref(`raids/${r.id}/creator`).set('Bagel');
-                        db.ref(`raids/${r.id}/members`).set(rMembers);
-                    }
-                }
-            }
-        });
 
-        // Auto-repair creator for Bagel's confirmed teams if accidentally overwritten to Lumi
-        if (Array.isArray(confirmedTeams)) {
-            let teamsRepaired = false;
-            confirmedTeams.forEach(t => {
-                if (t && t.creator === 'Lumi') {
-                    const tMembers = Array.isArray(t.members) ? t.members : (t.members ? Object.values(t.members) : []);
-                    const hasBagel = tMembers.some(m => m && m.name && m.name.toLowerCase() === 'bagel');
-                    const isBagelNote = t.note && (t.note.includes('主教掛繩清球') || t.note.includes('121鏢') || t.note.includes('阿甘'));
-                    if (hasBagel || isBagelNote) {
-                        t.creator = 'Bagel';
-                        if (tMembers[0] && tMembers[0].name === 'Bagel') {
-                            tMembers[0].isCreator = true;
-                        }
-                        tMembers.forEach(m => {
-                            if (m && m.name && m.name.toLowerCase() === 'lumi') {
-                                m.isCreator = false;
-                            }
-                        });
-                        teamsRepaired = true;
-                    }
-                }
-            });
-            if (teamsRepaired && typeof db !== 'undefined' && db && db.ref) {
-                db.ref('teams').set(confirmedTeams);
-            }
-        }
 
         // Auto-unify DER / DerDer / To偷哭ku / To偷哭kU / 偷哭 -> derder
         const unifyToDerder = (name) => {
@@ -4227,15 +4178,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const identityBadge = document.getElementById('create-modal-current-identity');
             if (identityBadge) {
-                const loggedName = getLoggedInUser();
-                if (loggedName) {
-                    identityBadge.textContent = `👤 發起人：${loggedName}`;
+                if (isAdmin()) {
+                    const adm = getAdminUser() || '管理員';
+                    identityBadge.textContent = `👑 管理員已授權 (${adm})`;
                     identityBadge.style.color = '#15803d';
                     identityBadge.style.background = '#f0fdf4';
                     identityBadge.style.borderColor = '#bbf7d0';
-                } else if (isAdmin()) {
-                    const adm = getAdminUser() || '管理員';
-                    identityBadge.textContent = `👑 管理員已授權 (${adm})`;
+                } else if (getLoggedInUser()) {
+                    const loggedName = getLoggedInUser();
+                    identityBadge.textContent = `👤 發起人：${loggedName}`;
                     identityBadge.style.color = '#15803d';
                     identityBadge.style.background = '#f0fdf4';
                     identityBadge.style.borderColor = '#bbf7d0';
@@ -6320,6 +6271,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
+                const isLocked = team.channelLocked !== undefined ? Boolean(team.channelLocked) : true;
+
+                const channelBoxHtml = isDk ? `
+                    <div class="report-channel-box report-channel-box-dk" style="margin-top: 0.3rem; display: flex; align-items: center; justify-content: center; gap: 3px;">
+                        <input type="number" min="1" max="800" class="report-channel-input ${isLocked ? 'is-locked' : ''}" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" ${isLocked ? 'disabled' : ''} title="${isLocked ? '頻道已鎖定 (點擊 🔒 解鎖)' : '輸入頻道 (1~800)'}">
+                        <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" ${isLocked ? 'disabled' : ''} title="${isLocked ? '頻道已鎖定，請先點擊 🔒 解鎖' : '隨機骰頻道'}">🎲</button>
+                        <button type="button" class="btn-table-lock-channel ${isLocked ? 'is-locked' : 'is-unlocked'}" data-team-index="${actualTeamIdx}" title="${isLocked ? '頻道已鎖定 (點擊解鎖以重新設定或骰頻道)' : '點擊鎖定頻道'}">${isLocked ? '🔒' : '🔓'}</button>
+                        <a href="https://bulashiterminal.github.io/horntail-party-position-planner/" target="_blank" rel="noopener noreferrer" class="btn-table-position-map" title="站位圖規劃(開新分頁)">🗺️</a>
+                    </div>
+                ` : `
+                    <div class="report-channel-box report-channel-box-single" style="margin-top: 0.25rem; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;">
+                        <input type="number" min="1" max="800" class="report-channel-input ${isLocked ? 'is-locked' : ''}" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" ${isLocked ? 'disabled' : ''} title="${isLocked ? '頻道已鎖定 (點擊下方 🔒 解鎖)' : '輸入頻道 (1~800)'}">
+                        <div class="report-channel-btn-group">
+                            <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" ${isLocked ? 'disabled' : ''} title="${isLocked ? '頻道已鎖定，請先點擊 🔒 解鎖' : '隨機骰頻道'}">🎲</button>
+                            <button type="button" class="btn-table-lock-channel ${isLocked ? 'is-locked' : 'is-unlocked'}" data-team-index="${actualTeamIdx}" title="${isLocked ? '頻道已鎖定 (點擊解鎖以重新設定或骰頻道)' : '點擊鎖定頻道'}">${isLocked ? '🔒' : '🔓'}</button>
+                        </div>
+                    </div>
+                `;
+
                 return `
                     <th ${thColSpan} ${thRowSpan} class="col-team-header" title="${fullTooltip}" style="vertical-align: top; padding: 0.35rem 2px;">
                         <div style="display: flex; align-items: center; justify-content: center; gap: 0.25rem; white-space: nowrap; line-height: 1.25;">
@@ -6329,13 +6299,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             ${timeStr ? `<span style="font-weight: 800; font-size: 0.78rem; color: #ea580c; background: #fff7ed; padding: 1px 4px; border-radius: 4px; border: 1px solid #fed7aa; white-space: nowrap; flex-shrink: 0; line-height: 1.2;">${timeStr}</span>` : ''}
                             ${dkGamesBadge}
                         </div>
-                        <div class="report-channel-box" style="margin-top: 0.3rem; display: flex; align-items: center; justify-content: center; gap: 0.2rem;">
-                            <input type="number" min="1" max="800" class="report-channel-input" data-team-index="${actualTeamIdx}" value="${currentCh}" placeholder="頻道" style="width: 44px; padding: 1px 2px; font-size: 0.82rem; text-align: center; border: 1px solid #cbd5e1; border-radius: 4px; font-weight: 800; color: #1e293b; background: #ffffff;">
-                            <button type="button" class="btn-table-reroll-channel" data-team-index="${actualTeamIdx}" title="隨機骰頻道" style="padding: 1px 3px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2;">🎲</button>
-                            ${isDk ? `
-                                <a href="https://bulashiterminal.github.io/horntail-party-position-planner/" target="_blank" rel="noopener noreferrer" class="btn-table-position-map" title="站位圖規劃(開新分頁)" style="padding: 1px 3px; font-size: 0.8rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #f8fafc; cursor: pointer; line-height: 1.2; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;">🗺️</a>
-                            ` : ''}
-                        </div>
+                        ${channelBoxHtml}
                         ${displayNote ? `<div class="report-team-note" title="📝 備註：${escapeHtml(displayNote)}" style="cursor: help;">📝 ${escapeHtml(displayNote)}</div>` : ''}
                     </th>
                 `;
@@ -6573,12 +6537,15 @@ document.addEventListener('DOMContentLoaded', () => {
             </table>
         `;
 
-        // Bind Reroll Channel Buttons (點擊直接隨機骰並儲存，無鎖定按鈕)
+        // Bind Reroll Channel Buttons (已鎖定時禁止骰頻道)
         container.querySelectorAll('.btn-table-reroll-channel').forEach(btn => {
             btn.onclick = (e) => {
                 const idx = parseInt(e.currentTarget.dataset.teamIndex);
                 const team = confirmedTeams[idx];
                 if (!team) return;
+                const isLocked = team.channelLocked !== undefined ? Boolean(team.channelLocked) : true;
+                if (isLocked) return;
+
                 const inputEls = container.querySelectorAll(`.report-channel-input[data-team-index="${idx}"]`);
                 if (inputEls.length === 0) return;
 
@@ -6605,12 +6572,66 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
-        // Bind Channel Input manual change
+        // Bind Lock/Unlock Channel Buttons (點擊切換鎖定狀態並即時更新 DOM)
+        container.querySelectorAll('.btn-table-lock-channel').forEach(btn => {
+            btn.onclick = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                const idx = parseInt(e.currentTarget.dataset.teamIndex);
+                const team = confirmedTeams[idx];
+                if (!team) return;
+                const currentLocked = team.channelLocked !== undefined ? Boolean(team.channelLocked) : true;
+                const nextLocked = !currentLocked;
+                team.channelLocked = nextLocked;
+                saveDB();
+
+                // 即時更新該隊伍所有相關元素 (輸入框、骰子、鎖定鈕)
+                const lockBtns = container.querySelectorAll(`.btn-table-lock-channel[data-team-index="${idx}"]`);
+                const rerollBtns = container.querySelectorAll(`.btn-table-reroll-channel[data-team-index="${idx}"]`);
+                const inputEls = container.querySelectorAll(`.report-channel-input[data-team-index="${idx}"]`);
+
+                lockBtns.forEach(b => {
+                    b.innerHTML = nextLocked ? '🔒' : '🔓';
+                    b.classList.toggle('is-locked', nextLocked);
+                    b.classList.toggle('is-unlocked', !nextLocked);
+                    b.title = nextLocked ? '頻道已鎖定 (點擊解鎖以重新設定或骰頻道)' : '點擊鎖定頻道';
+                });
+
+                rerollBtns.forEach(b => {
+                    if (nextLocked) {
+                        b.setAttribute('disabled', 'disabled');
+                        b.title = '頻道已鎖定，請先點擊 🔒 解鎖';
+                    } else {
+                        b.removeAttribute('disabled');
+                        b.title = '隨機骰頻道';
+                    }
+                });
+
+                inputEls.forEach(inp => {
+                    if (nextLocked) {
+                        inp.setAttribute('disabled', 'disabled');
+                        inp.classList.add('is-locked');
+                        inp.title = '頻道已鎖定 (點擊 🔒 解鎖)';
+                    } else {
+                        inp.removeAttribute('disabled');
+                        inp.classList.remove('is-locked');
+                        inp.title = '輸入頻道 (1~800)';
+                    }
+                });
+            };
+        });
+
+        // Bind Channel Input manual change (鎖定時不允許修改)
         container.querySelectorAll('.report-channel-input').forEach(input => {
             input.onchange = (e) => {
                 const idx = parseInt(e.target.dataset.teamIndex);
                 const team = confirmedTeams[idx];
                 if (!team) return;
+                const isLocked = team.channelLocked !== undefined ? Boolean(team.channelLocked) : true;
+                if (isLocked) {
+                    e.target.value = team.finalChannel;
+                    return;
+                }
                 const val = parseInt(e.target.value);
                 if (val && val >= 1 && val <= 800) {
                     team.finalChannel = val;
@@ -6998,6 +7019,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             `;
                             channelSection.querySelector('.reselect-ch-btn').onclick = () => {
                                 team.finalChannel = null;
+                                team.channelLocked = false;
                                 saveDB();
                                 renderConfirmedTeams();
                             };
@@ -7046,6 +7068,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     return;
                                 }
                                 team.finalChannel = val;
+                                team.channelLocked = true;
                                 saveDB();
                                 renderConfirmedTeams();
                             };
@@ -7170,6 +7193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (user) {
             localStorage.setItem('soulmine_admin_user', user);
             localStorage.setItem('soulmine_is_admin', 'true');
+            setLoggedInUser(user);
         } else {
             localStorage.removeItem('soulmine_admin_user');
             localStorage.removeItem('soulmine_is_admin');

@@ -3979,21 +3979,146 @@ button {
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 4px;
+    gap: 3px;
     margin-top: 3px;
 }
 
+.report-channel-box-single {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    margin-top: 2px;
+}
+
+.report-channel-box-single .report-channel-input {
+    width: 48px !important;
+    max-width: 48px !important;
+    box-sizing: border-box !important;
+}
+
+.report-channel-box-single .report-channel-btn-group {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 48px;
+    gap: 2px;
+    box-sizing: border-box;
+}
+
+.report-channel-box-single .btn-table-reroll-channel,
+.report-channel-box-single .btn-table-lock-channel {
+    flex: 1 1 50% !important;
+    width: 23px !important;
+    min-width: 23px !important;
+    max-width: 23px !important;
+    padding: 1px 0 !important;
+    box-sizing: border-box !important;
+}
+
 .report-channel-input {
-    width: 50px !important;
-    padding: 2px 2px !important;
-    font-size: 0.85rem !important;
+    width: 44px !important;
+    height: 22px !important;
+    line-height: 20px !important;
+    padding: 1px 2px !important;
+    font-size: 0.82rem !important;
     text-align: center !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 4px !important;
     font-weight: 800 !important;
     color: #1e293b !important;
     background: #ffffff !important;
+    box-sizing: border-box !important;
     -moz-appearance: textfield !important;
+    transition: all 0.15s ease;
+}
+
+.report-channel-input:focus {
+    border-color: #3b82f6 !important;
+    outline: none !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+.report-channel-input:disabled,
+.report-channel-input.is-locked {
+    background: #f1f5f9 !important;
+    color: #475569 !important;
+    border-color: #e2e8f0 !important;
+    cursor: not-allowed !important;
+    opacity: 0.95;
+}
+
+.btn-table-reroll-channel {
+    padding: 1px 3px !important;
+    font-size: 0.8rem !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    background: #f8fafc !important;
+    cursor: pointer !important;
+    line-height: 1.2 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    transition: all 0.15s ease !important;
+}
+
+.btn-table-reroll-channel:hover:not(:disabled) {
+    background: #eff6ff !important;
+    border-color: #93c5fd !important;
+    transform: translateY(-1px);
+}
+
+.btn-table-reroll-channel:disabled {
+    background: #f1f5f9 !important;
+    border-color: #e2e8f0 !important;
+    opacity: 0.45 !important;
+    cursor: not-allowed !important;
+}
+
+.btn-table-lock-channel {
+    padding: 1px 3px !important;
+    font-size: 0.8rem !important;
+    height: 22px !important;
+    min-width: 22px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    background: #f8fafc !important;
+    cursor: pointer !important;
+    line-height: 1.2 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    box-sizing: border-box !important;
+    transition: all 0.15s ease !important;
+}
+
+.btn-table-lock-channel.is-locked {
+    background: #fef3c7 !important;
+    border-color: #f59e0b !important;
+    color: #b45309 !important;
+}
+
+.btn-table-lock-channel.is-locked:hover {
+    background: #fde68a !important;
+    border-color: #d97706 !important;
+    transform: translateY(-1px);
+}
+
+.btn-table-lock-channel.is-unlocked {
+    background: #f8fafc !important;
+    border-color: #cbd5e1 !important;
+    color: #64748b !important;
+}
+
+.btn-table-lock-channel.is-unlocked:hover {
+    background: #eff6ff !important;
+    border-color: #93c5fd !important;
+    color: #2563eb !important;
+    transform: translateY(-1px);
 }
 
 .report-channel-input::-webkit-outer-spin-button,
