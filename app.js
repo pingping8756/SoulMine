@@ -6453,6 +6453,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                     </div>
                                     <textarea class="report-table-drop-input" data-team-index="${actualTeamIdx}" placeholder="輸入掉寶紀錄..." style="width: 100%; height: 38px; font-size: 0.72rem; padding: 2px 3px; border: 1px solid #cbd5e1; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #ffffff; color: #1e293b; font-family: inherit;">${escapeHtml(team.drops || '')}</textarea>
                                 </div>
+                                <!-- 歷史出團保留管理功能 (複製 / 編輯 / 刪除) -->
+                                <div style="display: flex; justify-content: center; align-items: center; gap: 4px; width: 100%; box-sizing: border-box; max-width: 130px; margin: 4px auto 0;">
+                                    <button type="button" class="btn-table-copy-team" data-team-index="${actualTeamIdx}" title="複製原班人馬建立新出團 (複製)" style="flex: 1; min-width: 0; font-size: 0.8rem; padding: 2px 2px; border-radius: 3px; background: #2563eb; color: #ffffff; border: none; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">📋</button>
+                                    <button type="button" class="btn-table-edit-team" data-team-index="${actualTeamIdx}" title="編輯調整成員站位與戰術定位 (編輯)" style="flex: 1; min-width: 0; font-size: 0.8rem; padding: 2px 2px; border-radius: 3px; background: #ffffff; color: #2563eb; border: 1px solid #3b82f6; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">✏️</button>
+                                    <button type="button" class="btn-table-delete-team" data-team-index="${actualTeamIdx}" title="刪除出團紀錄 (刪除)" style="flex: 1; min-width: 0; font-size: 0.85rem; padding: 2px 2px; border-radius: 3px; background: #ffffff; color: #dc2626; border: 1px solid #f87171; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">✕</button>
+                                </div>
                             </td>
                         `;
                     }
@@ -6493,6 +6499,12 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <button type="button" class="btn-table-save-drop" data-team-index="${actualTeamIdx}" style="font-size: 0.7rem; padding: 1px 4px; background: #16a34a; color: #ffffff; border: none; border-radius: 3px; cursor: pointer; font-weight: 700;">儲存</button>
                                 </div>
                                 <textarea class="report-table-drop-input" data-team-index="${actualTeamIdx}" placeholder="輸入掉寶紀錄..." style="width: 100%; height: 38px; font-size: 0.72rem; padding: 2px 3px; border: 1px solid #cbd5e1; border-radius: 4px; resize: vertical; box-sizing: border-box; background: #ffffff; color: #1e293b; font-family: inherit;">${escapeHtml(team.drops || '')}</textarea>
+                            </div>
+                            <!-- 歷史出團保留管理功能 (複製 / 編輯 / 刪除) -->
+                            <div style="display: flex; justify-content: center; align-items: center; gap: 2px; width: 100%; box-sizing: border-box; margin-top: 4px;">
+                                <button type="button" class="btn-table-copy-team" data-team-index="${actualTeamIdx}" title="複製原班人馬建立新出團 (複製)" style="flex: 1; min-width: 0; font-size: 0.8rem; padding: 2px 1px; border-radius: 3px; background: #2563eb; color: #ffffff; border: none; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">📋</button>
+                                <button type="button" class="btn-table-edit-team" data-team-index="${actualTeamIdx}" title="編輯調整成員站位與戰術定位 (編輯)" style="flex: 1; min-width: 0; font-size: 0.8rem; padding: 2px 1px; border-radius: 3px; background: #ffffff; color: #2563eb; border: 1px solid #3b82f6; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">✏️</button>
+                                <button type="button" class="btn-table-delete-team" data-team-index="${actualTeamIdx}" title="刪除出團紀錄 (刪除)" style="flex: 1; min-width: 0; font-size: 0.85rem; padding: 2px 1px; border-radius: 3px; background: #ffffff; color: #dc2626; border: 1px solid #f87171; font-weight: 800; cursor: pointer; text-align: center; line-height: 1.2;">✕</button>
                             </div>
                         </td>
                     `;
