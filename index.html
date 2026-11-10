@@ -6,7 +6,7 @@
     <title>🍁 SoulMine 組隊系統 🍂</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=327">
+    <link rel="stylesheet" href="style.css?v=331">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -344,6 +344,10 @@
                         <option value="主">主</option>
                     </select>
                     <input type="number" id="roster-mg-level" placeholder="等級" min="1" max="250" style="width: 80px; padding: 0.45rem 0.7rem; font-size: 0.88rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; color: #0f172a; font-weight: 700;">
+                    <label style="display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.88rem; font-weight: 800; color: #0f172a; cursor: pointer; user-select: none; padding: 0.45rem 0.65rem; background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 6px; white-space: nowrap;" title="勾選代表此角色持有楓祝20 (底色將顯示為淺黃色)">
+                        <input type="checkbox" id="roster-mg-maple20" style="width: 17px; height: 17px; accent-color: #eab308; cursor: pointer;">
+                        <span>楓祝20</span>
+                    </label>
                     <button type="button" id="btn-roster-mg-submit" class="btn-primary" style="padding: 0.45rem 1.2rem; font-size: 0.88rem; font-weight: 700; background: #16a34a; color: #ffffff; border: none; border-radius: 6px; cursor: pointer; white-space: nowrap;">
                         ➕ 新增角色
                     </button>
@@ -1083,6 +1087,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=327" defer></script>
+    <script src="app.js?v=331" defer></script>
 </body>
 </html>

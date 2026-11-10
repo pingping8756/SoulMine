@@ -5692,3 +5692,137 @@ button {
         width: 230px;
     }
 }
+
+/* ======================================================== */
+/* 🍁 楓祝20 (楓20) 專屬淺黃底樣式 (Character Card Maple20) */
+/* ======================================================== */
+/* 1. 報名彈窗中的角色卡 (Join Raid Roster Cards) */
+.roster-card.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+    box-shadow: 0 1px 4px rgba(234, 179, 8, 0.15) !important;
+}
+.roster-card.has-maple20:hover {
+    background: #fef9c3 !important;
+    border-color: #eab308 !important;
+    box-shadow: 0 3px 8px rgba(234, 179, 8, 0.28) !important;
+}
+.roster-card.has-maple20.disabled {
+    background: #fefce8 !important;
+    border-color: #fef08a !important;
+    opacity: 0.65;
+}
+
+/* 2. 出團席位指定中的角色卡 (Create Raid Roster Key Items) */
+.roster-card-item.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+    box-shadow: 0 1px 3px rgba(234, 179, 8, 0.12) !important;
+}
+.roster-card-item.has-maple20:hover {
+    background: #fef9c3 !important;
+    border-color: #eab308 !important;
+    box-shadow: 0 2px 6px rgba(234, 179, 8, 0.22) !important;
+}
+.roster-card-item.has-maple20.selected {
+    background: #fef08a !important;
+    border: 1.5px solid #ca8a04 !important;
+    box-shadow: 0 1px 5px rgba(202, 138, 4, 0.25) !important;
+}
+.roster-card-item.has-maple20.selected:hover {
+    background: #fef2f2 !important;
+    border-color: #ef4444 !important;
+}
+
+/* 3. 角色卡管理清單標籤 (Roster Management Chips) */
+.roster-mg-char-chip.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+    box-shadow: 0 1px 3px rgba(234, 179, 8, 0.12) !important;
+}
+.roster-mg-char-chip.has-maple20:hover {
+    background: #fef9c3 !important;
+    border-color: #eab308 !important;
+}
+
+/* 4. 行前預排角色卡 (Pre-Draft Character Chips) */
+.predraft-card-chip.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+    border-left: 3.5px solid #eab308 !important;
+}
+.predraft-card-chip.has-maple20:hover {
+    background: #fef9c3 !important;
+}
+.predraft-card-chip.has-maple20.selected {
+    background: #fef08a !important;
+    border: 1.5px solid #ca8a04 !important;
+    border-left: 3.5px solid #a16207 !important;
+    box-shadow: 0 0 0 2px rgba(202, 138, 4, 0.25) !important;
+}
+
+/* 5. 楓祝20 小徽章 */
+.badge-maple20 {
+    font-size: 0.68rem;
+    font-weight: 800;
+    background: #fef08a;
+    color: #854d0e;
+    border: 1px solid #facc15;
+    padding: 0.05rem 0.28rem;
+    border-radius: 4px;
+    white-space: nowrap;
+    line-height: 1.1;
+    display: inline-flex;
+    align-items: center;
+    gap: 1px;
+}
+
+/* 6. 排班工作台席位黃底樣式 (Smart Schedule, Pre-Draft, Create Raid Slots) */
+.smart-matrix-chip-cell.filled-slot.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+    box-shadow: 0 1px 3px rgba(234, 179, 8, 0.15) !important;
+}
+.smart-matrix-chip-cell.filled-slot.has-maple20:hover {
+    background: #fff1f2 !important;
+    border-color: #ef4444 !important;
+}
+.predraft-slot-box.filled.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+}
+.create-slot-box.filled.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+}
+.create-slot-box.filled.has-maple20.active {
+    border-color: #ca8a04 !important;
+    box-shadow: 0 0 0 2px rgba(202, 138, 4, 0.3) !important;
+}
+.smart-char-pick-btn.has-maple20 {
+    background: #fefce8 !important;
+    border: 1.5px solid #fde047 !important;
+}
+.smart-char-pick-btn.has-maple20:hover {
+    background: #fef9c3 !important;
+    border-color: #eab308 !important;
+}
+
+/* 7. 出團看板 (Confirmed Report Table & Raid Cards) 楓祝20淺黃底 */
+.confirmed-report-table td.col-slot-cell.has-maple20 {
+    background: #fefce8 !important;
+}
+.confirmed-report-table td.col-slot-cell.has-maple20:hover {
+    background: #fef9c3 !important;
+}
+.confirmed-report-table td.col-slot-cell.is-my-slot.has-maple20 {
+    background: #fef9c3 !important;
+    box-shadow: inset 3px 0 0 #22c55e !important;
+}
+.confirmed-report-table td.col-slot-cell.is-my-slot.has-maple20:hover {
+    background: #fef08a !important;
+}
+.raid-slot-item.has-maple20 {
+    background: #fefce8 !important;
+    border-color: #fde047 !important;
+}

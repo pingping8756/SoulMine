@@ -213,9 +213,9 @@ function getHighContrastJobColor(job) {
 }
 
 // --- Character Roster (Ordered by 力職 ➔ 敏職 ➔ 法職) ---
-const CURRENT_ROSTER_VERSION = 7;
+const CURRENT_ROSTER_VERSION = 8;
 const DEFAULT_CHARACTER_ROSTER = [
-    // --- 力職 (14位: 火 ➔ 聖 ➔ 英) ---
+    // --- 力職 (火 ➔ 聖 ➔ 英) ---
     { id: "Eric", job: "火", level: 180, category: "力職" },
     { id: "rose", job: "火", level: 180, category: "力職" },
     { id: "Steve", job: "火", level: 177, category: "力職" },
@@ -225,27 +225,38 @@ const DEFAULT_CHARACTER_ROSTER = [
     { id: "長吉毛毛娃", job: "火", level: 158, category: "力職" },
     { id: "汪德", job: "火", level: 147, category: "力職" },
     { id: "漢堡王", job: "火", level: 145, category: "力職" },
-    { id: "小茵", job: "聖", level: 162, category: "力職" },
+    { id: "Covernat", job: "火", level: 190, category: "力職", hasMaple20: true },
+    { id: "賴打", job: "火", level: 160, category: "力職", hasMaple20: true },
+    { id: "小茵", job: "聖", level: 164, category: "力職", hasMaple20: true },
+    { id: "殷殷", job: "聖", level: 164, category: "力職", hasMaple20: true },
+    { id: "照燒雞腿", job: "聖", level: 178, category: "力職", hasMaple20: true },
+    { id: "雞腿", job: "聖", level: 178, category: "力職", hasMaple20: true },
     { id: "阿翔", job: "聖", level: 151, category: "力職" },
     { id: "小皮", job: "聖", level: 140, category: "力職" },
+    { id: "Underwor", job: "英", level: 182, category: "力職", hasMaple20: true },
     { id: "Eric", job: "英", level: 168, category: "力職" },
     { id: "毛毛蟲", job: "英", level: 152, category: "力職" },
 
-    // --- 敏職 (25位: 弩/弓 ➔ 刀/鏢 ➔ 槍/拳) ---
-    { id: "IE", job: "弩", level: 175, category: "敏職" },
-    { id: "毛毛蟲", job: "弩", level: 168, category: "敏職" },
+    // --- 敏職 (弩/弓 ➔ 刀/鏢 ➔ 槍/拳) ---
+    { id: "IE", job: "弩", level: 175, category: "敏職", hasMaple20: true },
+    { id: "毛毛蟲", job: "弩", level: 170, category: "敏職", hasMaple20: true },
+    { id: "蟲", job: "弩", level: 170, category: "敏職", hasMaple20: true },
+    { id: "Dana", job: "弩", level: 170, category: "敏職", hasMaple20: true },
+    { id: "本色", job: "弩", level: 165, category: "敏職", hasMaple20: true },
     { id: "Steve", job: "弩", level: 166, category: "敏職" },
     { id: "BBG", job: "弓", level: 175, category: "敏職" },
-    { id: "小茵", job: "弓", level: 174, category: "敏職" },
+    { id: "小茵", job: "弓", level: 174, category: "敏職", hasMaple20: true },
     { id: "小皮", job: "弓", level: 160, category: "敏職" },
     { id: "阿甘", job: "弓", level: 153, category: "敏職" },
     { id: "Lumi", job: "弓", level: 138, category: "敏職" },
-    { id: "阿仁", job: "刀", level: 180, category: "敏職" },
+    { id: "阿仁", job: "刀", level: 183, category: "敏職", hasMaple20: true },
+    { id: "柚子", job: "刀", level: 180, category: "敏職", hasMaple20: true },
     { id: "John", job: "刀", level: 170, category: "敏職" },
     { id: "Bagel", job: "刀", level: 163, category: "敏職" },
     { id: "derder", job: "刀", level: 151, category: "敏職" },
     { id: "阿偉", job: "刀", level: 149, category: "敏職" },
-    { id: "阿甘", job: "鏢", level: 174, category: "敏職" },
+    { id: "阿甘", job: "鏢", level: 177, category: "敏職", hasMaple20: true },
+    { id: "貓爺", job: "鏢", level: 160, category: "敏職", hasMaple20: true },
     { id: "John", job: "鏢", level: 169, category: "敏職" },
     { id: "Steve", job: "鏢", level: 166, category: "敏職" },
     { id: "Eric", job: "鏢", level: 163, category: "敏職" },
@@ -253,18 +264,23 @@ const DEFAULT_CHARACTER_ROSTER = [
     { id: "Bagel", job: "鏢", level: 121, category: "敏職" },
     { id: "derder", job: "鏢", level: 118, category: "敏職" },
     { id: "汪德", job: "槍", level: 170, category: "敏職" },
+    { id: "沁悸", job: "槍", level: 150, category: "敏職", hasMaple20: true },
     { id: "阿翔", job: "拳", level: 170, category: "敏職" },
     { id: "阿仁", job: "拳", level: 167, category: "敏職" },
     { id: "Tim", job: "拳", level: 167, category: "敏職" },
     { id: "小皮", job: "拳", level: 140, category: "敏職" },
 
-    // --- 法職 (17位: 毒 ➔ 冰 ➔ 主) ---
-    { id: "Bagel", job: "毒", level: 174, category: "法職" },
+    // --- 法職 (毒 ➔ 冰 ➔ 主) ---
+    { id: "Bagel", job: "毒", level: 176, category: "法職", hasMaple20: true },
+    { id: "Dana", job: "毒", level: 150, category: "法職", hasMaple20: true },
     { id: "Steve", job: "毒", level: 148, category: "法職" },
     { id: "Tim", job: "毒", level: 132, category: "法職" },
     { id: "Eric", job: "冰", level: 169, category: "法職" },
-    { id: "CC", job: "冰", level: 164, category: "法職" },
-    { id: "小龜", job: "主", level: 174, category: "法職" },
+    { id: "CC", job: "冰", level: 167, category: "法職", hasMaple20: true },
+    { id: "冰的", job: "冰", level: 165, category: "法職", hasMaple20: true },
+    { id: "冰冰", job: "冰", level: 165, category: "法職", hasMaple20: true },
+    { id: "小龜", job: "主", level: 181, category: "法職", hasMaple20: true },
+    { id: "本色", job: "主", level: 155, category: "法職", hasMaple20: true },
     { id: "阿翔", job: "主", level: 172, category: "法職" },
     { id: "CC", job: "主", level: 165, category: "法職" },
     { id: "Ohni", job: "主", level: 162, category: "法職" },
@@ -299,7 +315,16 @@ let MEMBER_NAME_ALIASES = {
     'Tim': ['Tim', 'tim'],
     'John': ['John', 'john'],
     'rose': ['rose', 'Rose'],
-    'BBG': ['BBG', 'bbg']
+    'BBG': ['BBG', 'bbg'],
+    '毛毛蟲': ['毛毛蟲', '蟲'],
+    '蟲': ['毛毛蟲', '蟲'],
+    '小茵': ['小茵', '殷殷', '花顏英英'],
+    '殷殷': ['小茵', '殷殷', '花顏英英'],
+    '花顏英英': ['小茵', '殷殷', '花顏英英'],
+    '照燒雞腿': ['照燒雞腿', '雞腿'],
+    '雞腿': ['照燒雞腿', '雞腿'],
+    '冰的': ['冰的', '冰冰'],
+    '冰冰': ['冰的', '冰冰']
 };
 
 function bindMemberAlias(surveyName, charId) {
@@ -894,7 +919,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     job: normalizeJobName(c.job || '火'),
                     level: parseInt(c.level, 10) || 120,
                     category: c.category || getCategoryByJob(normalizeJobName(c.job)),
-                    isCustom: !!c.isCustom
+                    isCustom: !!c.isCustom,
+                    hasMaple20: !!(c.hasMaple20 || c.maple20)
                 })).filter(c => c.id && c.job);
                 if (mapped.length > 0) {
                     CHARACTER_ROSTER = mapped;
@@ -2993,8 +3019,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (isFilled) {
             const jobColor = getHighContrastJobColor(s.job);
+            const charMatch = (CHARACTER_ROSTER || []).find(c => c && c.id.toLowerCase() === (s.name || '').toLowerCase() && (!s.job || c.job === s.job));
+            const hasMaple20 = !!(charMatch && (charMatch.hasMaple20 || charMatch.maple20));
             return `
-                <div class="predraft-slot-box filled">
+                <div class="predraft-slot-box filled ${hasMaple20 ? 'has-maple20' : ''}">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.2rem; line-height: 1;">
                         <span style="font-size: 0.7rem; font-weight: 800; color: #64748b; background: #f1f5f9; padding: 0.05rem 0.25rem; border-radius: 3px; white-space: nowrap;">${numLabel}</span>
                         ${roleSelectHtml}
@@ -3277,6 +3305,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const catClass = c.category === '力職' ? 'cat-force' : (c.category === '敏職' ? 'cat-dex' : 'cat-int');
             const selectedClass = isSelected ? 'selected' : '';
+            const hasMaple20 = !!(c.hasMaple20 || c.maple20);
             const jobColor = getHighContrastJobColor(c.job);
 
             const scrollTag = c.isScrollYes 
@@ -3285,12 +3314,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const normJob = normalizeJobName(c.job);
             const cardTitle = isSelected 
-                ? `[席位 ${slotNum}] 點擊退選` 
-                : `角色: ${escapeHtml(c.id)} (${escapeHtml(normJob)} Lv.${c.level}) | 擁有者: ${escapeHtml(c.memberName)}${c.notes ? ' | 備註: ' + escapeHtml(c.notes) : ''} (點擊入座)`;
+                ? `[席位 ${slotNum}] 點擊退選${hasMaple20 ? ' (持有楓祝20)' : ''}` 
+                : `角色: ${escapeHtml(c.id)} (${escapeHtml(normJob)} Lv.${c.level})${hasMaple20 ? ' [持有楓祝20]' : ''} | 擁有者: ${escapeHtml(c.memberName)}${c.notes ? ' | 備註: ' + escapeHtml(c.notes) : ''} (點擊入座)`;
 
             // 名字不重複：卡片頂部只顯示角色 ID，下方顯示職業與吃券狀態，擁有者在 hover tooltip 中提示
             html += `
-                <div class="predraft-card-chip ${catClass} ${selectedClass}"
+                <div class="predraft-card-chip ${catClass} ${selectedClass} ${hasMaple20 ? 'has-maple20' : ''}"
                      onclick="window.togglePreDraftCharacter('${escapeHtml(c.id)}', '${escapeHtml(normJob)}', ${c.level})"
                      title="${cardTitle}">
                     <div style="display: flex; justify-content: space-between; align-items: center; gap: 0.15rem; line-height: 1.15;">
@@ -3814,8 +3843,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     </select>
                 `;
 
+                const charMatch = isFilled ? (CHARACTER_ROSTER || []).find(c => c && c.id.toLowerCase() === (s.name || '').toLowerCase() && (!s.job || c.job === s.job)) : null;
+                const hasMaple20 = !!(charMatch && (charMatch.hasMaple20 || charMatch.maple20));
                 const item = document.createElement('div');
-                item.className = `create-slot-box ${isFilled ? 'filled' : 'empty'} ${isActive ? 'active' : ''}`;
+                item.className = `create-slot-box ${isFilled ? 'filled' : 'empty'} ${isActive ? 'active' : ''} ${hasMaple20 ? 'has-maple20' : ''}`;
                 
                 if (isFilled) {
                     const jobColor = getHighContrastJobColor(s.job);
@@ -3963,9 +3994,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         const assignedSlot = createRaidState.slots.find(s => s && s.name === c.id && s.job === c.job);
                         const isAssigned = !!assignedSlot;
                         const jobColor = getHighContrastJobColor(c.job);
+                        const hasMaple20 = !!(c.hasMaple20 || c.maple20);
 
                         const card = document.createElement('div');
-                        card.className = `roster-card-item ${isAssigned ? 'selected' : ''}`;
+                        card.className = `roster-card-item ${isAssigned ? 'selected' : ''} ${hasMaple20 ? 'has-maple20' : ''}`;
                         
                         if (isAssigned) {
                             card.innerHTML = `
@@ -3975,7 +4007,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span style="color:#15803d; font-weight:700; font-size:0.78rem;">Lv.${c.level}</span>
                                 </div>
                             `;
-                            card.title = `點擊可退選`;
+                            card.title = `點擊可退選${hasMaple20 ? ' (持有楓祝20)' : ''}`;
                         } else {
                             card.innerHTML = `
                                 <div class="roster-card-id" style="color: #000000 !important;">${escapeHtml(c.id)}</div>
@@ -3984,7 +4016,7 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <span style="color:#64748b; font-weight:600; font-size:0.78rem;">Lv.${c.level}</span>
                                 </div>
                             `;
-                            card.title = `點擊指定入座`;
+                            card.title = `點擊指定入座${hasMaple20 ? ' (持有楓祝20)' : ''}`;
                         }
 
                         card.onclick = () => {
@@ -4803,11 +4835,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 chars.forEach(c => {
                     const isJoined = members.some(m => m.name === c.id && m.job === c.job);
                     const jobColor = getHighContrastJobColor(c.job);
+                    const hasMaple20 = !!(c.hasMaple20 || c.maple20);
 
                     const normJob = normalizeJobName(c.job);
                     if (isJoined) {
                         html += `
-                            <div class="roster-card disabled" title="此角色已在此隊伍中">
+                            <div class="roster-card disabled ${hasMaple20 ? 'has-maple20' : ''}" title="此角色已在此隊伍中${hasMaple20 ? ' (持有楓祝20)' : ''}">
                                 <div class="roster-card-name" style="color: #64748b !important; font-weight: 800;">${escapeHtml(c.id)}</div>
                                 <div class="roster-card-meta">
                                     <span class="roster-card-job" style="color: ${jobColor}; font-weight: 700;">${escapeHtml(normJob)}</span>
@@ -4817,7 +4850,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     } else {
                         html += `
-                            <div class="roster-card" onclick="window.selectRosterCharacter('${raidId}', ${slotIndex}, '${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level})" title="點擊選擇 ${escapeHtml(c.id)} 入座">
+                            <div class="roster-card ${hasMaple20 ? 'has-maple20' : ''}" onclick="window.selectRosterCharacter('${raidId}', ${slotIndex}, '${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level})" title="點擊選擇 ${escapeHtml(c.id)} 入座${hasMaple20 ? ' (持有楓祝20)' : ''}">
                                 <div class="roster-card-name" style="color: #000000 !important; font-weight: 800;">${escapeHtml(c.id)}</div>
                                 <div class="roster-card-meta">
                                     <span class="roster-card-job" style="color: ${jobColor}; font-weight: 700;">${escapeHtml(normJob)}</span>
@@ -5667,9 +5700,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (m) {
                     const isActuallyCreator = Boolean(m.name && displayCreator && String(m.name).toLowerCase() === String(displayCreator).toLowerCase());
                     const mNormJob = normalizeJobName(m.job);
+                    const mName = String(m.name || '').trim();
+                    const charMatch = (typeof CHARACTER_ROSTER !== 'undefined' ? CHARACTER_ROSTER : []).find(c => c && c.id && c.id.trim().toLowerCase() === mName.toLowerCase() && (!mNormJob || c.job === mNormJob));
+                    const hasMaple20 = !!(m.hasMaple20 || (charMatch && (charMatch.hasMaple20 || charMatch.maple20)));
                     if (isExpired) {
                         return `
-                            <div style="background: rgba(255,255,255,0.03); padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid rgba(255,255,255,0.06); box-sizing: border-box;">
+                            <div class="raid-slot-item ${hasMaple20 ? 'has-maple20' : ''}" style="background: ${hasMaple20 ? '#fefce8' : 'rgba(255,255,255,0.03)'}; padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid ${hasMaple20 ? '#fde047' : 'rgba(255,255,255,0.06)'}; box-sizing: border-box;">
                                 <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.12rem;">
                                     <div style="display: flex; align-items: center; gap: 0.25rem; min-width: 0; overflow: hidden; white-space: nowrap;">
                                         <strong style="color: #94a3b8; font-size: 0.8rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
@@ -5684,7 +5720,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         `;
                     }
                     return `
-                        <div style="background: #fdfaf7; padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid #ebd9c8; box-sizing: border-box;">
+                        <div class="raid-slot-item ${hasMaple20 ? 'has-maple20' : ''}" style="background: ${hasMaple20 ? '#fefce8' : '#fdfaf7'}; padding: 0.28rem 0.4rem; border-radius: 6px; font-size: 0.82rem; display: flex; justify-content: space-between; align-items: center; gap: 0.25rem; border: 1px solid ${hasMaple20 ? '#fde047' : '#ebd9c8'}; box-sizing: border-box;">
                             <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 0.12rem;">
                                 <div style="display: flex; align-items: center; gap: 0.25rem; min-width: 0; overflow: hidden; white-space: nowrap;">
                                     <strong style="color: #c2410c; font-size: 0.8rem; flex-shrink: 0;">${escapeHtml(mNormJob)}</strong>
@@ -6379,9 +6415,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         const roleBadge = cleanRoleTag ? `<span class="member-role-badge ${roleInfo.cssClass}" title="${escapeHtml(memberFullInfo)}">${escapeHtml(cleanRoleTag)}</span>` : '';
                         const jobTag = normJob ? `<span class="slot-job-text" title="${escapeHtml(name)}${lvlStr ? ` (${lvlStr})` : ''}">${escapeHtml(normJob)}</span>` : '';
+                        const charMatch = (typeof CHARACTER_ROSTER !== 'undefined' ? CHARACTER_ROSTER : []).find(c => c && c.id && c.id.trim().toLowerCase() === name.toLowerCase() && (!normJob || c.job === normJob));
+                        const hasMaple20 = !!(m.hasMaple20 || (charMatch && (charMatch.hasMaple20 || charMatch.maple20)));
 
                         rowCells += `
-                            <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''}" title="${escapeHtml(memberFullInfo)}">
+                            <td class="col-slot-cell ${isMe ? 'is-my-slot' : ''} ${hasMaple20 ? 'has-maple20' : ''}" title="${escapeHtml(memberFullInfo)}">
                                 <div class="slot-inner">
                                     <div class="slot-top-row" style="display: flex; align-items: center; gap: 2px; min-width: 0; width: 100%; overflow: hidden; white-space: nowrap;">
                                         ${jobTag}
@@ -6935,7 +6973,15 @@ document.addEventListener('DOMContentLoaded', () => {
                                 }
                             }
 
-                            memberSlot.style.background = '#ffffff';
+                            const memName = String(member.name || '').trim();
+                            const memJob = normalizeJobName(member.job);
+                            const memMatch = (typeof CHARACTER_ROSTER !== 'undefined' ? CHARACTER_ROSTER : []).find(c => c && c.id && c.id.trim().toLowerCase() === memName.toLowerCase() && (!memJob || c.job === memJob));
+                            const memHasMaple20 = !!(member.hasMaple20 || (memMatch && (memMatch.hasMaple20 || memMatch.maple20)));
+
+                            memberSlot.style.background = memHasMaple20 ? '#fefce8' : '#ffffff';
+                            if (memHasMaple20) {
+                                memberSlot.style.borderColor = '#fde047';
+                            }
                             memberSlot.innerHTML = `
                                 <div style="font-weight: 700; color: #1e293b; display: flex; align-items: center; justify-content: space-between;">
                                     <span style="overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${escapeHtml(member.name)} ${isActuallyCreator ? '👑' : ''}</span>
@@ -7590,6 +7636,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const submitBtn = document.getElementById('btn-roster-mg-submit');
         const cancelEditBtn = document.getElementById('btn-roster-mg-cancel-edit');
+
+        function setRosterMgMaple20State(active) {
+            const cb = document.getElementById('roster-mg-maple20');
+            if (cb) cb.checked = Boolean(active);
+        }
+        window.setRosterMgMaple20State = setRosterMgMaple20State;
+
         if (cancelEditBtn) {
             cancelEditBtn.onclick = resetRosterMgForm;
         }
@@ -7606,6 +7659,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const levelInput = document.getElementById('roster-mg-level');
                 const origIdInput = document.getElementById('roster-mg-editing-original-id');
                 const origJobInput = document.getElementById('roster-mg-editing-original-job');
+                const isMaple20 = Boolean(document.getElementById('roster-mg-maple20')?.checked);
 
                 const name = nameInput.value.trim();
                 const job = jobSelect.value;
@@ -7629,20 +7683,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (origId && origJob) {
                     const idx = CHARACTER_ROSTER.findIndex(c => c.id === origId && c.job === origJob);
                     if (idx !== -1) {
-                        CHARACTER_ROSTER[idx] = { id: name, job, level, category: cat, isCustom: true };
+                        CHARACTER_ROSTER[idx] = { id: name, job, level, category: cat, isCustom: true, hasMaple20: isMaple20 };
                     } else {
-                        CHARACTER_ROSTER.push({ id: name, job, level, category: cat, isCustom: true });
+                        CHARACTER_ROSTER.push({ id: name, job, level, category: cat, isCustom: true, hasMaple20: isMaple20 });
                     }
-                    alert(`✅ 已成功更新角色【${name}】資料！`);
+                    alert(`✅ 已成功更新角色【${name}】資料！${isMaple20 ? ' (持有楓祝20 - 淺黃底)' : ''}`);
                 } else {
                     const existingIdx = CHARACTER_ROSTER.findIndex(c => c.id.toLowerCase() === name.toLowerCase() && c.job === job);
                     if (existingIdx !== -1) {
                         CHARACTER_ROSTER[existingIdx].level = level;
                         CHARACTER_ROSTER[existingIdx].category = cat;
-                        alert(`✅ 已更新現有角色【${name}】等級為 Lv.${level}！`);
+                        CHARACTER_ROSTER[existingIdx].hasMaple20 = isMaple20;
+                        alert(`✅ 已更新現有角色【${name}】等級為 Lv.${level}！${isMaple20 ? ' (持有楓祝20 - 淺黃底)' : ''}`);
                     } else {
-                        CHARACTER_ROSTER.push({ id: name, job, level, category: cat, isCustom: true });
-                        alert(`🎉 已成功新增角色【${name}】(${job} Lv.${level}) 至資料庫！`);
+                        CHARACTER_ROSTER.push({ id: name, job, level, category: cat, isCustom: true, hasMaple20: isMaple20 });
+                        alert(`🎉 已成功新增角色【${name}】(${job} Lv.${level}) 至資料庫！${isMaple20 ? ' (持有楓祝20 - 淺黃底)' : ''}`);
                     }
                 }
 
@@ -7749,6 +7804,9 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('roster-mg-form-title').textContent = '➕ 新增角色卡至資料庫';
         document.getElementById('btn-roster-mg-submit').textContent = '➕ 新增角色';
         document.getElementById('btn-roster-mg-cancel-edit').style.display = 'none';
+        if (typeof window.setRosterMgMaple20State === 'function') {
+            window.setRosterMgMaple20State(false);
+        }
     }
 
     function openRosterManageModal() {
@@ -7858,17 +7916,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 const normJob = normalizeJobName(c.job || '');
                 const jobColor = typeof getHighContrastJobColor === 'function' ? getHighContrastJobColor(c.job) : '#334155';
                 const category = c.category || (typeof getCategoryByJob === 'function' ? getCategoryByJob(c.job) : '力職');
+                const hasMaple20 = !!(c.hasMaple20 || c.maple20);
                 const catBadgeColor = category === '力職' ? 'background: #fff7ed; color: #c2410c; border: 1px solid #fed7aa;' :
                                       (category === '敏職' ? 'background: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0;' :
                                       'background: #faf5ff; color: #7e22ce; border: 1px solid #e9d5ff;');
 
                 chipsHtml += `
-                    <div class="roster-mg-char-chip">
+                    <div class="roster-mg-char-chip ${hasMaple20 ? 'has-maple20' : ''}">
                         <span class="roster-mg-job-badge" style="color: ${jobColor}; font-weight: 800; font-size: 0.85rem; padding: 0.1rem 0.35rem;">${escapeHtml(normJob)}</span>
                         <span class="roster-mg-level-badge" style="font-size: 0.8rem; font-weight: 700;">Lv.${c.level || 120}</span>
                         <span style="font-size: 0.68rem; padding: 0.05rem 0.3rem; border-radius: 4px; font-weight: 700; ${catBadgeColor}">${category}</span>
                         <div class="roster-mg-chip-actions">
-                            <button type="button" class="roster-mg-chip-btn-edit" onclick="window.startEditRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level || 120})" title="編輯 ${escapeHtml(c.id)} (${normJob})">✏️</button>
+                            <button type="button" class="roster-mg-chip-btn-edit" onclick="window.startEditRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}', ${c.level || 120})" title="編輯 ${escapeHtml(c.id)} (${normJob})${hasMaple20 ? ' [持有楓祝20]' : ''}">✏️</button>
                             <button type="button" class="roster-mg-chip-btn-del" onclick="window.confirmDeleteRosterCard('${encodeURIComponent(c.id)}', '${encodeURIComponent(normJob)}')" title="刪除 ${escapeHtml(c.id)} (${normJob})">🗑️</button>
                         </div>
                     </div>
@@ -7900,6 +7959,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('roster-mg-level').value = level;
         document.getElementById('roster-mg-editing-original-id').value = id;
         document.getElementById('roster-mg-editing-original-job').value = job;
+
+        const charObj = (CHARACTER_ROSTER || []).find(c => c.id === id && c.job === job);
+        const hasMaple20 = !!(charObj && (charObj.hasMaple20 || charObj.maple20));
+        if (typeof window.setRosterMgMaple20State === 'function') {
+            window.setRosterMgMaple20State(hasMaple20);
+        }
 
         document.getElementById('roster-mg-form-title').textContent = `✏️ 正在編輯：${id} (${job})`;
         document.getElementById('btn-roster-mg-submit').textContent = '💾 儲存修改';
@@ -8115,19 +8180,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 category = getCategoryByJob(job);
             }
 
+            const hasMapleInRow = row.some(c => c && (c.includes('楓20') || c.includes('楓祝20') || c.toLowerCase().includes('maple20')));
+
             if (charId && job) {
                 const existingIdx = CHARACTER_ROSTER.findIndex(c => c.id.toLowerCase() === charId.toLowerCase() && c.job === job);
                 if (existingIdx !== -1) {
                     CHARACTER_ROSTER[existingIdx].level = level;
                     CHARACTER_ROSTER[existingIdx].category = category;
                     CHARACTER_ROSTER[existingIdx].isCustom = true;
+                    if (hasMapleInRow) CHARACTER_ROSTER[existingIdx].hasMaple20 = true;
                 } else {
                     CHARACTER_ROSTER.push({
                         id: charId,
                         job: job,
                         level: level,
                         category: category,
-                        isCustom: true
+                        isCustom: true,
+                        hasMaple20: hasMapleInRow
                     });
                 }
 
@@ -9481,10 +9550,12 @@ document.addEventListener('DOMContentLoaded', () => {
                     const jobColor = getHighContrastJobColor(chip.job);
                     const cleanRole = stripRoleIcon(chip.roleTag);
                     const chipNotes = getSurveyNotesByMemberOrChar(chip.name, responses);
+                    const charMatch = (CHARACTER_ROSTER || []).find(c => c && c.id.toLowerCase() === (chip.name || '').toLowerCase() && (!chip.job || c.job === chip.job));
+                    const hasMaple20 = !!(charMatch && (charMatch.hasMaple20 || charMatch.maple20));
                     cellBody = `
-                        <div class="smart-matrix-chip-cell filled-slot ${conflictInfo.hasConflict ? 'has-conflict' : ''}"
+                        <div class="smart-matrix-chip-cell filled-slot ${hasMaple20 ? 'has-maple20' : ''} ${conflictInfo.hasConflict ? 'has-conflict' : ''}"
                              onclick="window.unassignSmartSlot('${escapeHtml(col.slotKey)}', ${col.squadIdx}, ${rowIdx})"
-                             title="${conflictInfo.hasConflict ? escapeHtml(conflictInfo.reason) + ' (點擊取消退回下方)' : '點擊直接取消並退回下方名冊'}${chipNotes ? `\n📝 備註：${escapeHtml(chipNotes)}` : ''}">
+                             title="${conflictInfo.hasConflict ? escapeHtml(conflictInfo.reason) + ' (點擊取消退回下方)' : '點擊直接取消並退回下方名冊'}${hasMaple20 ? '\n🍁 持有楓祝20' : ''}${chipNotes ? `\n📝 備註：${escapeHtml(chipNotes)}` : ''}">
                             <!-- Line 1: 定位標籤 + 職業 (固定長度) + ✕退選 -->
                             <div class="smart-chip-line1">
                                 <span class="smart-role-pill ${cleanRole ? 'has-role' : ''}"
@@ -10022,8 +10093,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 const charDisplayName = (c.id && c.id.toLowerCase() !== memberName.toLowerCase())
                     ? `${c.id} (${memberName})`
                     : (c.id || memberName);
+                const hasMaple20 = !!(c.hasMaple20 || c.maple20);
                 return `
-                    <button type="button" class="smart-char-pick-btn" onclick="window.confirmPickCharFromModal('${escapeHtml(slotKey)}', '${encodeURIComponent(memberName)}', '${encodeURIComponent(normJob)}', ${c.level || 120}, '${encodeURIComponent(charRoleTag)}', ${typeof targetSquadIdx === 'number' ? targetSquadIdx : 0})">
+                    <button type="button" class="smart-char-pick-btn ${hasMaple20 ? 'has-maple20' : ''}" onclick="window.confirmPickCharFromModal('${escapeHtml(slotKey)}', '${encodeURIComponent(memberName)}', '${encodeURIComponent(normJob)}', ${c.level || 120}, '${encodeURIComponent(charRoleTag)}', ${typeof targetSquadIdx === 'number' ? targetSquadIdx : 0})">
                         <div style="display: flex; align-items: baseline; gap: 0.55rem;">
                             <span style="font-size: 0.92rem; font-weight: 800; color: ${jobColor};">${escapeHtml(normJob)}</span>
                             <strong style="font-size: 1.02rem; color: #0f172a;">${escapeHtml(charDisplayName)}</strong>
