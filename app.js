@@ -6856,10 +6856,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (isDk) {
-            const dkLetter = String.fromCharCode(65 + (dkTracker ? dkTracker.count : 0));
-            if (dkTracker) dkTracker.count++;
-            const squad1Label = `${dkLetter}1隊`;
-            const squad2Label = `${dkLetter}2隊`;
+            const squad1Label = 'A隊';
+            const squad2Label = 'B隊';
 
             const sq1 = [];
             const sq2 = [];
@@ -6931,10 +6929,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         matchingTeams.sort((a, b) => (getTeamTimestamp(a) || 0) - (getTeamTimestamp(b) || 0));
 
-        let text = `【SoulMine 當週已確認出團名單】\n`;
-        text += `${weekLabel}\n`;
-        text += `共確認 ${matchingTeams.length} 隊出團\n`;
-        text += `===============================\n\n`;
+        let text = `${weekLabel}\n`;
+        text += `共確認 ${matchingTeams.length} 隊出團\n\n`;
 
         weekDays.forEach(wd => {
             const dayTeams = matchingTeams.filter(team => {
@@ -6952,11 +6948,16 @@ document.addEventListener('DOMContentLoaded', () => {
                 text += `📅 ● ${wd.dateLabel} (共 ${dayTeams.length} 隊)：\n`;
                 const dkTracker = { count: 0 };
                 dayTeams.forEach((t, tIdx) => {
+                    if (tIdx > 0) {
+                        text += `-------------------------------\n\n`;
+                    }
                     text += formatConfirmedTeamRosterText(t, tIdx, dkTracker);
                 });
-                text += `-------------------------------\n`;
+                text += `\n`;
             }
         });
+
+        text = text.trim();
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(() => {
@@ -7002,15 +7003,17 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        let text = `【SoulMine 出團名單】\n`;
-        text += `📅 ● ${wd.dateLabel} (共 ${dayTeams.length} 隊)：\n`;
-        text += `===============================\n\n`;
+        let text = `📅 ● ${wd.dateLabel} (共 ${dayTeams.length} 隊)：\n`;
 
         const dkTracker = { count: 0 };
         dayTeams.forEach((t, tIdx) => {
+            if (tIdx > 0) {
+                text += `-------------------------------\n\n`;
+            }
             text += formatConfirmedTeamRosterText(t, tIdx, dkTracker);
         });
-        text += `-------------------------------`;
+
+        text = text.trim();
 
         if (navigator.clipboard && navigator.clipboard.writeText) {
             navigator.clipboard.writeText(text).then(() => {
