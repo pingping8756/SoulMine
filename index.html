@@ -6,7 +6,7 @@
     <title>🍁 SoulMine 組隊系統 🍂</title>
     <link rel="icon" type="image/png" href="favicon.png">
     <link rel="apple-touch-icon" sizes="180x180" href="favicon.png">
-    <link rel="stylesheet" href="style.css?v=331">
+    <link rel="stylesheet" href="style.css?v=335">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <!-- Flatpickr CSS -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
@@ -928,18 +928,24 @@
             <!-- Tab 2: Confirmed Raids -->
             <section id="tab-status" class="tab-content">
                 <!-- 1. 當週已確認出團名單明細 表格 (直接融合在出團看板頂部) -->
-                <div class="glass-card" style="margin-bottom: 1.5rem; background: #f6f0e6; border: 1.5px solid #e4d5c1;">
+                <div class="glass-card" style="margin-bottom: 1.5rem; background: #f6f0e6; border: 1.5px solid #e4d5c1; padding: 1.1rem 0.65rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap; gap: 0.6rem;">
                         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
                             <h2 style="margin: 0; font-size: 1.25rem; font-weight: 900; color: #9a3412; display: flex; align-items: center; gap: 0.4rem; white-space: nowrap; flex-shrink: 0;">
                                 <span>📊 當週已確認出團名單明細</span>
                             </h2>
-                            <!-- 藍色週次選擇：同一行、不換行、自動隨內容包覆不超出 -->
-                            <div class="week-filter-inline-wrap">
-                                <span style="font-size: 0.82rem; font-weight: 800; color: #1e40af; white-space: nowrap; flex-shrink: 0;">📅 查看週次：</span>
-                                <select id="confirmed-report-week-select" class="week-filter-inline-select">
-                                    <!-- Populated dynamically -->
-                                </select>
+                            <!-- 藍色週次選擇：本週班表 / 歷史紀錄 雙按鈕切換 + 日期區間下拉 -->
+                            <div class="confirmed-report-filter-bar" style="display: inline-flex; align-items: center; gap: 0.4rem; flex-wrap: wrap;">
+                                <div class="confirmed-report-mode-toggle" style="display: inline-flex; border: 1.5px solid #cbd5e1; border-radius: 6px; overflow: hidden; background: #ffffff;">
+                                    <button type="button" id="btn-confirmed-mode-current" class="btn-report-mode active">本週班表</button>
+                                    <button type="button" id="btn-confirmed-mode-history" class="btn-report-mode">歷史紀錄</button>
+                                </div>
+                                <div class="week-filter-inline-wrap" id="confirmed-report-select-wrap">
+                                    <span style="font-size: 0.82rem; font-weight: 800; color: #1e40af; white-space: nowrap; flex-shrink: 0;" id="confirmed-report-select-label">📅 日期區間：</span>
+                                    <select id="confirmed-report-week-select" class="week-filter-inline-select">
+                                        <!-- Populated dynamically -->
+                                    </select>
+                                </div>
                             </div>
                             <span id="confirmed-report-total-badge" style="font-size: 0.8rem; background: #f0fdf4; color: #15803d; border: 1px solid #86efac; padding: 0.15rem 0.55rem; border-radius: 12px; font-weight: 800; white-space: nowrap; flex-shrink: 0;">已確認 0 隊</span>
                         </div>
@@ -1087,6 +1093,6 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-    <script src="app.js?v=331" defer></script>
+    <script src="app.js?v=335" defer></script>
 </body>
 </html>

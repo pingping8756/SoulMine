@@ -3966,7 +3966,7 @@ button {
 /* Confirmed Raid Weekly Report Table (當週已確認出團名單明細 - 極簡緊湊一頁式) */
 .confirmed-report-table {
     width: 100%;
-    min-width: 560px;
+    min-width: 760px;
     table-layout: fixed;
     border-collapse: separate;
     border-spacing: 0;
@@ -4143,6 +4143,92 @@ button {
     max-width: 100% !important;
 }
 
+#tab-status > .glass-card {
+    padding: 1.1rem 0.65rem !important;
+}
+
+.confirmed-report-mode-toggle {
+    display: inline-flex;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #f8fafc;
+}
+
+.btn-report-mode {
+    border: none !important;
+    padding: 0.24rem 0.7rem !important;
+    font-size: 0.82rem !important;
+    font-weight: 800 !important;
+    cursor: pointer !important;
+    background: #f8fafc !important;
+    color: #475569 !important;
+    transition: all 0.15s ease !important;
+}
+
+.btn-report-mode.active {
+    background: #2563eb !important;
+    color: #ffffff !important;
+}
+.btn-report-mode:hover:not(.active) {
+    background: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+.report-header-date-inner {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+}
+
+.report-header-date-text {
+    font-size: 0.84rem;
+    font-weight: 800;
+    white-space: nowrap;
+    display: inline-block;
+    letter-spacing: -0.2px;
+}
+
+.report-header-team-badge {
+    font-size: 0.72rem;
+    background: rgba(37, 99, 235, 0.12);
+    color: #2563eb;
+    padding: 1px 4px;
+    border-radius: 8px;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.btn-table-copy-day {
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    font-size: 0.68rem;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    color: #2563eb;
+    border: 1px solid #bfdbfe;
+    border-radius: 4px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+    transition: all 0.15s ease;
+    vertical-align: middle;
+}
+.btn-table-copy-day:hover {
+    background: #2563eb;
+    color: #ffffff;
+    border-color: #1d4ed8;
+    transform: scale(1.1);
+}
+
 .week-filter-inline-select,
 #confirmed-report-week-select,
 #survey-matrix-week-select {
@@ -4269,7 +4355,7 @@ button {
     color: #0f172a;
     font-weight: 900;
     font-size: 0.88rem;
-    padding: 0.35rem 2px;
+    padding: 0.35rem 3px;
     text-align: center;
     position: sticky;
     top: 0;

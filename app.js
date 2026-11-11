@@ -5911,6 +5911,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Confirmed Teams Weekly Report Modal State & Logic ---
     let currentConfirmedReportWeekId = '';
+    let confirmedReportMode = 'current'; // 'current' (本週班表) 或 'history' (歷史紀錄)
+    let showAllHistoryWeeks = false; // 是否展開全部歷史週次（若否則預設只列最近3週）
 
     function parseConfirmedTeamDate(team) {
         if (!team) return null;
@@ -6010,18 +6012,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const isOngoing = isCurrentWeek;
             const teamsCount = data.teams.length;
 
-            let tag = '';
-            if (isOngoing) tag = ' 【本週進行中】';
-            else if (isExpired) tag = ' 【歷史紀錄】';
-            else tag = ' 【預排】';
-
             allWeeks.push({
                 weekId: weekId,
                 tueDate: tue,
                 teamsCount: teamsCount,
                 isOngoing: isOngoing,
                 isExpired: isExpired,
-                label: `${tue.getMonth() + 1}/${tue.getDate()}(二) ～ ${mon.getMonth() + 1}/${mon.getDate()}(一)${tag} (${teamsCount}隊)`,
+                label: `${tue.getMonth() + 1}/${tue.getDate()}(二) ~ ${mon.getMonth() + 1}/${mon.getDate()}(一)`,
                 shortLabel: `${tue.getMonth() + 1}/${tue.getDate()}(二) ~ ${mon.getMonth() + 1}/${mon.getDate()}(一)`
             });
         });
@@ -6045,28 +6042,105 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function initConfirmedReportWeekSelect() {
         const selectEl = document.getElementById('confirmed-report-week-select');
+        const selectWrap = document.getElementById('confirmed-report-select-wrap');
+        const selectLabel = document.getElementById('confirmed-report-select-label');
+        const btnCurrent = document.getElementById('btn-confirmed-mode-current');
+        const btnHistory = document.getElementById('btn-confirmed-mode-history');
         if (!selectEl) return;
 
-        const weekOptions = getConfirmedReportWeekOptions();
-        if (!currentConfirmedReportWeekId || !weekOptions.some(o => o.weekId === currentConfirmedReportWeekId)) {
-            const ongoingWithTeams = weekOptions.find(o => o.isOngoing && o.teamsCount > 0);
-            const anyWithTeams = weekOptions.find(o => o.teamsCount > 0);
-            const ongoingOpt = weekOptions.find(o => o.isOngoing);
-            currentConfirmedReportWeekId = ongoingWithTeams ? ongoingWithTeams.weekId : (anyWithTeams ? anyWithTeams.weekId : (ongoingOpt ? ongoingOpt.weekId : (weekOptions[0] ? weekOptions[0].weekId : '')));
+        const allWeekOptions = getConfirmedReportWeekOptions();
+        const activeWeeks = allWeekOptions.filter(w => !w.isExpired);
+        const expiredWeeks = allWeekOptions.filter(w => w.isExpired);
+
+        // Update button visual styles
+        if (btnCurrent && btnHistory) {
+            const isCur = (confirmedReportMode === 'current');
+            btnCurrent.classList.toggle('active', isCur);
+            btnHistory.classList.toggle('active', !isCur);
+
+            if (isCur) {
+                btnCurrent.style.setProperty('background', '#2563eb', 'important');
+                btnCurrent.style.setProperty('color', '#ffffff', 'important');
+                btnHistory.style.setProperty('background', '#f8fafc', 'important');
+                btnHistory.style.setProperty('color', '#475569', 'important');
+            } else {
+                btnCurrent.style.setProperty('background', '#f8fafc', 'important');
+                btnCurrent.style.setProperty('color', '#475569', 'important');
+                btnHistory.style.setProperty('background', '#2563eb', 'important');
+                btnHistory.style.setProperty('color', '#ffffff', 'important');
+            }
+
+            btnCurrent.onclick = () => {
+                if (confirmedReportMode === 'current') return;
+                confirmedReportMode = 'current';
+                // Switch to current ongoing week
+                const ongoing = activeWeeks.find(o => o.isOngoing) || activeWeeks[0] || allWeekOptions[0];
+                if (ongoing) currentConfirmedReportWeekId = ongoing.weekId;
+                renderConfirmedReportTable();
+            };
+            btnHistory.onclick = () => {
+                if (confirmedReportMode === 'history') return;
+                confirmedReportMode = 'history';
+                // Switch to newest historical week
+                const newestHistory = expiredWeeks[0] || allWeekOptions[0];
+                if (newestHistory) currentConfirmedReportWeekId = newestHistory.weekId;
+                renderConfirmedReportTable();
+            };
         }
 
-        const html = weekOptions.map(o => `
+        let displayedWeeks = [];
+        if (confirmedReportMode === 'current') {
+            displayedWeeks = activeWeeks.length > 0 ? activeWeeks : (allWeekOptions.length > 0 ? [allWeekOptions[0]] : []);
+            if (selectLabel) selectLabel.textContent = '📅 日期區間：';
+        } else {
+            // History mode: B 方案結合，只顯示最近 3 週歷史，其餘以「📁 查看更早歷史...」收合
+            if (showAllHistoryWeeks || expiredWeeks.length <= 3) {
+                displayedWeeks = expiredWeeks;
+            } else {
+                displayedWeeks = expiredWeeks.slice(0, 3);
+            }
+            if (selectLabel) selectLabel.textContent = '📜 歷史區間：';
+        }
+
+        // Validate selection
+        if (!currentConfirmedReportWeekId || !displayedWeeks.some(o => o.weekId === currentConfirmedReportWeekId)) {
+            if (confirmedReportMode === 'current') {
+                const ongoing = displayedWeeks.find(o => o.isOngoing) || displayedWeeks[0];
+                currentConfirmedReportWeekId = ongoing ? ongoing.weekId : (allWeekOptions[0] ? allWeekOptions[0].weekId : '');
+            } else {
+                const newest = displayedWeeks[0] || (expiredWeeks[0] || allWeekOptions[0]);
+                currentConfirmedReportWeekId = newest ? newest.weekId : '';
+            }
+        }
+
+        let html = displayedWeeks.map(o => `
             <option value="${escapeHtml(o.weekId)}" ${o.weekId === currentConfirmedReportWeekId ? 'selected' : ''}>
                 ${escapeHtml(o.label)}
             </option>
         `).join('');
 
-        if (selectEl.innerHTML !== html) {
-            selectEl.innerHTML = html;
+        if (confirmedReportMode === 'history' && expiredWeeks.length > 3) {
+            if (!showAllHistoryWeeks) {
+                html += `<option value="__SHOW_ALL_HISTORY__">📁 查看更早歷史紀錄...</option>`;
+            } else {
+                html += `<option value="__COLLAPSE_HISTORY__">🔼 收合更早歷史紀錄</option>`;
+            }
         }
+
+        selectEl.innerHTML = html;
         selectEl.value = currentConfirmedReportWeekId;
 
         selectEl.onchange = function() {
+            if (this.value === '__SHOW_ALL_HISTORY__') {
+                showAllHistoryWeeks = true;
+                initConfirmedReportWeekSelect();
+                return;
+            }
+            if (this.value === '__COLLAPSE_HISTORY__') {
+                showAllHistoryWeeks = false;
+                initConfirmedReportWeekSelect();
+                return;
+            }
             currentConfirmedReportWeekId = this.value;
             renderConfirmedReportTable();
         };
@@ -6261,10 +6335,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const distinctTeams = new Set(cols.map(c => c.team)).size;
+            // 只要當天有已確認出團，就在標頭右上角顯示複製按鈕，hover 顯示「複製出團名單」
+            const copyDayBtnHtml = cols.length > 0 ? `
+                <button type="button" class="btn-table-copy-day" data-day-index="${dIdx}" title="複製出團名單" aria-label="複製出團名單">📋</button>
+            ` : '';
+
             return `
-                <th colspan="${colSpan}" class="col-day ${isWeekend ? 'col-weekend' : ''}" style="position: relative;">
-                    <span>${escapeHtml(wd.dateLabel)}</span>${holBadge}
-                    ${distinctTeams > 1 ? `<span style="font-size: 0.72rem; background: rgba(37,99,235,0.12); color: #2563eb; padding: 1px 4px; border-radius: 8px; margin-left: 3px; font-weight: 800;">${distinctTeams}團</span>` : ''}
+                <th colspan="${colSpan}" class="col-day ${isWeekend ? 'col-weekend' : ''}">
+                    <div class="report-header-date-inner">
+                        <span class="report-header-date-text">${escapeHtml(wd.dateLabel)}</span>${holBadge}
+                        ${distinctTeams > 1 ? `<span class="report-header-team-badge">${distinctTeams}團</span>` : ''}
+                        ${copyDayBtnHtml}
+                    </div>
                 </th>
             `;
         }).join('');
@@ -6565,7 +6647,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
 
         container.innerHTML = `
-            <table class="confirmed-report-table" style="min-width: ${Math.max(560, totalColumns * 65)}px;">
+            <table class="confirmed-report-table" style="min-width: ${Math.max(760, totalColumns * 80)}px;">
                 ${colgroupHtml}
                 <thead>
                     <tr class="report-header-dates">
@@ -6729,6 +6811,17 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         });
 
+        // Bind Copy Day Buttons (以天為單位複製當天出團名單)
+        container.querySelectorAll('.btn-table-copy-day').forEach(btn => {
+            btn.onclick = (e) => {
+                e.stopPropagation();
+                const dIdx = parseInt(e.currentTarget.dataset.dayIndex, 10);
+                if (typeof window.copyConfirmedDayText === 'function') {
+                    window.copyConfirmedDayText(dIdx);
+                }
+            };
+        });
+
         // Bind Save Drop Record Buttons
         container.querySelectorAll('.btn-table-save-drop').forEach(btn => {
             btn.onclick = (e) => {
@@ -6747,6 +6840,77 @@ document.addEventListener('DOMContentLoaded', () => {
                 }, 1500);
             };
         });
+    }
+
+    function formatConfirmedTeamRosterText(t, tIdx, dkTracker) {
+        const boss = normalizeBossName(t.boss || 'Boss');
+        const timeStr = t.timeText || t.time || '時間未定';
+        const channel = t.finalChannel ? ` (頻道: ${t.finalChannel})` : (t.channels && t.channels !== '未指定' ? ` (頻道: ${t.channels})` : '');
+        const members = t.members ? (Array.isArray(t.members) ? t.members : Object.values(t.members)) : [];
+        const hasExplicitSlotIndex = members.some(item => item && item.slotIndex !== undefined && item.slotIndex !== null);
+        const isDk = isDragonKingBoss(t.boss) || members.length > 6 || (hasExplicitSlotIndex && members.some(m => m && m.slotIndex >= 6));
+
+        let out = `▶ [隊伍 ${tIdx + 1}] [${boss}] ${t.gamesCount || 7}場 ⏰ ${timeStr}${channel}\n`;
+        if (t.note) {
+            out += `📝 備註：${t.note}\n`;
+        }
+
+        if (isDk) {
+            const dkLetter = String.fromCharCode(65 + (dkTracker ? dkTracker.count : 0));
+            if (dkTracker) dkTracker.count++;
+            const squad1Label = `${dkLetter}1隊`;
+            const squad2Label = `${dkLetter}2隊`;
+
+            const sq1 = [];
+            const sq2 = [];
+            for (let i = 0; i < 6; i++) {
+                const m = hasExplicitSlotIndex ? members.find(item => item && item.slotIndex === i) : members[i];
+                if (m && m.name) sq1.push({ mem: m, slotIdx: i });
+            }
+            for (let i = 6; i < 12; i++) {
+                const m = hasExplicitSlotIndex ? members.find(item => item && item.slotIndex === i) : members[i];
+                if (m && m.name) sq2.push({ mem: m, slotIdx: i });
+            }
+
+            out += `👥 【${squad1Label}】(${sq1.length}人)：\n`;
+            if (sq1.length === 0) {
+                out += `(尚無成員)\n`;
+            } else {
+                sq1.forEach((item, mIdx) => {
+                    const m = item.mem;
+                    const roleTag = m.roleTag || ((t.slotRoles && t.slotRoles[item.slotIdx]) ? t.slotRoles[item.slotIdx] : '');
+                    const cleanRole = stripRoleIcon(roleTag);
+                    const role = cleanRole ? `【${cleanRole}】` : '';
+                    out += `${mIdx + 1}. [${normalizeJobName(m.job) || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
+                });
+            }
+            out += `\n`;
+
+            out += `👥 【${squad2Label}】(${sq2.length}人)：\n`;
+            if (sq2.length === 0) {
+                out += `(尚無成員)\n`;
+            } else {
+                sq2.forEach((item, mIdx) => {
+                    const m = item.mem;
+                    const roleTag = m.roleTag || ((t.slotRoles && t.slotRoles[item.slotIdx]) ? t.slotRoles[item.slotIdx] : '');
+                    const cleanRole = stripRoleIcon(roleTag);
+                    const role = cleanRole ? `【${cleanRole}】` : '';
+                    out += `${mIdx + 1}. [${normalizeJobName(m.job) || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
+                });
+            }
+            out += `\n`;
+        } else {
+            const validMembers = members.filter(m => m && m.name);
+            out += `👥 成員 (${validMembers.length}人)：\n`;
+            validMembers.forEach((m, mIdx) => {
+                const roleTag = m.roleTag || ((t.slotRoles && t.slotRoles[m.slotIndex !== undefined ? m.slotIndex : mIdx]) ? t.slotRoles[m.slotIndex !== undefined ? m.slotIndex : mIdx] : '');
+                const cleanRole = stripRoleIcon(roleTag);
+                const role = cleanRole ? `【${cleanRole}】` : '';
+                out += `${mIdx + 1}. [${normalizeJobName(m.job) || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
+            });
+            out += `\n`;
+        }
+        return out;
     }
 
     window.copyConfirmedReportText = function() {
@@ -6786,22 +6950,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (dayTeams.length > 0) {
                 text += `📅 ● ${wd.dateLabel} (共 ${dayTeams.length} 隊)：\n`;
+                const dkTracker = { count: 0 };
                 dayTeams.forEach((t, tIdx) => {
-                    const boss = normalizeBossName(t.boss || 'Boss');
-                    const timeStr = t.timeText || t.time || '時間未定';
-                    const channel = t.finalChannel ? ` (頻道: ${t.finalChannel})` : (t.channels && t.channels !== '未指定' ? ` (頻道: ${t.channels})` : '');
-                    text += `▶ [隊伍 ${tIdx + 1}] [${boss}] ${t.gamesCount || 7}場 ⏰ ${timeStr}${channel}\n`;
-                    if (t.note) {
-                        text += `📝 備註：${t.note}\n`;
-                    }
-                    const members = t.members ? (Array.isArray(t.members) ? t.members : Object.values(t.members)) : [];
-                    text += `👥 成員 (${members.length}人)：\n`;
-                    members.forEach((m, mIdx) => {
-                        const cleanRole = stripRoleIcon(m.roleTag);
-                        const role = cleanRole ? `【${cleanRole}】` : '';
-                        text += `${mIdx + 1}. [${normalizeJobName(m.job) || '冒險者'}] ${m.name} (Lv.${m.level || '?'}) ${role}\n`;
-                    });
-                    text += `\n`;
+                    text += formatConfirmedTeamRosterText(t, tIdx, dkTracker);
                 });
                 text += `-------------------------------\n`;
             }
@@ -6815,6 +6966,60 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } else {
             prompt("請手動複製下方出團名單文字：", text);
+        }
+    };
+
+    window.copyConfirmedDayText = function(dayIndex) {
+        const weekDays = getWeekDaysDetails(currentConfirmedReportWeekId);
+        const wd = weekDays[dayIndex];
+        if (!wd) return;
+
+        const matchingTeams = (confirmedTeams || []).filter(team => {
+            if (!team) return false;
+            const d = parseConfirmedTeamDate(team);
+            if (d) {
+                const tue = getTuesdayOfWeek(d);
+                return formatDateISO(tue) === currentConfirmedReportWeekId;
+            }
+            return team.weekId === currentConfirmedReportWeekId;
+        });
+
+        const dayTeams = matchingTeams.filter(team => {
+            const td = parseConfirmedTeamDate(team);
+            if (td) {
+                return wd.dateObj.getFullYear() === td.getFullYear() &&
+                       wd.dateObj.getMonth() === td.getMonth() &&
+                       wd.dateObj.getDate() === td.getDate();
+            }
+            const fullText = (team.timeText || team.timeslot || team.time || '');
+            return fullText.includes(wd.dateLabel.split('(')[0]);
+        });
+
+        dayTeams.sort((a, b) => (getTeamTimestamp(a) || 0) - (getTeamTimestamp(b) || 0));
+
+        if (dayTeams.length === 0) {
+            alert(`【${wd.dateLabel}】尚無已確認出團紀錄！`);
+            return;
+        }
+
+        let text = `【SoulMine 出團名單】\n`;
+        text += `📅 ● ${wd.dateLabel} (共 ${dayTeams.length} 隊)：\n`;
+        text += `===============================\n\n`;
+
+        const dkTracker = { count: 0 };
+        dayTeams.forEach((t, tIdx) => {
+            text += formatConfirmedTeamRosterText(t, tIdx, dkTracker);
+        });
+        text += `-------------------------------`;
+
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(() => {
+                alert(`✅ 已複製【${wd.dateLabel}】出團名單文字！可直接貼至 LINE / Discord！`);
+            }).catch(() => {
+                prompt(`請手動複製【${wd.dateLabel}】出團名單文字：`, text);
+            });
+        } else {
+            prompt(`請手動複製【${wd.dateLabel}】出團名單文字：`, text);
         }
     };
 
