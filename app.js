@@ -6271,15 +6271,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 const actualTeamIdx = confirmedTeams.indexOf(team);
                 const isDk = isDragonKingBoss(team.boss);
                 if (isDk) {
-                    const dkLetter = String.fromCharCode(65 + dkDayCount); // A, B, C...
-                    dkDayCount++;
                     cols.push({
                         team: team,
                         actualTeamIdx: actualTeamIdx,
                         isDk: true,
                         squadIdx: 0,
-                        squadLabel: `${dkLetter}1`,
-                        squadShort: `${dkLetter}1`,
+                        squadLabel: 'A',
+                        squadShort: 'A',
                         slotOffset: 0,
                         isSecondSquad: false
                     });
@@ -6288,8 +6286,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         actualTeamIdx: actualTeamIdx,
                         isDk: true,
                         squadIdx: 1,
-                        squadLabel: `${dkLetter}2`,
-                        squadShort: `${dkLetter}2`,
+                        squadLabel: 'B',
+                        squadShort: 'B',
                         slotOffset: 6,
                         isSecondSquad: true
                     });
@@ -6555,8 +6553,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         if (mem && mem.name) squad2Count++;
                     }
                     const totalDkCount = squad1Count + squad2Count;
-                    const squad1Label = col.squadShort || 'A1';
-                    const squad2Label = col.squadShort ? col.squadShort.replace('1', '2') : 'A2';
+                    const squad1Label = 'A';
+                    const squad2Label = 'B';
 
                     if (isHistory) {
                         return `
