@@ -6840,10 +6840,30 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function toEmojiDigits(val) {
+        if (val === null || val === undefined) return '';
+        const s = String(val).trim();
+        const map = {
+            '0': '0️⃣',
+            '1': '1️⃣',
+            '2': '2️⃣',
+            '3': '3️⃣',
+            '4': '4️⃣',
+            '5': '5️⃣',
+            '6': '6️⃣',
+            '7': '7️⃣',
+            '8': '8️⃣',
+            '9': '9️⃣'
+        };
+        return s.split('').map(c => map[c] || c).join('');
+    }
+
     function formatConfirmedTeamRosterText(t, tIdx, dkTracker) {
         const boss = normalizeBossName(t.boss || 'Boss');
         const timeStr = t.timeText || t.time || '時間未定';
-        const channel = t.finalChannel ? ` (頻道: ${t.finalChannel})` : (t.channels && t.channels !== '未指定' ? ` (頻道: ${t.channels})` : '');
+        const rawCh = t.finalChannel ? t.finalChannel : (t.channels && t.channels !== '未指定' ? t.channels : '');
+        const emojiCh = rawCh ? toEmojiDigits(rawCh) : '';
+        const channel = emojiCh ? ` (頻道: ${emojiCh})` : '';
         const members = t.members ? (Array.isArray(t.members) ? t.members : Object.values(t.members)) : [];
         const hasExplicitSlotIndex = members.some(item => item && item.slotIndex !== undefined && item.slotIndex !== null);
         const isDk = isDragonKingBoss(t.boss) || members.length > 6 || (hasExplicitSlotIndex && members.some(m => m && m.slotIndex >= 6));
